@@ -1,1 +1,1 @@
-This is something that i really like
+Repository for LavenderCare admin dashboard
