@@ -19,41 +19,70 @@ import React from "react";
 import MentalHealthScreeningDetail from "../pages/admin/healthcareProvider/MentalHealthScreeningDetail";
 import MentalHealthScreening from "../pages/admin/healthcareProvider/MentalHealthScreening";
 
+import CaseloadSummaries from "../pages/admin/healthcareProvider/CaseloadSummaries";
+import AllCaseload from "../pages/admin/healthcareProvider/AllCaseload";
+
 function Routing() {
   return (
-  <>
+    <>
+      <Routes>
+        <Route path="/" default element={<App />} />
+        <Route path="/admin/login" element={<Login />} />
+        {/* <Route path="/admin/create-account" element={<CreateAccount />} /> */}
+        <Route path="/admin/verify-account" element={<VerifyEmail />} />
+        <Route path="/admin/recover-account" element={<RecoverAccount />} />
 
-    <Routes>
-      <Route path="/" default element={<App />} />
-      <Route path="/admin/login" element={<Login />} />
-      {/* <Route path="/admin/create-account" element={<CreateAccount />} /> */}
-      <Route path="/admin/verify-account" element={<VerifyEmail />} />
-      <Route path="/admin/recover-account" element={<RecoverAccount />} />
+        <Route path="/admin" element={<Layout />}>
+          <Route path="/admin/dashboard" element={<Dashboard />} />
+          {/* user management */}
+          <Route path="/admin/user-management" element={<UserManagement />} />
+          <Route path="/admin/activity-logs" element={<ActivityLogs />} />
+          <Route
+            path="/admin/user-management/invite-user"
+            element={<InviteUsers />}
+          />
 
+          {/* service providers */}
+          <Route
+            path="/admin/service-providers"
+            element={<ServiceProvider />}
+          />
+          <Route
+            path="/admin/service-provider/disputes"
+            element={<Disputes />}
+          />
+          <Route
+            path="/admin/service-provider/performance"
+            element={<Performance />}
+          />
+          <Route
+            path="/admin/service-provider/disputes/:id"
+            element={<DisputeDetails />}
+          />
 
-      <Route path="/admin" element={<Layout />}>
-        <Route path="/admin/dashboard" element={<Dashboard />} />
-        {/* user management */}
-        <Route path="/admin/user-management" element={<UserManagement />} />
-        <Route path="/admin/activity-logs" element={<ActivityLogs />} />
-        <Route path="/admin/user-management/invite-user" element={<InviteUsers />} />
-
-        {/* service providers */}
-        <Route path="/admin/service-providers" element={<ServiceProvider />} />
-        <Route path="/admin/service-provider/disputes" element={<Disputes />} />
-        <Route path="/admin/service-provider/performance" element={<Performance />} />
-        <Route path="/admin/service-provider/disputes/:id" element={<DisputeDetails />} />
-
-  {/* healthcare provider */}
-  <Route path="/admin/healthcare-provider" element={<HealthcareProvider />} />
-  <Route path="/admin/credentials-review" element={<ReviewCredential />} />
-  {/* mental health screening */}
-  <Route path="/admin/mental-health-screening" element={<MentalHealthScreening />} />
-  <Route path="/admin/mental-health-screening/:id" element={<MentalHealthScreeningDetail />} />
-      </Route>
-    </Routes>
-
-  </>
+          {/* healthcare provider */}
+          <Route
+            path="/admin/healthcare-provider"
+            element={<HealthcareProvider />}
+          />
+          <Route
+            path="/admin/credentials-review"
+            element={<ReviewCredential />}
+          />
+          {/* mental health screening */}
+          <Route
+            path="/admin/mental-health-screening"
+            element={<MentalHealthScreening />}
+          />
+          <Route
+            path="/admin/mental-health-screening/:id"
+            element={<MentalHealthScreeningDetail />}
+          />
+          <Route path="/admin/caseloads" element={<CaseloadSummaries />} />
+          <Route path="/admin/all-caseload" element={<AllCaseload />} />
+        </Route>
+      </Routes>
+    </>
   );
 }
 

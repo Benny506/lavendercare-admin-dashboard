@@ -59,9 +59,9 @@ const providers = [
 
 function HealthcareProvider() {
   return (
-    <div className=" pt-8 min-h-screen">
+    <div className=" pt-6 min-h-screen">
       {/* Breadcrumbs and title */}
-      <div className="flex py-4 items-center gap-1">
+      <div className="flex items-center gap-1">
         <svg
           width="20"
           height="20"
@@ -121,12 +121,12 @@ function HealthcareProvider() {
       </div>
 
       {/* healthcare provider title */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">
+      <div className="flex justify-between py-4 items-center">
+        <h2 className="text-xl sm:text-2xl font-bold">
           Healthcare Provider
         </h2>
 
-        <div className="text-xs w-max text-gray-500 mb-6 flex gap-2 bg-white py-3 px-4 rounded-sm items-center">
+        <div className="text-xs w-max text-gray-500 flex gap-2 bg-white py-3 px-4 rounded-sm items-center">
           <svg
             width="18"
             height="14"
