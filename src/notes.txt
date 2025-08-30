@@ -1,0 +1,7 @@
+i exported the images in svg format so that they can maintain the best image quality 
+and also have a very small overall size
+for faster loading time.
+
+
+Another thing the font used on the figma design i could not find it on google 
+fonts or fontshare.com so i downloaded the .ttf version.
