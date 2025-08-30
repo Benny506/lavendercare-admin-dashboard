@@ -19,8 +19,16 @@ import React from "react";
 import MentalHealthScreeningDetail from "../pages/admin/healthcareProvider/MentalHealthScreeningDetail";
 import MentalHealthScreening from "../pages/admin/healthcareProvider/MentalHealthScreening";
 
+
 import CaseloadSummaries from "../pages/admin/healthcareProvider/CaseloadSummaries";
 import AllCaseload from "../pages/admin/healthcareProvider/AllCaseload";
+import Promotions from "../pages/admin/content/Promotions";
+import Resource from "../pages/admin/content/Resource";
+import Blog from "../pages/admin/content/Blog";
+
+import Product from "../pages/admin/marketPlace/Product";
+import AddProduct from "../pages/admin/marketPlace/AddProduct";
+import ProductPreview from "../pages/admin/marketPlace/ProductPreview";
 
 function Routing() {
   return (
@@ -34,6 +42,8 @@ function Routing() {
 
         <Route path="/admin" element={<Layout />}>
           <Route path="/admin/dashboard" element={<Dashboard />} />
+
+          
           {/* user management */}
           <Route path="/admin/user-management" element={<UserManagement />} />
           <Route path="/admin/activity-logs" element={<ActivityLogs />} />
@@ -80,6 +90,18 @@ function Routing() {
           />
           <Route path="/admin/caseloads" element={<CaseloadSummaries />} />
           <Route path="/admin/all-caseload" element={<AllCaseload />} />
+
+          {/* blog */}
+          <Route path="/admin/content/blog" element={<Blog />} />
+          <Route path="/admin/content/resource" element={<Resource />} />
+          <Route path="/admin/content/promotions" element={<Promotions />} />
+
+
+
+          {/* marketplace */}
+          <Route path="/admin/marketplace/manage-product" element={<Product />} />
+          <Route path="/admin/marketplace/add-product" element={<AddProduct />} />
+          <Route path="/admin/marketplace/yoga-mat" element={<ProductPreview />} />
         </Route>
       </Routes>
     </>
