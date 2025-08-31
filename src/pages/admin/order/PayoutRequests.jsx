@@ -11,7 +11,7 @@ const payouts = [
 
 function PayoutRequests() {
     return (
-        <div className="w-full px-2 md:px-8 py-6">
+        <div className="w-full py-6">
             {/* Breadcrumbs */}
             <div className="flex items-center gap-1 text-xs text-gray-400 mb-4">
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
