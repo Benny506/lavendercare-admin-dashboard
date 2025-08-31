@@ -29,6 +29,8 @@ import Blog from "../pages/admin/content/Blog";
 import Product from "../pages/admin/marketPlace/Product";
 import AddProduct from "../pages/admin/marketPlace/AddProduct";
 import ProductPreview from "../pages/admin/marketPlace/ProductPreview";
+import MarketPromotions from "../pages/admin/marketPlace/MarketPromotions";
+import PayoutRequests from "../pages/admin/order/PayoutRequests";
 
 function Routing() {
   return (
@@ -43,7 +45,7 @@ function Routing() {
         <Route path="/admin" element={<Layout />}>
           <Route path="/admin/dashboard" element={<Dashboard />} />
 
-          
+
           {/* user management */}
           <Route path="/admin/user-management" element={<UserManagement />} />
           <Route path="/admin/activity-logs" element={<ActivityLogs />} />
@@ -102,6 +104,11 @@ function Routing() {
           <Route path="/admin/marketplace/manage-product" element={<Product />} />
           <Route path="/admin/marketplace/add-product" element={<AddProduct />} />
           <Route path="/admin/marketplace/yoga-mat" element={<ProductPreview />} />
+          <Route path="/admin/marketplace/promotions" element={<MarketPromotions />} />
+
+          {/* order and transactions */}
+          {/* <Route path="/admin/order" element={<Product />} /> */}
+          <Route path="/admin/order/payout-requests" element={<PayoutRequests />} />
         </Route>
       </Routes>
     </>

@@ -163,7 +163,7 @@ const sidebarMenu = [
     path: "#",
     submenu: [
       { title: "Manage Products", path: "/admin/marketplace/manage-product" },
-      { title: "Promotions and Discounts", path: "/admin/promotions" },
+      { title: "Promotions and Discounts", path: "/admin/marketplace/promotions" },
     ],
   },
   {
@@ -186,7 +186,7 @@ const sidebarMenu = [
     submenu: [
       { title: "Orders", path: "/admin/orders" },
       { title: "Refunds", path: "/admin/refunds" },
-      { title: "Vendor Payout Requests", path: "/admin/payouts" },
+      { title: "Vendor Payout Requests", path: "/admin/order/payout-requests" },
       { title: "Transaction History", path: "/admin/transactions" },
     ],
   },
@@ -347,14 +347,17 @@ function Sidebar() {
                         key={subIndex}
                         to={subItem.path}
                         className={({ isActive }) =>
-                          `block px-4 py-2 text-sm text-white text-[14px]  rounded-r-lg transition-colors duration-200 ${
-                            isActive
-                              ? "text-blue-600 font-medium border-r-4 border-blue-500"
-                              : ""
-                          }`
+                          `block px-4 py-2 text-sm text-white text-[14px] relative rounded-r-lg transition-colors duration-200`
                         }
                       >
-                        {subItem.title}
+                        {({ isActive }) => (
+                          <>
+                            {isActive && (
+                              <span className="absolute right-4 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-white"></span>
+                            )}
+                            {subItem.title}
+                          </>
+                        )}
                       </NavLink>
                     ))}
                   </div>
@@ -364,8 +367,8 @@ function Sidebar() {
               <NavLink
                 to={item.path}
                 className={({ isActive }) =>
-                  `flex items-center px-4 py-3 text-white transition-colors duration-200 ${
-                    isActive ? "text-blue-600 font-medium border-b-2" : ""
+                  `flex items-center px-4 text-[14px] py-3  border-b border-(--primary-500) text-white transition-colors duration-200 ${
+                    isActive ? "text-blue-600 font-medium border-[#9F7DDC]" : ""
                   }`
                 }
               >
