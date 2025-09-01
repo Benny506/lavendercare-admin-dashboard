@@ -31,6 +31,11 @@ import AddProduct from "../pages/admin/marketPlace/AddProduct";
 import ProductPreview from "../pages/admin/marketPlace/ProductPreview";
 import MarketPromotions from "../pages/admin/marketPlace/MarketPromotions";
 import PayoutRequests from "../pages/admin/order/PayoutRequests";
+import TransactionHistory from "../pages/admin/order/TransactionHistory";
+import General from "../pages/admin/settings/General";
+import EscalatedTickets from "../pages/admin/support/EscalatedTickets";
+import AllTickets from "../pages/admin/support/AllTickets";
+import TicketDetails from "../pages/admin/support/TicketDetails";
 
 function Routing() {
   return (
@@ -109,6 +114,18 @@ function Routing() {
           {/* order and transactions */}
           {/* <Route path="/admin/order" element={<Product />} /> */}
           <Route path="/admin/order/payout-requests" element={<PayoutRequests />} />
+          <Route path="/admin/order/transaction-history" element={<TransactionHistory />} />
+
+
+          {/* support */}
+          <Route path="/admin/support/all-tickets" element={<AllTickets />} />
+          <Route path="/admin/support/escalated-tickets" element={<EscalatedTickets />} />
+          <Route path="/admin/support/ticket-details/:id" element={<TicketDetails />} />
+
+
+
+          {/* settings */}
+          <Route path="/admin/settings/general" element={<General />} />
         </Route>
       </Routes>
     </>
