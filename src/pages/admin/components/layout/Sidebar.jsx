@@ -187,7 +187,7 @@ const sidebarMenu = [
       { title: "Orders", path: "/admin/orders" },
       { title: "Refunds", path: "/admin/refunds" },
       { title: "Vendor Payout Requests", path: "/admin/order/payout-requests" },
-      { title: "Transaction History", path: "/admin/transactions" },
+      { title: "Transaction History", path: "/admin/order/transaction-history" },
     ],
   },
   {
@@ -208,8 +208,8 @@ const sidebarMenu = [
     ),
     path: "#",
     submenu: [
-      { title: "All Tickets", path: "/admin/support-tickets" },
-      { title: "Escalated", path: "/admin/escalated-tickets" },
+      { title: "All Tickets", path: "/admin/support/all-tickets" },
+      { title: "Escalated", path: "/admin/support/escalated-tickets" },
     ],
   },
   {
