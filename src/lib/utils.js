@@ -1,0 +1,104 @@
+import { DateTime } from 'luxon'
+
+export function generateNumericCode(length = 6) {
+  const charset = '0123456789';
+  let code = '';
+
+  // Use crypto for stronger randomness if available
+  if (typeof window !== 'undefined' && window.crypto?.getRandomValues) {
+    const values = new Uint32Array(length);
+    window.crypto.getRandomValues(values);
+    for (let i = 0; i < length; i++) {
+      code += charset[values[i] % charset.length];
+    }
+  } else {
+    // Fallback to Math.random
+    for (let i = 0; i < length; i++) {
+      code += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+  }
+
+  return code;
+}
+
+export const isoToDateTime = ({ isoString }) => {
+  return DateTime.fromISO(isoString)
+    .toFormat("ccc LLL dd. hh:mma"); 
+};
+
+export function getMaxByKey({ arr, key }) {
+  if (!arr.length) return null;
+
+  return arr.reduce((maxObj, current) => {
+    return current[key] > maxObj[key] ? current : maxObj;
+  });
+}
+
+export function getAppointmentStatus({ status, date_ISO, startHour, duration_secs }) {
+  const now = DateTime.now();
+
+  // Build the start time at the given hour on the given date
+  const bookingStartTime = DateTime.fromISO(date_ISO).set({
+    hour: startHour,
+    minute: 0,
+    second: 0,
+    millisecond: 0,
+  });
+
+  // Calculate end time by adding duration
+  const bookingEndTime = bookingStartTime.plus({ seconds: duration_secs });
+
+  // Helper flags
+  const hasStarted = now >= bookingStartTime;
+  const hasEnded   = now > bookingEndTime;
+
+  // 1) If the appointment is new and is currently in progress
+  if ((status === 'new' || status == 'awaiting_completion') && hasStarted && !hasEnded) {
+    return 'ongoing';
+  }
+
+  // 2) new → either still new or missed
+  if (status === 'new') {
+    return hasStarted ? 'missed' : 'new';
+  }
+
+  // 3) New but not ongoing → still new
+  if (status === 'new') {
+    return 'new';
+  }
+
+  // 4) Cancelled → as is
+  if (status === 'cancelled') {
+    return 'cancelled';
+  }
+
+  // 5) Completed → as is
+  if (status === 'completed') {
+    return 'completed';
+  }
+
+  // 6) Awating completion → as is
+  if (status === 'awaiting_completion') {
+    return 'awaiting_completion';
+  }  
+
+  // Fallback to the raw status
+  return status;
+}
+
+export const sortByStatusPriority = (arr) => {
+  const priorityOrder = [
+    'ongoing',
+    'new',
+    'awaiting_completion',
+    'completed',
+    'missed',
+    'cancelled'
+  ];
+
+  return [...arr].sort((a, b) => {
+    const aIndex = priorityOrder.indexOf(a.status);
+    const bIndex = priorityOrder.indexOf(b.status);
+    return aIndex - bIndex;
+  });
+};

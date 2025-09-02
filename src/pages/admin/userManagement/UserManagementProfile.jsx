@@ -17,66 +17,66 @@ const assignedProvider = {
 };
 
 const timelineData = [
-  //   {
-  //     type: "Consultation",
-  //     date: "07/15/2025, 2:00 PM",
-  //     note: "Patient is experiencing mild anxiety...",
-  //   },
-  //   {
-  //     type: "Booking made",
-  //     date: "07/17/2025, 2:00 PM",
-  //   },
-  //   {
-  //     type: "Screening Completed",
-  //     date: "07/09/2025",
-  //   },
-  //   {
-  //     type: "Prescription issued",
-  //     date: "",
-  //     note: "Sertraline, Dosage: 50mg",
-  //   },
-  //   {
-  //     type: "Therapy Notes Added",
-  //     date: "07/10/2024",
-  //   },
-  //   {
-  //     type: "Consultation",
-  //     date: "07/01/2024, 10:00 AM",
-  //     note: "Initial assessment and treatment plan...",
-  //   },
+    {
+      type: "Consultation",
+      date: "07/15/2025, 2:00 PM",
+      note: "Patient is experiencing mild anxiety...",
+    },
+    {
+      type: "Booking made",
+      date: "07/17/2025, 2:00 PM",
+    },
+    {
+      type: "Screening Completed",
+      date: "07/09/2025",
+    },
+    {
+      type: "Prescription issued",
+      date: "",
+      note: "Sertraline, Dosage: 50mg",
+    },
+    {
+      type: "Therapy Notes Added",
+      date: "07/10/2024",
+    },
+    {
+      type: "Consultation",
+      date: "07/01/2024, 10:00 AM",
+      note: "Initial assessment and treatment plan...",
+    },
 ];
 
 const bookingsData = [
-  //   {
-  //     service: "Medical Consultation",
-  //     date: "Jul 15, 2025",
-  //     time: "10:00 AM",
-  //     status: "Accepted",
-  //   },
-  //   {
-  //     service: "Therapy Session",
-  //     date: "Jul 10, 2025",
-  //     time: "2:00 PM",
-  //     status: "Accepted",
-  //   },
-  //   {
-  //     service: "Psychiatric Evaluation",
-  //     date: "Jul 5, 2025",
-  //     time: "11:30 AM",
-  //     status: "Completed",
-  //   },
-  //   {
-  //     service: "Medical Consultation",
-  //     date: "Jun 28, 2025",
-  //     time: "9:00 AM",
-  //     status: "Completed",
-  //   },
-  //   {
-  //     service: "Therapy Session",
-  //     date: "Jun 20, 2025",
-  //     time: "4:00 PM",
-  //     status: "Declined",
-  //   },
+    {
+      service: "Medical Consultation",
+      date: "Jul 15, 2025",
+      time: "10:00 AM",
+      status: "Accepted",
+    },
+    {
+      service: "Therapy Session",
+      date: "Jul 10, 2025",
+      time: "2:00 PM",
+      status: "Accepted",
+    },
+    {
+      service: "Psychiatric Evaluation",
+      date: "Jul 5, 2025",
+      time: "11:30 AM",
+      status: "Completed",
+    },
+    {
+      service: "Medical Consultation",
+      date: "Jun 28, 2025",
+      time: "9:00 AM",
+      status: "Completed",
+    },
+    {
+      service: "Therapy Session",
+      date: "Jun 20, 2025",
+      time: "4:00 PM",
+      status: "Declined",
+    },
 ];
 
 function UserManagementProfile() {
