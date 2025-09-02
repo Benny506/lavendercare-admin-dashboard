@@ -1,72 +1,71 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
+import { useLocation, useNavigate } from "react-router-dom";
+import { getAdminState } from "../../../redux/slices/adminState";
+import PatientInfo from "./auxiliary/PatientInfo";
+import useApiReqs from "../../../hooks/useApiReqs";
+import { getMaxByKey, isoToDateTime } from "../../../lib/utils";
+import { getRiskLevelBadge } from "../../../lib/utils_Jsx";
+import TestInfoModal from "./auxiliary/TestInfoModal";
 // import { useParams, useNavigate } from "react-router-dom";
 
-// Mock data for demonstration
-const details = [
-  {
-    name: "Chinenye Okeke",
-    risk: "High",
-    age: 29,
-    postpartumDay: 21,
-    contact: "email@example.com",
-    phone: "0801 234 5678",
-    pregnancyStatus: "Postpartum",
-    screeningType: "Medical Consultation",
-    notes: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et...",
-    report: "Mental Health Report",
-    latest: {
-      score: 24,
-      interpretation: "Severe Depression",
-      date: "Jul 12, 2025 – 3:15PM"
-    },
-    history: [
-      { date: "Jul12, 2025", type: "PHQ-9", score: 24, interpretation: "Severe Depression", risk: "Medium" },
-      { date: "Jun30, 2025", type: "EPDS", score: 8, interpretation: "Mild Anxiety", risk: "High" },
-      { date: "Jun30, 2025", type: "PHQ-9", score: 12, interpretation: "Severe Depression", risk: "Medium" },
-    ]
-  },
-  // ...add more mock details if needed
-];
-
-const riskColor = {
-  High: "text-red-500 bg-red-50",
-  Medium: "text-orange-500 bg-orange-50",
-  None: "text-green-500 bg-green-50"
-};
 
 function MentalHealthScreeningDetail() {
-  const d = details[0]; // For demo, always show first
+
+  const navigate = useNavigate()
+
+  const { state } = useLocation()
+  const patient_id = state?.patient_id
+
+  const { fetchTestResults } = useApiReqs()  
+
+  const screenings = useSelector(state => getAdminState(state).mentalHealthScreenings)
+
+  const [apiReqs, setApiReqs] = useState({ isLoading: false, errorMsg: null, data: null })
+  const [latestScreeningInfo, setLatestScreeningInfo] = useState() 
+  const [patientScreeningHistory, setPatientScreeningHistory] = useState()
+  const [testInfoModal, setTestInfoModal] = useState({ show: false, hide: null, data: null })  
+
+  useEffect(() => {
+      if(!patient_id){
+          navigate('/admin/mental-health-screening')
+      
+      } else {
+
+          if(screenings?.length > 0){
+            const patientScreenings = (screenings || []).filter(s => s.user_id == patient_id)
+
+            // const patientScreenings = sortByTimeStamp({ arr: patientScreenings, key: 'created_at' })
+
+            const latestScreeningInfo = patientScreenings[0]
+
+            const p_screeningHistory = patientScreenings
+
+            if(!latestScreeningInfo){
+                const errorMsg = "Error fetching patient information"
+                setApiReqs({ isLoading: false, errorMsg, data: null })
+            
+            } else{
+                setPatientScreeningHistory(p_screeningHistory)
+                setLatestScreeningInfo(latestScreeningInfo)
+            }            
+          
+          } else{
+            fetchTestResults({})
+          }
+      }
+  }, [screenings])
+  
+  const openTestInfoModal = (args) => setTestInfoModal({ visible: true, hide: hideTestInfoModal, data: args })
+  const hideTestInfoModal = () => setTestInfoModal({ visible: true, hide: null, data: null })  
 
   return (
     <div className="pt-6 min-h-screen flex flex-col lg:flex-row gap-6">
       {/* Left: Patient Info */}
-      <div className="bg-white rounded-xl p-4 w-full max-w-xs flex-shrink-0 flex flex-col items-center lg:items-start">
-        <div className="flex flex-col items-center lg:items-start w-full">
-          <div className="w-20 h-20 rounded-full bg-gray-200 mb-2" />
-          <div className="flex items-center gap-2 mb-1">
-            <span className="font-bold text-lg">{d.name}</span>
-            <span className="px-2 py-1 rounded text-xs font-semibold text-red-500 bg-red-50">{d.risk}</span>
-          </div>
-        </div>
-        <div className="w-full mt-2">
-          <div className="text-xs text-gray-500 mb-1">Patient Information</div>
-          <div className="text-xs mb-1">Age: <span className="font-semibold">{d.age}</span></div>
-          <div className="text-xs mb-1">Postpartum Day: <span className="font-semibold">{d.postpartumDay}</span></div>
-          <div className="text-xs mb-1">Contact: <span className="font-semibold">{d.contact}</span></div>
-          <div className="text-xs mb-1">Phone no: <span className="font-semibold">{d.phone}</span></div>
-          <div className="text-xs mb-1">Pregnancy Status: <span className="font-semibold">{d.pregnancyStatus}</span></div>
-          <div className="text-xs mb-1">Screening Type: <span className="font-semibold">{d.screeningType}</span></div>
-        </div>
-        <div className="w-full mt-4">
-          <div className="text-xs text-gray-500 mb-1">Session Summary & Notes</div>
-          <div className="text-xs bg-gray-50 rounded p-2 min-h-[60px]">{d.notes}</div>
-        </div>
-        <div className="w-full mt-4">
-          <div className="text-xs text-gray-500 mb-1">Attachments & Reports</div>
-          <div className="text-xs mb-2">{d.report}</div>
-          <button className="bg-purple-600 text-white px-4 py-2 rounded text-xs font-semibold w-full">Download PDF</button>
-        </div>
-      </div>
+      <PatientInfo 
+        screeningInfo={latestScreeningInfo}
+      />
+
       {/* Right: Results */}
       <div className="flex-1 bg-white rounded-xl p-4">
         <div className="mb-6">
@@ -75,16 +74,16 @@ function MentalHealthScreeningDetail() {
             <table className="min-w-[300px] w-full text-xs">
               <tbody>
                 <tr>
-                  <td className="py-2 pr-4 text-gray-500 font-medium">Score</td>
-                  <td className="py-2">{d.latest.score}</td>
+                  <td className="py-2 pr-4 text-gray-500 font-medium text-sm">Score</td>
+                  <td className="py-2 text-sm">{latestScreeningInfo?.score}</td>
                 </tr>
                 <tr>
-                  <td className="py-2 pr-4 text-gray-500 font-medium">Interpretation</td>
-                  <td className="py-2">{d.latest.interpretation}</td>
+                  <td className="py-2 pr-4 text-gray-500 font-medium text-sm">Interpretation</td>
+                  <td className="py-2 text-sm">{latestScreeningInfo?.remark}</td>
                 </tr>
                 <tr>
-                  <td className="py-2 pr-4 text-gray-500 font-medium">Submitted on</td>
-                  <td className="py-2">{d.latest.date}</td>
+                  <td className="py-2 pr-4 text-gray-500 font-medium text-sm">Submitted on</td>
+                  <td className="py-2 text-sm">{latestScreeningInfo?.created_at && isoToDateTime({ isoString: latestScreeningInfo?.created_at })}</td>
                 </tr>
               </tbody>
             </table>
@@ -92,34 +91,55 @@ function MentalHealthScreeningDetail() {
         </div>
         <div>
           <div className="font-semibold text-base mb-2">Full Screening History Table</div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-w-full">
             <table className="min-w-[400px] w-full text-xs">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="py-2 px-2 text-left font-semibold text-gray-500 whitespace-nowrap">Date</th>
                   <th className="py-2 px-2 text-left font-semibold text-gray-500 whitespace-nowrap">Type</th>
                   <th className="py-2 px-2 text-left font-semibold text-gray-500 whitespace-nowrap">Score</th>
-                  <th className="py-2 px-2 text-left font-semibold text-gray-500 whitespace-nowrap">Interpretation</th>
                   <th className="py-2 px-2 text-left font-semibold text-gray-500 whitespace-nowrap">Risk Level</th>
+                  <th className="py-2 px-2 text-left font-semibold text-gray-500 whitespace-nowrap">Max Risk % (Answer)</th>
                 </tr>
               </thead>
               <tbody>
-                {d.history.map((h, idx) => (
-                  <tr key={idx} className="border-t border-gray-100">
-                    <td className="py-2 px-2 whitespace-nowrap">{h.date}</td>
-                    <td className="py-2 px-2 whitespace-nowrap">{h.type}</td>
-                    <td className="py-2 px-2 whitespace-nowrap">{h.score}</td>
-                    <td className="py-2 px-2 whitespace-nowrap">{h.interpretation}</td>
-                    <td className="py-2 px-2 whitespace-nowrap">
-                      <span className={`px-2 py-1 rounded text-xs font-semibold ${riskColor[h.risk]}`}>{h.risk}</span>
-                    </td>
-                  </tr>
-                ))}
+                {patientScreeningHistory?.map((h, idx) => {
+                  const { answer } = h
+
+                  const max_risk_percent = getMaxByKey({ arr: answer?.filter(ans => ans.alert_level == 'high' || ans?.alert_level == 'severe'), key: 'risk_level' })
+                  
+                  return (
+                    <tr key={idx} className="border-t border-gray-100">
+                      <td className="py-2 px-2 whitespace-nowrap">{h?.created_at && isoToDateTime({ isoString: h?.created_at })}</td>
+                      <td className="py-2 px-2 whitespace-nowrap">{h?.test_type}</td>
+                      <td className="py-2 px-2 whitespace-nowrap">{h?.score}</td>
+                      <td className="py-2 px-2 whitespace-nowrap">
+                        {
+                          getRiskLevelBadge(h?.risk_level)
+                        }
+                      </td>
+                      <td className="py-2 px-2 whitespace-nowrap">{ max_risk_percent?.risk_percent }%</td>
+                        <td className="py-2 gap-2 flex items-cener sm:py-3 px-2 sm:px-4 whitespace-nowrap">                        
+                          <button
+                            className="bg-purple-600 cursor-pointer text-white px-4 py-1 rounded-full text-xs w-full sm:w-auto transition hover:bg-grey-700"
+                            onClick={() => openTestInfoModal(h)}
+                          >
+                            Test info
+                          </button>                          
+                        </td>                      
+                    </tr>
+                )})}
               </tbody>
             </table>
           </div>
         </div>
       </div>
+
+      <TestInfoModal
+        onClose={testInfoModal?.hide}
+        show={testInfoModal?.visible}
+        data={testInfoModal?.data}
+      />      
     </div>
   );
 }

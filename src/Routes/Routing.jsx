@@ -31,28 +31,34 @@ import AddProduct from "../pages/admin/marketPlace/AddProduct";
 import ProductPreview from "../pages/admin/marketPlace/ProductPreview";
 import MarketPromotions from "../pages/admin/marketPlace/MarketPromotions";
 import PayoutRequests from "../pages/admin/order/PayoutRequests";
+
 import TransactionHistory from "../pages/admin/order/TransactionHistory";
 import General from "../pages/admin/settings/General";
 import EscalatedTickets from "../pages/admin/support/EscalatedTickets";
 import AllTickets from "../pages/admin/support/AllTickets";
 import TicketDetails from "../pages/admin/support/TicketDetails";
 
+import ProtectedRoute from "../pages/admin/components/ProtectedRoute";
+import AutoLogin from "../pages/admin/components/AutoLogin";
+import UserManagementProfile from "../pages/admin/userManagement/UserManagementProfile";
+
 function Routing() {
   return (
-    <>
+    <AutoLogin>
       <Routes>
-        <Route path="/" default element={<App />} />
+        <Route path="/" element={<Login />} />
         <Route path="/admin/login" element={<Login />} />
         {/* <Route path="/admin/create-account" element={<CreateAccount />} /> */}
         <Route path="/admin/verify-account" element={<VerifyEmail />} />
         <Route path="/admin/recover-account" element={<RecoverAccount />} />
 
-        <Route path="/admin" element={<Layout />}>
+        <Route path="/admin" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route path="/admin/dashboard" element={<Dashboard />} />
 
 
           {/* user management */}
           <Route path="/admin/user-management" element={<UserManagement />} />
+          <Route path="/admin/user-management/profile" element={<UserManagementProfile />} />
           <Route path="/admin/activity-logs" element={<ActivityLogs />} />
           <Route
             path="/admin/user-management/invite-user"
@@ -128,7 +134,7 @@ function Routing() {
           <Route path="/admin/settings/general" element={<General />} />
         </Route>
       </Routes>
-    </>
+    </AutoLogin>
   );
 }
 

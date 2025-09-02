@@ -1,63 +1,44 @@
-const providers = [
-  {
-    name: "Dr. Grace Bello",
-    specialty: "OB-GYN",
-    hospital: "City General Hospital",
-    consults: 132,
-    rating: 3.2,
-    status: true,
-  },
-  {
-    name: "Dr. Emeka Obi",
-    specialty: "Maternal Mental Health",
-    hospital: "Metro Heart Center",
-    consults: 98,
-    rating: 4.2,
-    status: true,
-  },
-  {
-    name: "Nurse Lillian James",
-    specialty: "Postnatal Recovery",
-    hospital: "PSkin & Wellness Clinic",
-    consults: 76,
-    rating: 4.5,
-    status: true,
-  },
-  {
-    name: "Dr. David Okorie",
-    specialty: "General Practitioner",
-    hospital: "Cancer Care Center",
-    consults: 121,
-    rating: 4.4,
-    status: true,
-  },
-  {
-    name: "Doula Funke Adeyemi",
-    specialty: "Birth & Labor Support",
-    hospital: "Joint & Motion Clinic",
-    consults: 65,
-    rating: 2.2,
-    status: false,
-  },
-  {
-    name: "Therapist Aisha Lawal",
-    specialty: "Postpartum Therapy",
-    hospital: "Mental Health Associates",
-    consults: 89,
-    rating: 4.5,
-    status: true,
-  },
-  {
-    name: "Dr. Chuka Nwosu",
-    specialty: "Pelvic Health Specialist",
-    hospital: "Women's Health Center",
-    consults: 54,
-    rating: 4.5,
-    status: true,
-  },
-];
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { getAdminState, setAdminState } from "../../../redux/slices/adminState";
+import { IoToggle } from "react-icons/io5";
+import { MdToggleOff, MdToggleOn } from "react-icons/md";
+import ZeroItems from "../components/ZeroItems";
+import { appLoadStart, appLoadStop } from "../../../redux/slices/appLoadingSlice";
+import { toast } from "react-toastify";
+import supabase from "../../../database/dbInit";
+
 
 function HealthcareProvider() {
+  const dispatch = useDispatch()
+
+  const providers = useSelector(state => getAdminState(state).providers)
+
+  const [searchFilter, setSearchFilter] = useState('')
+  const [apiReqs, setApiReqs] = useState({ isLoading: false, data: null, errorMsg: null })
+
+  const filteredData = (providers || []).filter(p => {
+    const { provider_name, professional_title } = p
+
+    const matchesSearch =
+      (
+        searchFilter?.toLowerCase().includes(provider_name?.toLowerCase())
+        ||
+        provider_name?.toLowerCase().includes(searchFilter?.toLowerCase())
+
+        ||
+        searchFilter?.toLowerCase().includes(professional_title?.toLowerCase())
+        ||
+        professional_title?.toLowerCase().includes(searchFilter?.toLowerCase())      
+      );
+
+    return matchesSearch;
+  })
+
+  const totalProvidersCount = (providers || [])?.length
+  const activeProvidersCount = (providers || [])?.filter(p => p?.credentials_approved)?.length
+  const inActiveProvidersCount = (providers || [])?.filter(p => !p?.credentials_approved)?.length
+
   return (
     <div className=" pt-6 min-h-screen">
       {/* Breadcrumbs and title */}
@@ -150,7 +131,9 @@ function HealthcareProvider() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-xl p-4 flex flex-col items-start min-w-[120px]">
           <span className="text-xs text-gray-500 mb-1">Total Providers</span>
-          <span className="text-3xl font-bold">424</span>
+          <span className="text-3xl font-bold">
+            { totalProvidersCount }
+          </span>
         </div>
         <div className="bg-white rounded-xl p-4 flex flex-col items-start min-w-[120px]">
           <span className="text-xs text-gray-500 mb-1 flex items-center gap-1">
@@ -180,7 +163,9 @@ function HealthcareProvider() {
             </svg>
             Active
           </span>
-          <span className="text-3xl font-bold">400</span>
+          <span className="text-3xl font-bold">
+            { activeProvidersCount }
+          </span>
         </div>
         <div className="bg-white rounded-xl p-4 flex flex-col items-start min-w-[120px]">
           <span className="text-xs text-gray-500 mb-1 flex items-center gap-1">
@@ -210,7 +195,9 @@ function HealthcareProvider() {
             </svg>
             Inactive
           </span>
-          <span className="text-3xl font-bold">23</span>
+          <span className="text-3xl font-bold">
+            { inActiveProvidersCount }
+          </span>
         </div>
       </div>
 
@@ -222,12 +209,14 @@ function HealthcareProvider() {
               All Healthcare Provider
             </div>
             <div className="text-xs text-gray-500">
-              See all your Provider below
+              See all your Providers below
             </div>
           </div>
           <div className="flex gap-2 w-full sm:w-auto">
             <div className="relative flex-1">
               <input
+                value={searchFilter}
+                onChange={e => setSearchFilter(e?.target?.value)}
                 className="w-full border border-gray-300 rounded px-3 py-2 text-xs"
                 placeholder="Search"
               />
@@ -238,9 +227,9 @@ function HealthcareProvider() {
                 </svg>
               </span>
             </div>
-            <button className="border-gray-300 bg-white border px-2 sm:px-3 py-2 rounded text-xs">
+            {/* <button className="border-gray-300 bg-white border px-2 sm:px-3 py-2 rounded text-xs">
               Filter by: All
-            </button>
+            </button> */}
           </div>
         </div>
         <div className="overflow-x-auto rounded-xl border border-gray-100">
@@ -251,13 +240,10 @@ function HealthcareProvider() {
                   Name
                 </th>
                 <th className="py-2 sm:py-3 px-2 sm:px-4 text-left font-semibold text-gray-500 whitespace-nowrap">
-                  Specialty
+                  Exprience
                 </th>
                 <th className="py-2 sm:py-3 px-2 sm:px-4 text-left font-semibold text-gray-500 whitespace-nowrap">
-                  Hospital
-                </th>
-                <th className="py-2 sm:py-3 px-2 sm:px-4 text-left font-semibold text-gray-500 whitespace-nowrap">
-                  Total Consults
+                  Professional Title
                 </th>
                 <th className="py-2 sm:py-3 px-2 sm:px-4 text-left font-semibold text-gray-500 whitespace-nowrap">
                   Rating
@@ -271,98 +257,112 @@ function HealthcareProvider() {
               </tr>
             </thead>
             <tbody>
-              {providers.map((p, idx) => (
-                <tr key={p.name} className="border-t border-gray-100">
-                  <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
-                    {p.name}
-                  </td>
-                  <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
-                    {p.specialty}
-                  </td>
-                  <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
-                    {p.hospital}
-                  </td>
-                  <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
-                    {p.consults}
-                  </td>
-                  <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap flex items-center gap-1">
-                    <svg width="16" height="16" fill="none" viewBox="0 0 16 16">
-                      <path
-                        d="M8 1.333l2.06 4.175 4.607.669-3.334 3.25.787 4.586L8 11.667l-4.12 2.046.787-4.586-3.334-3.25 4.607-.669L8 1.333z"
-                        fill="#FACC15"
-                      />
-                    </svg>
-                    {p.rating}
-                  </td>
-                  <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
-                    <label className="inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="sr-only peer"
-                        checked={p.status}
-                        readOnly
-                      />
-                      <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-checked:bg-purple-600 transition-colors"></div>
-                      <div className="absolute w-4 h-4 bg-white border rounded-full left-1 top-0.5 peer-checked:translate-x-4 transition-transform"></div>
-                    </label>
-                  </td>
-                  <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap flex gap-2">
-                    <button className="text-purple-600 hover:underline">
-                      <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 20 20"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M14.0514 3.73889L15.4576 2.33265C16.0678 1.72245 17.0572 1.72245 17.6674 2.33265C18.2775 2.94284 18.2775 3.93216 17.6674 4.54235L8.81849 13.3912C8.37792 13.8318 7.83453 14.1556 7.23741 14.3335L5 15L5.66648 12.7626C5.84435 12.1655 6.1682 11.6221 6.60877 11.1815L14.0514 3.73889ZM14.0514 3.73889L16.25 5.93749M15 11.6667V15.625C15 16.6605 14.1605 17.5 13.125 17.5H4.375C3.33947 17.5 2.5 16.6605 2.5 15.625V6.87499C2.5 5.83946 3.33947 4.99999 4.375 4.99999H8.33333"
-                          stroke="#6F3DCB"
-                          stroke-width="1.5"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                      </svg>
-                    </button>
-                    <button className="text-purple-600 hover:underline">
-                      <svg
-                        width="18"
-                        height="12"
-                        viewBox="0 0 18 12"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M17.9483 5.757C17.922 5.69775 17.2868 4.2885 15.8745 2.87625C13.9928 0.9945 11.616 0 9 0C6.384 0 4.00725 0.9945 2.12549 2.87625C0.713243 4.2885 0.0749929 5.7 0.0517429 5.757C0.0176277 5.83373 0 5.91677 0 6.00075C0 6.08473 0.0176277 6.16777 0.0517429 6.2445C0.0779929 6.30375 0.713243 7.71225 2.12549 9.1245C4.00725 11.0055 6.384 12 9 12C11.616 12 13.9928 11.0055 15.8745 9.1245C17.2868 7.71225 17.922 6.30375 17.9483 6.2445C17.9824 6.16777 18 6.08473 18 6.00075C18 5.91677 17.9824 5.83373 17.9483 5.757ZM9 10.8C6.6915 10.8 4.67475 9.96075 3.00524 8.30625C2.32023 7.62502 1.73743 6.84822 1.27499 6C1.73731 5.1517 2.32012 4.37488 3.00524 3.69375C4.67475 2.03925 6.6915 1.2 9 1.2C11.3085 1.2 13.3253 2.03925 14.9948 3.69375C15.6811 4.37472 16.2652 5.15154 16.7288 6C16.188 7.0095 13.8323 10.8 9 10.8ZM9 2.4C8.28799 2.4 7.59196 2.61114 6.99995 3.00671C6.40793 3.40228 5.94651 3.96453 5.67403 4.62234C5.40156 5.28015 5.33026 6.00399 5.46917 6.70233C5.60808 7.40066 5.95094 8.04212 6.45441 8.54559C6.95788 9.04906 7.59934 9.39192 8.29767 9.53083C8.99601 9.66973 9.71985 9.59844 10.3777 9.32597C11.0355 9.05349 11.5977 8.59207 11.9933 8.00005C12.3889 7.40804 12.6 6.71201 12.6 6C12.599 5.04553 12.2194 4.13043 11.5445 3.45551C10.8696 2.7806 9.95448 2.40099 9 2.4ZM9 8.4C8.52532 8.4 8.06131 8.25924 7.66663 7.99553C7.27195 7.73181 6.96434 7.35698 6.78269 6.91844C6.60104 6.4799 6.55351 5.99734 6.64611 5.53178C6.73872 5.06623 6.9673 4.63859 7.30294 4.30294C7.63859 3.9673 8.06623 3.73872 8.53178 3.64612C8.99734 3.55351 9.4799 3.60104 9.91844 3.78269C10.357 3.96434 10.7318 4.27195 10.9955 4.66663C11.2592 5.06131 11.4 5.52532 11.4 6C11.4 6.63652 11.1471 7.24697 10.6971 7.69706C10.247 8.14714 9.63652 8.4 9 8.4Z"
-                          fill="#6F3DCB"
-                        />
-                      </svg>
-                    </button>
-                    <button className="text-red-500 hover:underline">
-                      <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 20 20"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M12.2837 7.5L11.9952 15M8.00481 15L7.71635 7.5M16.023 4.82547C16.308 4.86851 16.592 4.91456 16.875 4.96358M16.023 4.82547L15.1332 16.3938C15.058 17.3707 14.2434 18.125 13.2637 18.125H6.73631C5.75655 18.125 4.94198 17.3707 4.86683 16.3938L3.97696 4.82547M16.023 4.82547C15.0677 4.6812 14.1013 4.57071 13.125 4.49527M3.125 4.96358C3.40798 4.91456 3.69198 4.86851 3.97696 4.82547M3.97696 4.82547C4.93231 4.6812 5.89874 4.57071 6.875 4.49527M13.125 4.49527V3.73182C13.125 2.74902 12.3661 1.92853 11.3838 1.8971C10.9244 1.8824 10.463 1.875 10 1.875C9.53696 1.875 9.07565 1.8824 8.61618 1.8971C7.63388 1.92853 6.875 2.74902 6.875 3.73182V4.49527M13.125 4.49527C12.0938 4.41558 11.0516 4.375 10 4.375C8.94836 4.375 7.9062 4.41558 6.875 4.49527"
-                          stroke="#E41C11"
-                          stroke-width="1.5"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                      </svg>
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {
+                filteredData?.length > 0
+                ?
+                  filteredData.map((p, idx) => {
+
+                    return (
+                      <tr key={idx} className="border-t border-gray-100">
+                        <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
+                          {p?.provider_name}
+                        </td>
+                        <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
+                          {p?.years_of_experience || 'Not set'}
+                        </td>
+                        <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
+                          {p?.professional_title || 'Not set'}
+                        </td>
+                        <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap flex items-center gap-1">
+                          <svg width="16" height="16" fill="none" viewBox="0 0 16 16">
+                            <path
+                              d="M8 1.333l2.06 4.175 4.607.669-3.334 3.25.787 4.586L8 11.667l-4.12 2.046.787-4.586-3.334-3.25 4.607-.669L8 1.333z"
+                              fill="#FACC15"
+                            />
+                          </svg>
+                          {p.avg_rating}
+                        </td>
+                        <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
+                          <label className="inline-flex items-center">
+                            {
+                              p?.credentials_approved
+                              ?
+                                <MdToggleOn 
+                                  size={50}
+                                  className={"text-purple-600"}                          
+                                />
+                              :
+                                <MdToggleOff
+                                  size={50}
+                                  className={'text-gray-200'}  
+                                />
+                            }
+                          </label>
+                        </td>
+                        <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap flex gap-2">
+                          <button className="text-purple-600 hover:underline">
+                            <svg
+                              width="20"
+                              height="20"
+                              viewBox="0 0 20 20"
+                              fill="none"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path
+                                d="M14.0514 3.73889L15.4576 2.33265C16.0678 1.72245 17.0572 1.72245 17.6674 2.33265C18.2775 2.94284 18.2775 3.93216 17.6674 4.54235L8.81849 13.3912C8.37792 13.8318 7.83453 14.1556 7.23741 14.3335L5 15L5.66648 12.7626C5.84435 12.1655 6.1682 11.6221 6.60877 11.1815L14.0514 3.73889ZM14.0514 3.73889L16.25 5.93749M15 11.6667V15.625C15 16.6605 14.1605 17.5 13.125 17.5H4.375C3.33947 17.5 2.5 16.6605 2.5 15.625V6.87499C2.5 5.83946 3.33947 4.99999 4.375 4.99999H8.33333"
+                                stroke="#6F3DCB"
+                                stroke-width="1.5"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                              />
+                            </svg>
+                          </button>
+                          <button className="text-purple-600 hover:underline">
+                            <svg
+                              width="18"
+                              height="12"
+                              viewBox="0 0 18 12"
+                              fill="none"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path
+                                d="M17.9483 5.757C17.922 5.69775 17.2868 4.2885 15.8745 2.87625C13.9928 0.9945 11.616 0 9 0C6.384 0 4.00725 0.9945 2.12549 2.87625C0.713243 4.2885 0.0749929 5.7 0.0517429 5.757C0.0176277 5.83373 0 5.91677 0 6.00075C0 6.08473 0.0176277 6.16777 0.0517429 6.2445C0.0779929 6.30375 0.713243 7.71225 2.12549 9.1245C4.00725 11.0055 6.384 12 9 12C11.616 12 13.9928 11.0055 15.8745 9.1245C17.2868 7.71225 17.922 6.30375 17.9483 6.2445C17.9824 6.16777 18 6.08473 18 6.00075C18 5.91677 17.9824 5.83373 17.9483 5.757ZM9 10.8C6.6915 10.8 4.67475 9.96075 3.00524 8.30625C2.32023 7.62502 1.73743 6.84822 1.27499 6C1.73731 5.1517 2.32012 4.37488 3.00524 3.69375C4.67475 2.03925 6.6915 1.2 9 1.2C11.3085 1.2 13.3253 2.03925 14.9948 3.69375C15.6811 4.37472 16.2652 5.15154 16.7288 6C16.188 7.0095 13.8323 10.8 9 10.8ZM9 2.4C8.28799 2.4 7.59196 2.61114 6.99995 3.00671C6.40793 3.40228 5.94651 3.96453 5.67403 4.62234C5.40156 5.28015 5.33026 6.00399 5.46917 6.70233C5.60808 7.40066 5.95094 8.04212 6.45441 8.54559C6.95788 9.04906 7.59934 9.39192 8.29767 9.53083C8.99601 9.66973 9.71985 9.59844 10.3777 9.32597C11.0355 9.05349 11.5977 8.59207 11.9933 8.00005C12.3889 7.40804 12.6 6.71201 12.6 6C12.599 5.04553 12.2194 4.13043 11.5445 3.45551C10.8696 2.7806 9.95448 2.40099 9 2.4ZM9 8.4C8.52532 8.4 8.06131 8.25924 7.66663 7.99553C7.27195 7.73181 6.96434 7.35698 6.78269 6.91844C6.60104 6.4799 6.55351 5.99734 6.64611 5.53178C6.73872 5.06623 6.9673 4.63859 7.30294 4.30294C7.63859 3.9673 8.06623 3.73872 8.53178 3.64612C8.99734 3.55351 9.4799 3.60104 9.91844 3.78269C10.357 3.96434 10.7318 4.27195 10.9955 4.66663C11.2592 5.06131 11.4 5.52532 11.4 6C11.4 6.63652 11.1471 7.24697 10.6971 7.69706C10.247 8.14714 9.63652 8.4 9 8.4Z"
+                                fill="#6F3DCB"
+                              />
+                            </svg>
+                          </button>
+                          <button className="text-red-500 hover:underline">
+                            <svg
+                              width="20"
+                              height="20"
+                              viewBox="0 0 20 20"
+                              fill="none"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path
+                                d="M12.2837 7.5L11.9952 15M8.00481 15L7.71635 7.5M16.023 4.82547C16.308 4.86851 16.592 4.91456 16.875 4.96358M16.023 4.82547L15.1332 16.3938C15.058 17.3707 14.2434 18.125 13.2637 18.125H6.73631C5.75655 18.125 4.94198 17.3707 4.86683 16.3938L3.97696 4.82547M16.023 4.82547C15.0677 4.6812 14.1013 4.57071 13.125 4.49527M3.125 4.96358C3.40798 4.91456 3.69198 4.86851 3.97696 4.82547M3.97696 4.82547C4.93231 4.6812 5.89874 4.57071 6.875 4.49527M13.125 4.49527V3.73182C13.125 2.74902 12.3661 1.92853 11.3838 1.8971C10.9244 1.8824 10.463 1.875 10 1.875C9.53696 1.875 9.07565 1.8824 8.61618 1.8971C7.63388 1.92853 6.875 2.74902 6.875 3.73182V4.49527M13.125 4.49527C12.0938 4.41558 11.0516 4.375 10 4.375C8.94836 4.375 7.9062 4.41558 6.875 4.49527"
+                                stroke="#E41C11"
+                                stroke-width="1.5"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                              />
+                            </svg>
+                          </button>
+                        </td>
+                      </tr>
+                  )})
+                :
+                  <tr className="border-t border-gray-100">
+                    <td colSpan={'6'} className="pt-5">
+                      <ZeroItems zeroText={'No provider found'} />
+                    </td>
+                  </tr>
+              }
             </tbody>
           </table>
         </div>
         {/* Pagination UI (not functional) */}
-        <div className="flex flex-col sm:flex-row justify-between items-center mt-4 text-xs text-gray-500 gap-2">
+        {/* <div className="flex flex-col sm:flex-row justify-between items-center mt-4 text-xs text-gray-500 gap-2">
           <button className="px-2 py-1">&lt; Previous</button>
           <div className="flex gap-1 flex-wrap">
             <button className="w-6 h-6 rounded-full bg-purple-100 text-purple-700">
@@ -380,7 +380,7 @@ function HealthcareProvider() {
             </button>
           </div>
           <button className="px-2 py-1">Next &gt;</button>
-        </div>
+        </div> */}
       </div>
     </div>
   );
