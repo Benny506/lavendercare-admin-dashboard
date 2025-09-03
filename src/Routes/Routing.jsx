@@ -1,12 +1,13 @@
+import React from "react";
+
 import { Route, Routes } from "react-router-dom";
 import Login from "../pages/admin/login/Login";
-import App from "../App";
 import VerifyEmail from "../pages/admin/verifyEmail/VerifyEmail";
 import RecoverAccount from "../pages/admin/recoverAccount/RecoverAccount";
 
 import Layout from "../pages/admin/components/layout/Layout";
 import Dashboard from "../pages/admin/dashboard/Dashboard";
-import UserManagement from "../pages/admin/userManagement/userManagement";
+import UserManagement from "../pages/admin/userManagement/UserManagement";
 import InviteUsers from "../pages/admin/userManagement/InviteUsers";
 import ServiceProvider from "../pages/admin/serviceProvider/ServiceProvider";
 import ActivityLogs from "../pages/admin/activityLogs/ActivityLogs";
@@ -15,9 +16,9 @@ import DisputeDetails from "../pages/admin/serviceProvider/DisputeDetails";
 import HealthcareProvider from "../pages/admin/healthcareProvider/HealthcareProvider";
 import Performance from "../pages/admin/serviceProvider/Performance";
 import ReviewCredential from "../pages/admin/healthcareProvider/ReviewCredential";
-import React from "react";
 import MentalHealthScreeningDetail from "../pages/admin/healthcareProvider/MentalHealthScreeningDetail";
 import MentalHealthScreening from "../pages/admin/healthcareProvider/MentalHealthScreening";
+import SalesAndRevenue from "../pages/admin/analytics/SalesAndRevenue";
 
 
 import CaseloadSummaries from "../pages/admin/healthcareProvider/CaseloadSummaries";
@@ -31,6 +32,7 @@ import AddProduct from "../pages/admin/marketPlace/AddProduct";
 import ProductPreview from "../pages/admin/marketPlace/ProductPreview";
 import MarketPromotions from "../pages/admin/marketPlace/MarketPromotions";
 import PayoutRequests from "../pages/admin/order/PayoutRequests";
+
 import TransactionHistory from "../pages/admin/order/TransactionHistory";
 import General from "../pages/admin/settings/General";
 import EscalatedTickets from "../pages/admin/support/EscalatedTickets";
@@ -38,22 +40,30 @@ import AllTickets from "../pages/admin/support/AllTickets";
 import TicketDetails from "../pages/admin/support/TicketDetails";
 import Refund from "../pages/admin/order/Refund";
 
+import ProtectedRoute from "../pages/admin/components/ProtectedRoute";
+import AutoLogin from "../pages/admin/components/AutoLogin";
+import UserManagementProfile from "../pages/admin/userManagement/UserManagementProfile";
+import ConsulationVolumes from "../pages/admin/analytics/ConsulationVolumes";
+import ScreeningOutcomes from "../pages/admin/analytics/ScreeningOutcomes";
+import UserEngagement from "../pages/admin/analytics/UserEngagement";
+
 function Routing() {
   return (
-    <>
+    <AutoLogin>
       <Routes>
-        <Route path="/" default element={<App />} />
+        <Route path="/" element={<Login />} />
         <Route path="/admin/login" element={<Login />} />
         {/* <Route path="/admin/create-account" element={<CreateAccount />} /> */}
         <Route path="/admin/verify-account" element={<VerifyEmail />} />
         <Route path="/admin/recover-account" element={<RecoverAccount />} />
 
-        <Route path="/admin" element={<Layout />}>
+        <Route path="/admin" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route path="/admin/dashboard" element={<Dashboard />} />
 
 
           {/* user management */}
           <Route path="/admin/user-management" element={<UserManagement />} />
+          <Route path="/admin/user-management/profile" element={<UserManagementProfile />} />
           <Route path="/admin/activity-logs" element={<ActivityLogs />} />
           <Route
             path="/admin/user-management/invite-user"
@@ -123,13 +133,19 @@ function Routing() {
           <Route path="/admin/support/escalated-tickets" element={<EscalatedTickets />} />
           <Route path="/admin/support/ticket-details/:id" element={<TicketDetails />} />
 
+          {/* analytics */}
+          <Route path="/admin/analytics/sales" element={<SalesAndRevenue />} />
+          <Route path="/admin/analytics/bookings" element={<ConsulationVolumes />} />
+          <Route path="/admin/analytics/screening" element={<ScreeningOutcomes />} />
+          {/* <Route path="/admin/analytics/user-management" element={<UserEngagement />} /> */}
+
 
 
           {/* settings */}
           <Route path="/admin/settings/general" element={<General />} />
         </Route>
       </Routes>
-    </>
+    </AutoLogin>
   );
 }
 

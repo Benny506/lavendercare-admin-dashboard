@@ -1,44 +1,57 @@
-import React from "react";
-
-const caseloadData = [
-  {
-    mother: "Sarah Adebayo",
-    doctor: "Dr. Emeka Obi",
-    careType: "Medical",
-    lastConsult: "2025-07-06",
-    status: "Open",
-  },
-  {
-    mother: "Chinenye Okeke",
-    doctor: "Dr. Emeka Obi",
-    careType: "Mental",
-    lastConsult: "2025-07-05",
-    status: "Open",
-  },
-  {
-    mother: "Fatima Musa",
-    doctor: "Nurse Lillian James",
-    careType: "Physical",
-    lastConsult: "2025-07-04",
-    status: "Open",
-  },
-  {
-    mother: "Ifeoma Nwachukwu",
-    doctor: "Doula Funke Adeyemi",
-    careType: "Medical",
-    lastConsult: "2025-07-03",
-    status: "Closed",
-  },
-  {
-    mother: "Kemi Alade",
-    doctor: "Dr. Emeka Obi",
-    careType: "Mental",
-    lastConsult: "2025-07-02",
-    status: "Closed",
-  },
-];
+import React, { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
+import { getAdminState } from "../../../redux/slices/adminState";
+import useApiReqs from "../../../hooks/useApiReqs";
+import { isoToDateTime } from "../../../lib/utils";
+import { allStatus, getStatusBadge } from "../../../lib/utils_Jsx";
+import ZeroItems from "../components/ZeroItems";
+import { Select } from "../components/ui/Select";
 
 function AllCaseload() {
+
+  const { fetchBookings } = useApiReqs()
+
+  const bookings = useSelector(state => getAdminState(state).bookings)
+
+  const [searchFilter, setSearchFilter] = useState('')
+  const [statusTab, setStatusTab] = useState('')
+
+  useEffect(() => {
+    if((bookings || [])?.length <= 0){
+      fetchBookings({})
+    
+    }
+  }, [bookings])
+
+  const filteredData = (bookings || [])?.filter(b => {
+
+    const motherName = b?.user_profile?.name || ''
+    const providerName = b?.provider_profile?.provider_name || ''
+    const careType = b?.service_type || ''
+
+    const matchesSearch = (
+      (searchFilter?.toLowerCase().includes(motherName?.toLowerCase())
+      ||
+      motherName?.toLowerCase().includes(searchFilter?.toLowerCase()))
+
+      ||
+
+      (searchFilter?.toLowerCase().includes(providerName?.toLowerCase())
+      ||
+      providerName?.toLowerCase().includes(searchFilter?.toLowerCase()))
+      
+      ||
+
+      (searchFilter?.toLowerCase().includes(careType?.toLowerCase())
+      ||
+      careType?.toLowerCase().includes(searchFilter?.toLowerCase()))      
+    )
+
+    const matchesStatusTab = (statusTab === 'all' || !statusTab) ? true : statusTab === b?.status
+
+    return matchesSearch && matchesStatusTab
+  })
+
   return (
     <div className="w-full py-6">
       {/* Breadcrumbs */}
@@ -112,15 +125,26 @@ function AllCaseload() {
           </div>
           <div className="flex gap-2 w-full md:w-auto">
             <input
+              value={searchFilter}
+              onChange={e => setSearchFilter(e?.target?.value)}
               type="text"
-              placeholder="Search doctor or mother"
+              placeholder="Search doctor or mother or care type"
               className="w-full md:w-64 border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-(--primary-200)"
             />
-            <select className="border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700">
-              <option>Filter by: All</option>
-              <option>Open</option>
-              <option>Closed</option>
-            </select>
+            <Select
+              searchable={true}
+              options={[{ title: 'All', type: 'all' }, ...allStatus].map(s => {
+                return {
+                  value: s.type,
+                  label: s.title
+                }
+              })}
+              value={statusTab}
+              onChange={setStatusTab}
+              placeholder="Filter by status"
+            >
+
+            </Select>
           </div>
         </div>
 
@@ -136,46 +160,49 @@ function AllCaseload() {
                 </th>
                 <th className="py-2 px-4 text-left font-medium">Care Type</th>
                 <th className="py-2 px-4 text-left font-medium">
-                  Last Consult Date
+                  Consult Date
                 </th>
                 <th className="py-2 px-4 text-left font-medium">Status</th>
                 <th className="py-2 px-4 text-left font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {caseloadData.map((c, idx) => (
-                <tr
-                  key={c.mother}
-                  className="border-b last:border-b-0 hover:bg-gray-50"
-                >
-                  <td className="py-2 px-4">{c.mother}</td>
-                  <td className="py-2 px-4">{c.doctor}</td>
-                  <td className="py-2 px-4">{c.careType}</td>
-                  <td className="py-2 px-4">{c.lastConsult}</td>
-                  <td className="py-2 px-4">
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        c.status === "Open"
-                          ? "bg-green-100 text-green-600"
-                          : "bg-blue-100 text-blue-600"
-                      }`}
-                    >
-                      {c.status}
-                    </span>
-                  </td>
-                  <td className="py-2 px-2">
-                    <button className="bg-(--primary-100) text-(--primary-500) hover:bg-(--primary-200) rounded-lg px-3 py-1 font-medium transition">
-                      View
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {
+                filteredData?.length > 0
+                ?
+                  filteredData.map((c, idx) => {
+                    return (
+                      <tr
+                        key={idx}
+                        className="border-b last:border-b-0 hover:bg-gray-50"
+                      >
+                        <td className="py-2 px-4">{c?.user_profile?.name}</td>
+                        <td className="py-2 px-4">{c?.provider_profile?.provider_name}</td>
+                        <td className="py-2 px-4">{c?.service_type?.replaceAll("_", " ")}</td>
+                        <td className="py-2 px-4">{c?.created_at && isoToDateTime({ isoString: c?.created_at })}</td>
+                        <td className="py-2 px-4">
+                          { getStatusBadge(c?.status) }
+                        </td>
+                        <td className="py-2 px-2">
+                          <button className="bg-(--primary-100) text-(--primary-500) hover:bg-(--primary-200) rounded-lg px-3 py-1 font-medium transition">
+                            View
+                          </button>
+                        </td>
+                      </tr>
+                  )})
+                :
+                  <tr className="border-b last:border-b-0 hover:bg-gray-50">
+                    <td className="pt-5" colSpan={'6'}>
+                      <ZeroItems zeroText={'No caseloads found'} />
+                    </td>
+                  </tr>
+              }
             </tbody>
           </table>
         </div>
 
         {/* Pagination */}
-        <div className="flex justify-between items-center py-3 px-6 mt-4">
+        {/* <div className="flex justify-between items-center py-3 px-6 mt-4">
           <button className="text-(--primary-500) font-semibold">
             &larr; Previous
           </button>
@@ -196,7 +223,7 @@ function AllCaseload() {
           <button className="text-(--primary-500) font-semibold">
             Next &rarr;
           </button>
-        </div>
+        </div> */}
       </div>
     </div>
   );

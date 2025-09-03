@@ -1,78 +1,80 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
+import { getAdminState } from "../../../redux/slices/adminState";
+import useApiReqs from "../../../hooks/useApiReqs";
+import ZeroItems from "../components/ZeroItems";
+import ProfileImg from "../components/ProfileImg";
 
-const providers = [
-  {
-    name: "Dr. Grace Bello",
-    role: "Postnatal Recovery",
-    avgConsults: 150,
-    avatar: "https://randomuser.me/api/portraits/women/65.jpg",
-  },
-  {
-    name: "Dr. Emeka Obi",
-    role: "OB-GYN",
-    avgConsults: 140,
-    avatar: "https://randomuser.me/api/portraits/men/32.jpg",
-  },
-  {
-    name: "Nurse Lillian James",
-    role: "Postpartum Therapy",
-    avgConsults: 130,
-    avatar: "https://randomuser.me/api/portraits/women/44.jpg",
-  },
-  {
-    name: "Dr. David Okorie",
-    role: "General Practitioner",
-    avgConsults: 120,
-    avatar: "https://randomuser.me/api/portraits/men/45.jpg",
-  },
-  {
-    name: "Doula Funke Adeyemi",
-    role: "Birth & Labor Support",
-    avgConsults: 110,
-    avatar: "https://randomuser.me/api/portraits/women/55.jpg",
-  },
-];
+// Utility function
+function getTopProviders(bookings) {
+  // Count bookings per provider
+  const counts = bookings.reduce((acc, booking) => {
+    acc[booking.provider_id] = (acc[booking.provider_id] || 0) + 1;
+    return acc;
+  }, {});
 
-const caseloadData = [
-  {
-    mother: "Sarah Adebayo",
-    doctor: "Dr. Emeka Obi",
-    careType: "Medical",
-    lastConsult: "2025-07-06",
-    status: "Open",
-  },
-  {
-    mother: "Chinenye Okeke",
-    doctor: "Dr. Emeka Obi",
-    careType: "Mental",
-    lastConsult: "2025-07-05",
-    status: "Open",
-  },
-  {
-    mother: "Fatima Musa",
-    doctor: "Nurse Lillian James",
-    careType: "Physical",
-    lastConsult: "2025-07-04",
-    status: "Open",
-  },
-  {
-    mother: "Ifeoma Nwachukwu",
-    doctor: "Doula Funke Adeyemi",
-    careType: "Medical",
-    lastConsult: "2025-07-03",
-    status: "Closed",
-  },
-  {
-    mother: "Kemi Alade",
-    doctor: "Dr. Emeka Obi",
-    careType: "Mental",
-    lastConsult: "2025-07-02",
-    status: "Closed",
-  },
-];
+  // Group bookings by provider and attach count
+  const grouped = Object.keys(counts).map((providerId) => {
+    // find first booking object for that provider (keeps fields intact)
+    const providerBooking = bookings.find(
+      (b) => b.provider_id === providerId
+    );
+
+    return {
+      ...providerBooking, // keep other fields intact from first booking
+      count: counts[providerId],
+    };
+  });
+
+  // Sort by count desc & pick top 5
+  return grouped.sort((a, b) => b.count - a.count).slice(0, 5);
+}
+
+
+
+
+
 
 function CaseloadSummaries() {
+
+  const { fetchBookings } = useApiReqs()
+
+  const bookings = useSelector(state => getAdminState(state).bookings)
+
+  const [searchFilter, setSearchFilter] = useState('')
+
+  useEffect(() => {
+    if((bookings || [])?.length <= 0){
+      fetchBookings({})
+    }
+  }, [bookings])
+
+  const top5Providers = getTopProviders(bookings)
+
+  const filteredData = (top5Providers || [])?.filter(p => {
+
+    const providerName = p?.provider_profile?.provider_name || ''
+    const providerTitle = p?.provider_profile?.professional_title || ''
+
+    const matchesSearch = (
+      searchFilter?.toLowerCase().includes(providerName?.toLowerCase())
+      ||
+      providerName?.toLowerCase().includes(searchFilter?.toLowerCase())
+
+      ||
+      searchFilter?.toLowerCase().includes(providerTitle?.toLowerCase())
+      ||
+      providerTitle?.toLowerCase().includes(searchFilter?.toLowerCase())      
+    )
+
+    return matchesSearch
+  })
+
+  const totalCases = bookings?.length
+  const openCases = bookings?.filter(b => b?.status === 'new' || b?.status === 'awaiting_completion' || b?.status === 'ongoing')?.length
+  const closedCases = bookings?.filter(b => b?.status === 'completed' || b?.status === 'cancelled' || b?.status === 'missed')?.length
+
   return (
     <div className="w-full py-6">
       {/* Breadcrumbs */}
@@ -152,15 +154,15 @@ function CaseloadSummaries() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <div className="bg-white rounded-lg p-4 flex flex-col">
           <span className="text-gray-500 text-[18px]">Total Cases</span>
-          <span className="text-[40px] font-bold pt-2 leading-tight">1250</span>
+          <span className="text-[40px] font-bold pt-2 leading-tight">{totalCases ?? 'Nill'}</span>
         </div>
         <div className="bg-white rounded-lg p-4 flex flex-col">
           <span className="text-gray-500 text-[18px]">Open Cases</span>
-          <span className="text-[40px] font-bold pt-2 leading-tight">850</span>
+          <span className="text-[40px] font-bold pt-2 leading-tight">{openCases ?? 'Nill'}</span>
         </div>
         <div className="bg-white rounded-lg p-4 flex flex-col">
           <span className="text-gray-500 text-[18px]">Closed Cases</span>
-          <span className="text-[40px] font-bold pt-2 leading-tight">400</span>
+          <span className="text-[40px] font-bold pt-2 leading-tight">{closedCases ?? 'Nill'}</span>
         </div>
       </div>
 
@@ -170,6 +172,8 @@ function CaseloadSummaries() {
           <h3 className="font-semibold text-lg">Top 5 Providers by Caseload</h3>
           <div className="relative w-full md:w-64">
             <input
+              value={searchFilter}
+              onChange={e => setSearchFilter(e?.target?.value)}
               type="text"
               placeholder="Search"
               className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-(--primary-200)"
@@ -190,33 +194,44 @@ function CaseloadSummaries() {
               </tr>
             </thead>
             <tbody>
-              {providers.map((p, idx) => (
-                <tr
-                  key={p.name}
-                  className="border-b last:border-b-0 hover:bg-gray-50"
-                >
-                  <td className="py-2 px-2 flex items-center gap-3">
-                    <img
-                      src={p.avatar}
-                      alt={p.name}
-                      className="w-8 h-8 rounded-full object-cover"
-                    />
-                    <div>
-                      <div className="font-semibold">{p.name}</div>
-                      <div className="text-xs text-gray-500">{p.role}</div>
-                    </div>
-                  </td>
-                  <td className="py-2 px-2">{p.avgConsults}</td>
-                  <td className="py-2 flex justify-end mr-8 px-2">
-                    <button
-                      className="bg-(--primary-500) text-white rounded-full px-3 py-1 font-medium transition"
-                      onClick={() => navigate("/admin/all-caseload")}
-                    >
-                      View Details
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {
+                filteredData?.length > 0
+                ?
+                  filteredData.map((p, idx) => {
+                    return (
+                      <tr
+                        key={idx}
+                        className="border-b last:border-b-0 hover:bg-gray-50"
+                      >
+                        <td className="py-2 px-2 flex items-center gap-3">
+                          <ProfileImg 
+                            profile_img={p?.profile_img}
+                            name={p?.provider_profile?.provider_name}
+                            size="8"
+                          />
+                          <div>
+                            <div className="font-semibold">{p?.provider_profile?.provider_name}</div>
+                            <div className="text-xs text-gray-500">{p?.provider_profile?.professional_title}</div>
+                          </div>
+                        </td>
+                        <td className="py-2 px-2">{p?.count}</td>
+                        <td className="py-2 flex justify-end mr-8 px-2">
+                          <button
+                            className="bg-(--primary-500) text-white rounded-full px-3 py-1 font-medium transition"
+                            onClick={() => navigate("/admin/all-caseload")}
+                          >
+                            View Details
+                          </button>
+                        </td>
+                      </tr>
+                  )})
+                :
+                  <tr className="border-b last:border-b-0 hover:bg-gray-50">
+                    <td colSpan={'6'} className="pt-5">
+                      <ZeroItems zeroText={'No providers found'} />
+                    </td>
+                  </tr>
+              }
             </tbody>
           </table>
         </div>
