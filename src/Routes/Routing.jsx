@@ -47,6 +47,10 @@ import ConsulationVolumes from "../pages/admin/analytics/ConsulationVolumes";
 import ScreeningOutcomes from "../pages/admin/analytics/ScreeningOutcomes";
 import UserEngagement from "../pages/admin/analytics/UserEngagement";
 
+import ProtectedRoute from "../pages/admin/components/ProtectedRoute";
+import AutoLogin from "../pages/admin/components/AutoLogin";
+import UserManagementProfile from "../pages/admin/userManagement/UserManagementProfile";
+
 function Routing() {
   return (
     <AutoLogin>
