@@ -6,7 +6,7 @@ import RecoverAccount from "../pages/admin/recoverAccount/RecoverAccount";
 
 import Layout from "../pages/admin/components/layout/Layout";
 import Dashboard from "../pages/admin/dashboard/Dashboard";
-import UserManagement from "../pages/admin/userManagement/userManagement";
+import UserManagement from "../pages/admin/userManagement/UserManagement";
 import InviteUsers from "../pages/admin/userManagement/InviteUsers";
 import ServiceProvider from "../pages/admin/serviceProvider/ServiceProvider";
 import ActivityLogs from "../pages/admin/activityLogs/ActivityLogs";
