@@ -36,6 +36,7 @@ import General from "../pages/admin/settings/General";
 import EscalatedTickets from "../pages/admin/support/EscalatedTickets";
 import AllTickets from "../pages/admin/support/AllTickets";
 import TicketDetails from "../pages/admin/support/TicketDetails";
+import Refund from "../pages/admin/order/Refund";
 
 function Routing() {
   return (
@@ -112,7 +113,7 @@ function Routing() {
           <Route path="/admin/marketplace/promotions" element={<MarketPromotions />} />
 
           {/* order and transactions */}
-          {/* <Route path="/admin/order" element={<Product />} /> */}
+          <Route path="/admin/order/refunds" element={<Refund />} />
           <Route path="/admin/order/payout-requests" element={<PayoutRequests />} />
           <Route path="/admin/order/transaction-history" element={<TransactionHistory />} />
 

@@ -185,7 +185,7 @@ const sidebarMenu = [
     path: "#",
     submenu: [
       { title: "Orders", path: "/admin/orders" },
-      { title: "Refunds", path: "/admin/refunds" },
+      { title: "Refunds", path: "/admin/order/refunds" },
       { title: "Vendor Payout Requests", path: "/admin/order/payout-requests" },
       { title: "Transaction History", path: "/admin/order/transaction-history" },
     ],
