@@ -46,10 +46,8 @@ import UserManagementProfile from "../pages/admin/userManagement/UserManagementP
 import ConsulationVolumes from "../pages/admin/analytics/ConsulationVolumes";
 import ScreeningOutcomes from "../pages/admin/analytics/ScreeningOutcomes";
 import UserEngagement from "../pages/admin/analytics/UserEngagement";
+import ProviderVendor from "../pages/admin/analytics/ProviderVendor";
 
-import ProtectedRoute from "../pages/admin/components/ProtectedRoute";
-import AutoLogin from "../pages/admin/components/AutoLogin";
-import UserManagementProfile from "../pages/admin/userManagement/UserManagementProfile";
 
 function Routing() {
   return (
@@ -141,7 +139,8 @@ function Routing() {
           <Route path="/admin/analytics/sales" element={<SalesAndRevenue />} />
           <Route path="/admin/analytics/bookings" element={<ConsulationVolumes />} />
           <Route path="/admin/analytics/screening" element={<ScreeningOutcomes />} />
-          {/* <Route path="/admin/analytics/user-management" element={<UserEngagement />} /> */}
+          <Route path="/admin/analytics/user-engagement" element={<UserEngagement />} />
+          <Route path="/admin/analytics/provider-and-vendors" element={<ProviderVendor />} />
 
 
 

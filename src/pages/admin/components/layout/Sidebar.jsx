@@ -236,8 +236,8 @@ const sidebarMenu = [
         path: "/admin/analytics/bookings",
       },
       { title: "Screening Outcomes", path: "/admin/analytics/screening" },
-      { title: "User Management", path: "/admin/analytics/user-mangagement" },
-      { title: "Provider and Vendor", path: "/admin/analytics/providers" },
+      { title: "User Management", path: "/admin/analytics/user-engagement" },
+      { title: "Provider and Vendor", path:"/admin/analytics/provider-and-vendors" },
       {
         title: "Custom Report Builder",
         path: "/admin/analytics/report-builder",
