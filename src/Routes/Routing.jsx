@@ -47,6 +47,7 @@ import ConsulationVolumes from "../pages/admin/analytics/ConsulationVolumes";
 import ScreeningOutcomes from "../pages/admin/analytics/ScreeningOutcomes";
 import UserEngagement from "../pages/admin/analytics/UserEngagement";
 import ProviderVendor from "../pages/admin/analytics/ProviderVendor";
+import CustomReport from "../pages/admin/analytics/CustomReport";
 
 
 function Routing() {
@@ -141,6 +142,7 @@ function Routing() {
           <Route path="/admin/analytics/screening" element={<ScreeningOutcomes />} />
           <Route path="/admin/analytics/user-engagement" element={<UserEngagement />} />
           <Route path="/admin/analytics/provider-and-vendors" element={<ProviderVendor />} />
+          <Route path="/admin/analytics/report-builder" element={<CustomReport />} />
 
 
 
