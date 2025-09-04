@@ -185,7 +185,7 @@ const sidebarMenu = [
     path: "#",
     submenu: [
       { title: "Orders", path: "/admin/orders" },
-      { title: "Refunds", path: "/admin/refunds" },
+      { title: "Refunds", path: "/admin/order/refunds" },
       { title: "Vendor Payout Requests", path: "/admin/order/payout-requests" },
       { title: "Transaction History", path: "/admin/order/transaction-history" },
     ],
@@ -236,7 +236,7 @@ const sidebarMenu = [
         path: "/admin/analytics/bookings",
       },
       { title: "Screening Outcomes", path: "/admin/analytics/screening" },
-      { title: "User Management", path: "/admin/analytics/users" },
+      { title: "User Management", path: "/admin/analytics/user-mangagement" },
       { title: "Provider and Vendor", path: "/admin/analytics/providers" },
       {
         title: "Custom Report Builder",
