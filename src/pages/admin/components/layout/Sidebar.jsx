@@ -1,5 +1,7 @@
 import React, { useState } from "react";
+import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { NavLink } from "react-router-dom";
+import Collapse from "../Collapse";
 // import { FaChevronDown, FaChevronRight, FaHome, FaUsers, FaUserMd, FaFileAlt, FaShoppingCart, FaClipboardList, FaHeadset, FaChartBar, FaUsersCog, FaCog } from 'react-icons/fa';
 
 const sidebarMenu = [
@@ -68,6 +70,28 @@ const sidebarMenu = [
       { title: "Activity Logs", path: "/admin/activity-logs" },
     ],
   },
+  {
+    title: "Mothers",
+    icon: (
+      <svg
+        width="20"
+        height="21"
+        viewBox="0 0 20 21"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M5.625 11.75H2.5C2.33424 11.75 2.17527 11.6842 2.05806 11.5669C1.94085 11.4497 1.875 11.2908 1.875 11.125C1.875 10.9592 1.94085 10.8003 2.05806 10.6831C2.17527 10.5658 2.33424 10.5 2.5 10.5H5.29063L6.35469 8.90312C6.41174 8.8174 6.48909 8.74709 6.57987 8.69846C6.67064 8.64984 6.77202 8.62439 6.875 8.62439C6.97798 8.62439 7.07936 8.64984 7.17013 8.69846C7.26091 8.74709 7.33826 8.8174 7.39531 8.90312L9.375 11.8719L10.1047 10.7781C10.1618 10.6925 10.2392 10.6223 10.33 10.5738C10.4207 10.5253 10.5221 10.4999 10.625 10.5H12.5C12.6658 10.5 12.8247 10.5658 12.9419 10.6831C13.0592 10.8003 13.125 10.9592 13.125 11.125C13.125 11.2908 13.0592 11.4497 12.9419 11.5669C12.8247 11.6842 12.6658 11.75 12.5 11.75H10.9594L9.89531 13.3469C9.83826 13.4326 9.76091 13.5029 9.67013 13.5515C9.57936 13.6002 9.47798 13.6256 9.375 13.6256C9.27202 13.6256 9.17064 13.6002 9.07987 13.5515C8.98909 13.5029 8.91174 13.4326 8.85469 13.3469L6.875 10.3766L6.14531 11.4703C6.08837 11.5562 6.01107 11.6267 5.92029 11.6755C5.8295 11.7243 5.72806 11.7499 5.625 11.75ZM13.9062 3.625C12.293 3.625 10.8805 4.31875 10 5.49141C9.11953 4.31875 7.70703 3.625 6.09375 3.625C4.80955 3.62645 3.57837 4.13723 2.6703 5.0453C1.76223 5.95337 1.25145 7.18455 1.25 8.46875C1.25 8.52734 1.25 8.58594 1.25 8.64453C1.25518 8.81029 1.326 8.96721 1.44687 9.08075C1.56774 9.1943 1.72877 9.25518 1.89453 9.25C2.06029 9.24482 2.21721 9.174 2.33075 9.05313C2.4443 8.93226 2.50518 8.77123 2.5 8.60547C2.5 8.56016 2.5 8.51406 2.5 8.46875C2.50124 7.51601 2.88026 6.60265 3.55396 5.92896C4.22765 5.25526 5.14101 4.87624 6.09375 4.875C7.61328 4.875 8.88906 5.68438 9.42188 6.98438C9.46896 7.09901 9.54907 7.19705 9.65201 7.26605C9.75494 7.33505 9.87607 7.3719 10 7.3719C10.1239 7.3719 10.2451 7.33505 10.348 7.26605C10.4509 7.19705 10.531 7.09901 10.5781 6.98438C11.1109 5.68203 12.3867 4.875 13.9062 4.875C14.859 4.87624 15.7724 5.25526 16.446 5.92896C17.1197 6.60265 17.4988 7.51601 17.5 8.46875C17.5 12.657 11.425 16.4492 10 17.2812C9.15391 16.7883 6.66953 15.25 4.79063 13.2023C4.73512 13.1418 4.66824 13.0928 4.59379 13.0581C4.51935 13.0234 4.43881 13.0038 4.35676 13.0002C4.27471 12.9967 4.19276 13.0093 4.1156 13.0374C4.03843 13.0655 3.96756 13.1086 3.90703 13.1641C3.8465 13.2196 3.79749 13.2864 3.76281 13.3609C3.72813 13.4353 3.70845 13.5159 3.70489 13.5979C3.70134 13.68 3.71398 13.7619 3.74209 13.8391C3.77021 13.9163 3.81325 13.9871 3.86875 14.0477C6.30391 16.7039 9.56641 18.4758 9.70391 18.55C9.79492 18.599 9.89665 18.6246 10 18.6246C10.1033 18.6246 10.2051 18.599 10.2961 18.55C10.6414 18.3641 18.75 13.9375 18.75 8.46875C18.7486 7.18455 18.2378 5.95337 17.3297 5.0453C16.4216 4.13723 15.1904 3.62645 13.9062 3.625Z"
+          fill="white"
+        />
+      </svg>
+    ),
+    path: "#",
+    submenu: [
+      { title: "View All", path: "/admin/mothers" },
+      // { title: "Messages", path: "/admin/mother-messages" },
+    ],
+  },  
   {
     title: "Service Providers",
     icon: (
@@ -307,13 +331,10 @@ const sidebarMenu = [
 ];
 
 function Sidebar() {
-  const [openMenus, setOpenMenus] = useState({});
+  const [openMenu, setOpenMenu] = useState(null);
 
   const toggleMenu = (index) => {
-    setOpenMenus((prev) => ({
-      ...prev,
-      [index]: !prev[index],
-    }));
+    setOpenMenu(index);
   };
 
   return (
@@ -328,19 +349,33 @@ function Sidebar() {
         {sidebarMenu.map((item, index) => (
           <div key={index} className="mb-1">
             {item.submenu.length > 0 ? (
-              <>
-                <button
-                  onClick={() => toggleMenu(index)}
-                  className="flex items-center w-full px-4 py-3 text-left transition-colors duration-200 rounded-r-lg"
+              <div
+                key={index}
+              >
+                <Collapse
+                  header={
+                    <div
+                      // onClick={() => toggleMenu(index)}
+                      className={`cursor-pointer flex items-center w-full px-4 py-3 text-left transition-colors duration-200 rounded-r-lg ${'border-b border-(--primary-500)'}`}
+                    >
+                      <span className='mr-3 text-gray-500'>{item.icon}</span>
+                      <span className="flex-1 text-[14px] text-white">{item.title}</span>
+                      <span className="text-white">
+                        {
+                          openMenu === index
+                          ? 
+                            <FaChevronDown size={13} /> 
+                          : 
+                            <FaChevronUp size={13} /> 
+                        }
+                      </span>
+                    </div>
+                  }
+                  isOpen={openMenu === index }
+                  onToggle={() => toggleMenu(index)}
+                  duration={250}
                 >
-                  <span className='mr-3 text-gray-500'>{item.icon}</span>
-                  <span className="flex-1 text-[14px] text-white">{item.title}</span>
-                  <span className="text-white">
-                    {openMenus[index] ? "" : ""}
-                  </span>
-                </button>
 
-                {openMenus[index] && (
                   <div className="ml-2 mt-1 space-y-1">
                     {item.submenu.map((subItem, subIndex) => (
                       <NavLink
@@ -361,8 +396,8 @@ function Sidebar() {
                       </NavLink>
                     ))}
                   </div>
-                )}
-              </>
+                </Collapse>
+              </div>
             ) : (
               <NavLink
                 to={item.path}

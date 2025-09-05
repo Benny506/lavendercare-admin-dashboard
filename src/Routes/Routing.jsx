@@ -41,6 +41,8 @@ import TicketDetails from "../pages/admin/support/TicketDetails";
 import ProtectedRoute from "../pages/admin/components/ProtectedRoute";
 import AutoLogin from "../pages/admin/components/AutoLogin";
 import UserManagementProfile from "../pages/admin/userManagement/UserManagementProfile";
+import MotherMessages from "../pages/admin/mothers/MotherMessages";
+import AllMothers from "../pages/admin/mothers/AllMothers";
 
 function Routing() {
   return (
@@ -64,6 +66,16 @@ function Routing() {
             path="/admin/user-management/invite-user"
             element={<InviteUsers />}
           />
+
+          {/* Mothers  */}
+          <Route
+            path="/admin/mothers"
+            element={<AllMothers />}
+          />               
+          <Route
+            path="/admin/mother-messages"
+            element={<MotherMessages />}
+          />          
 
           {/* service providers */}
           <Route

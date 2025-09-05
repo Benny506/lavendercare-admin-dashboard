@@ -1,0 +1,300 @@
+import React, { useEffect, useRef, useState } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import ProfileImg from "../components/ProfileImg";
+import Modal from "../components/ui/Modal";
+import { getUserDetailsState } from "../../../redux/slices/userDetailsSlice";
+import { useSelector } from "react-redux";
+import { useDirectChat } from "../../../hooks/chatHooks/useDirectChat";
+import { dmTopic } from "../../../hooks/chatHooks/dm";
+import { isoToAMPM } from "../../../lib/utils";
+import { IoCheckmark, IoCheckmarkDoneSharp } from "react-icons/io5";
+import { MdMessage } from "react-icons/md";
+import { BsClockHistory } from "react-icons/bs";
+import { LuMessageCircleWarning } from "react-icons/lu";
+
+function MotherMessages() {
+
+    const navigate = useNavigate()
+
+    const { state } = useLocation()
+
+    const mother = state?.mother
+
+    const profile = useSelector(state => getUserDetailsState(state).profile)
+
+    const bottomRef = useRef(null)
+
+    const [showPopup, setShowPopup] = useState(false);
+    const [input, setInput] = useState("");
+
+    const meId = profile?.id
+    const peerId = mother?.id
+    const topic = peerId //Mother_id is the topic!
+
+    const {
+        sendMessage, messages, status, insertSubStatus, updateSubStatus, onlineUsers,
+    } = useDirectChat({
+        topic,
+        meId,
+        peerId,
+    })
+
+    const peerOnline = onlineUsers.includes(peerId)
+
+    useEffect(() => {
+        if (!mother) {
+            navigate('/admin/mothers')
+        }
+    }, [])
+
+    useEffect(() => {
+        bottomRef.current?.scrollIntoView({
+            behavior: "smooth", // smooth scrolling
+            block: "end",     // align at the top (can be 'center' or 'end')
+        });        
+    }, [messages])
+
+    const sendNow = () => {
+        if (!input.trim()) return;
+        sendMessage({ 
+            text: input.trim(), 
+            toUser: peerId,
+            user_notification_token: mother?.notification_token
+        });
+        setInput('');
+    };
+
+    if (!mother) return <></>
+
+    return (
+        <div className=" bg-[#F8F9FB] mt-6 flex flex-col">
+            {/*  */}
+            <div className="flex flex-col p-3 gap-4 flex-1">
+                {/* Chat Section */}
+                <div className="flex gap-2 items-center pb-3 border-b border-b-gray-300">
+                    <Link to="/admin/mothers">
+                        <svg
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                        >
+                            <rect width="24" height="24" rx="5" fill="#F5F5F5" />
+                            <g opacity="0.8">
+                                <path
+                                    d="M15.41 16.4066L10.83 12.0002L15.41 7.59383L14 6.24023L8 12.0002L14 17.7602L15.41 16.4066Z"
+                                    fill="#202224"
+                                />
+                            </g>
+                        </svg>
+                    </Link>
+                    <ProfileImg
+                        profile_img={mother?.profile_img}
+                        name={mother?.name}
+                        size="10"
+                    />
+                    <div>
+                        <p className="m-0 p-0 text-sm text-purple-600 font-semibold">
+                            {mother?.name}
+                        </p>
+                        <p className={`m-0 p-0 font-semibold text-xs ${peerOnline ? 'text-[#6F3DCB]' : 'text-gray-900'}`}>
+                            {peerOnline ? 'online' : onlineUsers.length > 0 ? 'offline' : ''}
+                        </p>
+                    </div>
+                </div>
+
+                <div className="max-h-[60vh] h-[60vh] min-h-[60vh] flex-1 p-6 flex flex-col gap-4 overflow-y-auto">
+                    {messages.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-full text-grey-400">
+                            <MdMessage
+                                size={48}
+                                className="text-[#6F3DCB]"
+                            />
+                            <p className="mt-2 text-lg font-bold text-grey-600">
+                                No messages to display
+                            </p>
+                            <p className="text-sm text-grey-500 text-center">
+                                Messages from this mother will appear here
+                            </p>
+                        </div>
+                    ) : (
+                        messages.map((msg) => {
+
+                            const { message, from_user, pending, failed, created_at, read_at, delivered_at } = msg
+
+                            const iAmSender = from_user === meId ? true : false
+
+                            const seen = read_at ? true : false
+                            const delivered = delivered_at ? true : false
+
+                            return (
+                                <div key={msg.id} className={`flex ${iAmSender ? 'justify-end' : 'justify-start'}`}>
+                                    <div>
+                                        <div className={`max-w-xs ${iAmSender
+                                            ? 'bg-purple-600 text-white'
+                                            : 'bg-gray-100 text-gray-900'
+                                            } rounded-2xl px-4 py-3`}>
+                                            {msg.isVoice ? (
+                                                <div className="flex items-center gap-2">
+                                                    {/* <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                                            <Mic className="w-4 h-4" />
+                                                        </div>
+                                                        <div className="flex-1 h-2 bg-white bg-opacity-20 rounded-full">
+                                                            <div className="w-1/3 h-full bg-white rounded-full"></div>
+                                                        </div>
+                                                        <span className="text-xs opacity-75">0:15</span> */}
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <p className="text-sm mb-3">{message}</p>
+
+                                                    <div className="flex flex-col items-end justify-end gap-">
+                                                        <p
+                                                            style={{
+                                                                color: iAmSender ? '#FFF' : "_000"
+                                                            }}
+                                                            className="text-xs m-0 p-0"
+                                                        >
+                                                            {isoToAMPM({ isoString: created_at })}
+                                                        </p>
+
+                                                        {
+                                                            iAmSender
+                                                            &&
+                                                            (
+                                                                seen
+                                                                    ?
+                                                                    <IoCheckmarkDoneSharp size={11} color="#FFF" />
+                                                                    :
+                                                                    delivered
+                                                                    &&
+                                                                    <IoCheckmark size={11} color="#FFF" />
+                                                            )
+                                                        }
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+
+                                        <div className="flex items-center justify-end">
+                                            {
+                                                pending
+                                                    ?
+                                                    // <Tooltip>
+                                                    //     <TooltipTrigger asChild>
+                                                    <BsClockHistory color="#6F3DCB" size={15} />
+                                                    // </TooltipTrigger>
+                                                    //     <TooltipContent side="top" sideOffset={5}>
+                                                    //         Pending message. Sending...
+                                                    //     </TooltipContent>
+                                                    // </Tooltip>                                                                    
+                                                    :
+                                                    failed
+                                                    &&
+                                                    // <Tooltip>
+                                                    //     <TooltipTrigger asChild>
+                                                    <LuMessageCircleWarning color="#c41a2b" size={15} />
+                                                // </TooltipTrigger>
+                                                //     <TooltipContent side="top" sideOffset={5}>
+                                                //         Error sending message
+                                                //     </TooltipContent>
+                                                // </Tooltip>                                                                
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            )
+                        })
+                    )}
+
+                    <div ref={bottomRef} />
+                </div>
+
+                {
+                    (status == 'subscribed' && insertSubStatus == 'subscribed' && updateSubStatus == 'subscribed')
+                    &&
+                        <div className="flex items-center gap-2 mt-auto border-t pt-2">
+                            <button className="text-gray-400">
+                                <svg width="20" height="20" fill="none" viewBox="0 0 20 20">
+                                    <circle
+                                        cx="10"
+                                        cy="10"
+                                        r="9"
+                                        stroke="#BDBDBD"
+                                        strokeWidth="2"
+                                    />
+                                    <path
+                                        d="M7 10h6M10 7v6"
+                                        stroke="#BDBDBD"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                    />
+                                </svg>
+                            </button>
+                            <input
+                                value={input}
+                                onChange={e => setInput(e.target.value)}
+                                className="flex-1 border rounded px-3 py-2 text-sm"
+                                placeholder="Type a message..."
+                            />
+                            <button 
+                                onClick={sendNow}
+                                className="cursor-pointer bg-purple-600 text-white px-4 py-2 rounded"
+                            >
+                                Send
+                            </button>
+                        </div>
+                }
+
+                {/* Right-side Popup Trigger */}
+                <div className="hidden md:block w-0"></div>
+                <div className="absolute top-4 right-4 flex gap-2 z-20">
+                    <button className="bg-purple-100 text-purple-700 px-4 py-2 rounded font-semibold text-xs">
+                        Mark as Resolved
+                    </button>
+                    <button
+                        className="bg-gray-100 px-2 py-2 rounded"
+                        onClick={() => setShowPopup(true)}
+                    >
+                        <svg width="20" height="20" fill="none" viewBox="0 0 20 20">
+                            <circle cx="10" cy="10" r="2" fill="#8B8B8A" />
+                            <circle cx="10" cy="5" r="2" fill="#8B8B8A" />
+                            <circle cx="10" cy="15" r="2" fill="#8B8B8A" />
+                        </svg>
+                    </button>
+                </div>
+                {/* Popup (Image 3) */}
+                {showPopup && (
+                    <Modal
+                        isOpen={true}
+                        onClose={() => setShowPopup(false)}
+                        className="w-full md:w-80 bg-white rounded-t-2xl md:rounded-2xl shadow-lg p-6 m-0 md:mr-8 md:mb-0"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center gap-3 mb-4">
+                            <img
+                                src="https://randomuser.me/api/portraits/women/44.jpg"
+                                alt="avatar"
+                                className="w-12 h-12 rounded-full"
+                            />
+                            <div>
+                                <div className="font-semibold">Chinenye Okeke</div>
+                                <div className="text-xs text-gray-500">User Information</div>
+                            </div>
+                        </div>
+                        <div className="text-xs text-gray-500 mb-2">Age: -</div>
+                        <div className="text-xs text-gray-500 mb-2">
+                            Contact: email@example.com
+                        </div>
+                        <div className="text-xs text-gray-500 mb-2">
+                            Phone no: 0801 234 5678
+                        </div>
+                    </Modal>
+                )}
+            </div>
+        </div>
+    );
+}
+
+export default MotherMessages;

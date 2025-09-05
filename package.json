@@ -25,6 +25,7 @@
     "react-toastify": "^11.0.5",
     "redux": "^5.0.1",
     "tailwindcss": "^4.1.11",
+    "uuid": "^11.1.0",
     "yup": "^1.7.0"
   },
   "devDependencies": {
