@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import ProfileImg from '../../components/ProfileImg';
 
-export default function PatientInfo({ screeningInfo }){
+export default function PatientInfo({ screeningInfo, noMentalHealth }){
 
     const patient = screeningInfo?.user_profile
 
@@ -13,11 +13,15 @@ export default function PatientInfo({ screeningInfo }){
                 <ProfileImg 
                     profile_img={patient?.profile_img}
                     name={patient?.name}
-                    size='20'
+                    size='16'
                 />
                 <div className="flex items-center gap-2 mb-1">
                     <span className="font-bold text-lg">{patient?.name}</span>
-                    <span className="px-2 py-1 rounded text-xs font-semibold text-red-500 bg-red-50">{screeningInfo?.risk_level}</span>
+                    {
+                        screeningInfo?.risk_level
+                        &&
+                            <span className="px-2 py-1 rounded text-xs font-semibold text-red-500 bg-red-50">{screeningInfo?.risk_level}</span>                        
+                    }
                 </div>
             </div>
 
@@ -45,12 +49,16 @@ export default function PatientInfo({ screeningInfo }){
                     })
                 }
             </div>
-
-            <div className="w-full mt-4">
-                <div className="text-xs text-gray-500 mb-1">Attachments & Reports</div>
-                <div className="text-xs mb-2">Mental Health Report</div>
-                <button className="bg-purple-600 text-white px-4 py-2 rounded text-xs font-semibold w-full">Download PDF</button>
-            </div>
+            
+            {
+                !noMentalHealth
+                &&
+                    <div className="w-full mt-4">
+                        <div className="text-xs text-gray-500 mb-1">Attachments & Reports</div>
+                        <div className="text-xs mb-2">Mental Health Report</div>
+                        <button className="bg-purple-600 text-white px-4 py-2 rounded text-xs font-semibold w-full">Download PDF</button>
+                    </div>                
+            }
         </div>
     );
 };

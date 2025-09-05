@@ -85,6 +85,51 @@ export default function useApiReqs(){
 
 
 
+    //mothers
+    const fetchMotherBookings = async ({ callBack = () => {}, mother_id }) => {
+        try {
+
+            if(!mother_id) throw new Error();
+
+            const { data: bookings, error: bookingsError } = await supabase
+                .from('bookings')
+                .select(`
+                    *,
+                    provider_profile: provider_profiles(*)                
+                `)
+                .eq('user_id', mother_id)
+
+            const { data: v_bookings, error: v_bookingsError } = await supabase
+                .from('vendor_bookings')
+                .select(`
+                    *,
+                    vendor_profile: vendor_profiles(*)                
+                `)
+                .eq('user_id', mother_id)   
+                
+            if(bookingsError || v_bookingsError){
+                console.log("Bookings error", bookingsError)
+                console.log("Vendor bookings error", v_bookingsError)
+
+                throw new Error()
+            }
+
+            callBack({
+                bookings,
+                v_bookings
+            })
+
+            return;
+            
+        } catch (error) {
+            console.log(error)
+            toast.error("Error fetching mother bookings")
+        }
+    }
+
+
+
+
 
     return {
         //mental health screening
@@ -95,6 +140,13 @@ export default function useApiReqs(){
 
 
         //bookings
-        fetchBookings
+        fetchBookings,
+
+
+
+
+
+        //mothers
+        fetchMotherBookings
     }
 }

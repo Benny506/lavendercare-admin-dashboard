@@ -102,3 +102,38 @@ export const sortByStatusPriority = (arr) => {
     return aIndex - bIndex;
   });
 };
+
+export function isoToAMPM({ isoString }) {
+  const dt = DateTime.fromISO(isoString);
+  if (!dt.isValid) return '';
+  return dt.toFormat('hh:mm a'); // hh = 2-digit hour, a = AM/PM
+}
+
+export function removeDuplicatesByKey({ arr, key }) {
+  const seen = new Set();
+  return arr.filter(item => {
+    const val = item[key];
+    if (seen.has(val)) {
+      return false;
+    }
+    seen.add(val);
+    return true;
+  });
+}
+
+export const sortByDate = ({ arr, key, ascending = false }) => {
+  if (!Array.isArray(arr) || !key) return [];
+
+  return [...arr].sort((a, b) => {
+    const dateA = DateTime.fromISO(a[key]);
+    const dateB = DateTime.fromISO(b[key]);
+
+    if (!dateA.isValid && !dateB.isValid) return 0;
+    if (!dateA.isValid) return 1; // invalid date goes last
+    if (!dateB.isValid) return -1;
+
+    return ascending
+      ? dateA.toMillis() - dateB.toMillis()
+      : dateB.toMillis() - dateA.toMillis();
+  });
+};

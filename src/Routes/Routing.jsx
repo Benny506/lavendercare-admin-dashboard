@@ -49,6 +49,8 @@ import UserEngagement from "../pages/admin/analytics/UserEngagement";
 import ProviderVendor from "../pages/admin/analytics/ProviderVendor";
 import CustomReport from "../pages/admin/analytics/CustomReport";
 
+import MotherMessages from "../pages/admin/mothers/MotherMessages";
+import AllMothers from "../pages/admin/mothers/AllMothers";
 
 function Routing() {
   return (
@@ -72,6 +74,16 @@ function Routing() {
             path="/admin/user-management/invite-user"
             element={<InviteUsers />}
           />
+
+          {/* Mothers  */}
+          <Route
+            path="/admin/mothers"
+            element={<AllMothers />}
+          />               
+          <Route
+            path="/admin/mother-messages"
+            element={<MotherMessages />}
+          />          
 
           {/* service providers */}
           <Route
