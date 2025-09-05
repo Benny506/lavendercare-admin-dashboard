@@ -137,3 +137,71 @@ export const sortByDate = ({ arr, key, ascending = false }) => {
       : dateB.toMillis() - dateA.toMillis();
   });
 };
+
+export function formatNumberWithCommas(value) {
+  if (value === null || value === undefined || isNaN(value)) return "";
+
+  return Number(value).toLocaleString();
+}
+
+export function formatDate1({ dateISO }) {
+  try {
+    if (!dateISO || typeof dateISO !== "string") {
+      return ""; // or "Invalid date"
+    }
+
+    const date = DateTime.fromISO(dateISO);
+
+    if (!date.isValid) {
+      return ""; // or "Invalid date"
+    }
+
+    return date.toFormat("ccc dd LLLL");
+  } catch (error) {
+    console.error("formatDate1 error:", error);
+    return ""; // fallback if something unexpected happens
+  }
+}
+
+export function timeToAMPM_FromHour({ hour }) {
+  const date = new Date();
+  date.setHours(hour, 0, 0, 0); // hour:00:00
+  const hours = date.getHours();
+  const suffix = hours >= 12 ? 'PM' : 'AM';
+  return `${hours.toString().padStart(2, '0')}:00 ${suffix}`;
+}
+
+export const formatTimeToHHMMSS = ({ secs }) => {
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  const s = secs % 60;
+  return `${h.toString().padStart(2, "0")}:${m
+    .toString()
+    .padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+};
+
+export function formatTimeToDuration({ secs }) {
+  const totalMinutes = secs / 60
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  let parts = [];
+
+  if (hours > 0) {
+    parts.push(`${hours} ${hours === 1 ? "hour" : "hours"}`);
+  }
+
+  if (minutes > 0) {
+    parts.push(`${minutes} ${minutes === 1 ? "minute" : "minutes"}`);
+  }
+
+  return parts.join(" ");
+}
+
+export function getHourFromHHMM({ timeStr }) {
+  if (!/^\d{2}:\d{2}$/.test(timeStr)) {
+    throw new Error("Invalid time format. Expected HH:mm");
+  }
+  const [hourStr] = timeStr.split(":");
+  return parseInt(hourStr, 10); // removes leading zeros
+}

@@ -85,24 +85,6 @@ const bookingsData = [
 
 function UserManagementProfile() {
 
-  const navigate = useNavigate()
-
-  const { state } = useLocation()
-
-  const user = state?.user
-
-  useEffect(() => {
-    if (!user) {
-      navigate('/admin/user-management')
-    }
-  }, []) 
-  
-  if(!user) return;
-
-  if(user?.role === 'mother'){
-    return <MotherProfile user={user} />
-  }
-
   return (
     <div className="flex min-h-screen w-full">
       {/* Main Content */}

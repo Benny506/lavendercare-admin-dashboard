@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import ProfileImg from '../../components/ProfileImg';
+import ProfileImg from '../components/ProfileImg';
+import { getRiskLevelBadge, getStatusBadge } from '../../../lib/utils_Jsx';
 
 export default function PatientInfo({ screeningInfo, noMentalHealth }){
 
@@ -9,24 +10,27 @@ export default function PatientInfo({ screeningInfo, noMentalHealth }){
 
     return (
         <div className="bg-white rounded-xl p-4 w-full max-w-xs flex-shrink-0 flex flex-col items-center lg:items-start">
-            <div className="flex flex-col items-center lg:items-start w-full">
+            {
+                screeningInfo?.risk_level
+                &&
+                    <div className='flex items-center justify-end mb-4 w-full'>
+                        { getRiskLevelBadge(screeningInfo?.risk_level) }
+                    </div>
+            }
+
+            <div className="flex flex-col items-center justify-start lg:items-start w-full">
                 <ProfileImg 
                     profile_img={patient?.profile_img}
                     name={patient?.name}
-                    size='16'
+                    size='12'
                 />
                 <div className="flex items-center gap-2 mb-1">
                     <span className="font-bold text-lg">{patient?.name}</span>
-                    {
-                        screeningInfo?.risk_level
-                        &&
-                            <span className="px-2 py-1 rounded text-xs font-semibold text-red-500 bg-red-50">{screeningInfo?.risk_level}</span>                        
-                    }
-                </div>
+                </div>                              
             </div>
 
             <div className="w-full mt-2">
-                <div className="text-xs text-gray-500 mb-5">Patient Information</div>
+                <div className="text-sm text-gray-500 mb-5">Patient Information</div>
                 {
                     [
                         { title: 'Age:', value: patient?.age || 'Not set', },
@@ -51,13 +55,13 @@ export default function PatientInfo({ screeningInfo, noMentalHealth }){
             </div>
             
             {
-                !noMentalHealth
-                &&
-                    <div className="w-full mt-4">
-                        <div className="text-xs text-gray-500 mb-1">Attachments & Reports</div>
-                        <div className="text-xs mb-2">Mental Health Report</div>
-                        <button className="bg-purple-600 text-white px-4 py-2 rounded text-xs font-semibold w-full">Download PDF</button>
-                    </div>                
+                // !noMentalHealth
+                // &&
+                //     <div className="w-full mt-4">
+                //         <div className="text-xs text-gray-500 mb-1">Attachments & Reports</div>
+                //         <div className="text-xs mb-2">Mental Health Report</div>
+                //         <button className="bg-purple-600 text-white px-4 py-2 rounded text-xs font-semibold w-full">Download PDF</button>
+                //     </div>                
             }
         </div>
     );

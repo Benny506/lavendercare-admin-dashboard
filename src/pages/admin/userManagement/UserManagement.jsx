@@ -10,6 +10,10 @@ import ZeroItems from "../components/ZeroItems";
 import { Select } from "../components/ui/Select";
 import { userTypes } from "../../../lib/utils_Jsx";
 import { onRequestApi } from "../../../lib/requestApi";
+import Pagination from "../components/Pagination";
+import { usePagination } from "../../../hooks/usePagination";
+import Modal from "../components/ui/Modal";
+import PathHeader from "../components/PathHeader";
 
 
 function UserManagement() {
@@ -26,7 +30,9 @@ function UserManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUser, setSelectedUser] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [apiReqs, setApiReqs] = useState({ isLoading: false, data: null, errorMsg: { type: null, err: null } })
+  const [apiReqs, setApiReqs] = useState({ isLoading: false, data: null, errorMsg: { type: null, err: null } })  
+  const [currentPage, setCurrentPage] = useState(0)
+  const [pageListIndex, setPageListIndex] = useState(0)  
 
   useEffect(() => {
     const _u = [...mothers, ...providers, ...vendors]
@@ -203,6 +209,38 @@ function UserManagement() {
     }
   );
 
+  const { pageItems, totalPages, pageList, totalPageListIndex } = usePagination({
+      arr: filteredUsers,
+      maxShow: 4,
+      index: currentPage,
+      maxPage: 5,
+      pageListIndex
+  });  
+
+  const incrementPageListIndex = () => {
+    alert(totalPageListIndex)
+    alert(pageListIndex)
+    if(pageListIndex === totalPageListIndex){
+        setPageListIndex(0)
+      
+    } else{
+        setPageListIndex(prev => prev+1)
+    }
+
+    return
+  }
+
+  const decrementPageListIndex = () => {
+      if(pageListIndex == 0){
+          setPageListIndex(totalPageListIndex)
+      
+      } else{
+          setPageListIndex(prev => prev-1)
+      }
+
+      return
+  }  
+
   const handleDelete = (user) => {
     setApiReqs({
       isLoading: true,
@@ -222,73 +260,37 @@ function UserManagement() {
     return
   };
 
-  useEffect(() => {
-    isModalOpen
-      ? (document.body.style.overflow = "hidden")
-      : (document.body.style.overflow = "auto");
-  }, [isModalOpen]);
+  const handleViewProfile = () => {
+    if(!selectedUser) return <></>
+
+    navigate(
+      selectedUser?.role === 'mother'
+      ? 
+        '/admin/mothers/single-mother'
+      :
+      selectedUser?.role === 'provider'
+      ?
+        '/admin/healthcare-provider/single-provider'
+      :
+      selectedUser?.role === 'vendor'
+      ?
+        '/admin/service-provider/single-vendor'      
+      :
+      ''
+      , 
+      { state: { user: selectedUser } }
+    )
+  }
 
   return (
     <div className="pb-[31px]">
       {/* breadcrumb  */}
-      <div className="flex py-[24px] items-center gap-1">
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 20 20"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M6.66667 14.1663H13.3333M9.18141 2.30297L3.52949 6.6989C3.15168 6.99276 2.96278 7.13968 2.82669 7.32368C2.70614 7.48667 2.61633 7.67029 2.56169 7.86551C2.5 8.0859 2.5 8.32521 2.5 8.80384V14.833C2.5 15.7664 2.5 16.2331 2.68166 16.5896C2.84144 16.9032 3.09641 17.1582 3.41002 17.318C3.76654 17.4996 4.23325 17.4996 5.16667 17.4996H14.8333C15.7668 17.4996 16.2335 17.4996 16.59 17.318C16.9036 17.1582 17.1586 16.9032 17.3183 16.5896C17.5 16.2331 17.5 15.7664 17.5 14.833V8.80384C17.5 8.32521 17.5 8.0859 17.4383 7.86551C17.3837 7.67029 17.2939 7.48667 17.1733 7.32368C17.0372 7.13968 16.8483 6.99276 16.4705 6.69891L10.8186 2.30297C10.5258 2.07526 10.3794 1.9614 10.2178 1.91763C10.0752 1.87902 9.92484 1.87902 9.78221 1.91763C9.62057 1.9614 9.47418 2.07526 9.18141 2.30297Z"
-            stroke="#8B8B8A"
-            stroke-width="1.66667"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 16 16"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <g clip-path="url(#clip0_1918_35894)">
-            <path
-              d="M6.66656 4L5.72656 4.94L8.7799 8L5.72656 11.06L6.66656 12L10.6666 8L6.66656 4Z"
-              fill="#8B8B8A"
-            />
-          </g>
-          <defs>
-            <clipPath id="clip0_1918_35894">
-              <rect width="16" height="16" fill="white" />
-            </clipPath>
-          </defs>
-        </svg>
-        <p>User management</p>
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 16 16"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <g clip-path="url(#clip0_1918_35894)">
-            <path
-              d="M6.66656 4L5.72656 4.94L8.7799 8L5.72656 11.06L6.66656 12L10.6666 8L6.66656 4Z"
-              fill="#8B8B8A"
-            />
-          </g>
-          <defs>
-            <clipPath id="clip0_1918_35894">
-              <rect width="16" height="16" fill="white" />
-            </clipPath>
-          </defs>
-        </svg>
-        <p className="text-(--primary-500) font-[600]">All Users</p>
-      </div>
+      <PathHeader 
+        paths={[
+          { type: 'text', text: 'User Management' },
+          { type: 'text', text: 'All Users' },
+        ]}
+      />
 
       <div className="flex items-center justify-between pb-5">
         <h2 className="text-[24px] font-semibold">All users</h2>
@@ -426,8 +428,8 @@ function UserManagement() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredUsers.length > 0 ? (
-                filteredUsers.map((user) => {
+              {pageItems.length > 0 ? (
+                pageItems.map((user) => {
                   const name = user?.name || user?.business_name || user?.provider_name
 
                   const lastLogin = user?.last_sign_in_at ? isoToDateTime({ isoString: user?.last_sign_in_at }) : 'Null'
@@ -492,7 +494,7 @@ function UserManagement() {
                           </svg>
                         </button>
 
-                        <button
+                        {/* <button
                           onClick={() => handleDelete(user)}
                           className="fill-red-600 fill:text-red-900 hover:cursor-pointer"
                         >
@@ -511,7 +513,7 @@ function UserManagement() {
                               stroke-linejoin="round"
                             />
                           </svg>
-                        </button>
+                        </button> */}
                       </td>
                     </tr>
                 )})
@@ -529,154 +531,168 @@ function UserManagement() {
               )}
             </tbody>
           </table>
+
+          <Pagination 
+            currentPage={currentPage}
+            pageItems={pageItems}
+            pageListIndex={pageListIndex}
+            pageList={pageList}
+            totalPageListIndex={totalPageListIndex}
+            decrementPageListIndex={decrementPageListIndex}
+            incrementPageListIndex={incrementPageListIndex}
+            setCurrentPage={setCurrentPage}
+          />
         </div>
       </div>
 
       {/* User Details Modal */}
       {isModalOpen && (
-        <div className={`relative z-[500] ${isModalOpen ? "" : "hidden"}`}>
-          <div className="fixed inset-0 overflow-y-auto">
-            <div
-              className="fixed inset-0 hover:cursor-pointer  bg-black opacity-70"
+        <Modal
+          isOpen={isModalOpen && selectedUser ? true : false}
+          onClose={closeModal}
+        >
+          <>
+            <p
+              className="text-sm text-(--primary-500) z-10 font-medium leading-6 hover:cursor-pointer flex gap-2 items-center"
               onClick={closeModal}
-            />
-            <div className="flex z-[1000] min-h-full items-center justify-center p-4 text-center">
-              <div className="w-[80%] z-10 max-w-md transform overflow-hidden md:w-[462px] rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                {selectedUser && (
-                  <>
-                    <p
-                      className="text-sm text-(--primary-500) z-10 font-medium leading-6 hover:cursor-pointer flex gap-2 items-center"
-                      onClick={closeModal}
-                    >
-                      <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 20 20"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <g clip-path="url(#clip0_1918_40368)">
-                          <path
-                            d="M16.6668 9.16732H6.52516L11.1835 4.50898L10.0002 3.33398L3.3335 10.0007L10.0002 16.6673L11.1752 15.4923L6.52516 10.834H16.6668V9.16732Z"
-                            fill="#6F3DCB"
-                          />
-                        </g>
-                        <defs>
-                          <clipPath id="clip0_1918_40368">
-                            <rect width="20" height="20" fill="white" />
-                          </clipPath>
-                        </defs>
-                      </svg>
-                      Back
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <g clip-path="url(#clip0_1918_40368)">
+                  <path
+                    d="M16.6668 9.16732H6.52516L11.1835 4.50898L10.0002 3.33398L3.3335 10.0007L10.0002 16.6673L11.1752 15.4923L6.52516 10.834H16.6668V9.16732Z"
+                    fill="#6F3DCB"
+                  />
+                </g>
+                <defs>
+                  <clipPath id="clip0_1918_40368">
+                    <rect width="20" height="20" fill="white" />
+                  </clipPath>
+                </defs>
+              </svg>
+              Back
+            </p>
+            <div className="mt-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center mb-4">
+                  <div className="h-[50px] w-[50px] rounded-full bg-gray-200 flex items-center justify-center text-2xl font-bold text-gray-600">
+                    {(selectedUser.name || selectedUser?.provider_name || selectedUser?.business_name).charAt(0)}
+                  </div>
+                  <div className="ml-4">
+                    <h4 className="text-lg font-semibold">
+                      {selectedUser?.name || selectedUser?.business_name || selectedUser?.provider_name}
+                    </h4>
+                    <p className="text-sm text-gray-500">
+                      {selectedUser.role}
                     </p>
-                    <div className="mt-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center mb-4">
-                          <div className="h-[50px] w-[50px] rounded-full bg-gray-200 flex items-center justify-center text-2xl font-bold text-gray-600">
-                            {(selectedUser.name || selectedUser?.provider_name || selectedUser?.business_name).charAt(0)}
-                          </div>
-                          <div className="ml-4">
-                            <h4 className="text-lg font-semibold">
-                              {selectedUser?.name || selectedUser?.business_name || selectedUser?.provider_name}
-                            </h4>
-                            <p className="text-sm text-gray-500">
-                              {selectedUser.role}
-                            </p>
-                          </div>
-                        </div>
+                  </div>
+                </div>
 
-                        <div className="text-sm">{selectedUser?.suspended ? 'Suspended' : 'Active'}</div>
-                      </div>
+                <div className="text-sm">{selectedUser?.suspended ? 'Suspended' : 'Active'}</div>
+              </div>
 
-                      <div className="space-y-3 mt-4">
-                        <div className="flex gap-2">
-                          <span className="text-sm text-gray-500">Email:</span>
-                          <span className="text-sm font-medium">
-                            {selectedUser.email}
-                          </span>
-                        </div>
-                        <div className="flex gap-2">
-                          <span className="text-sm text-gray-500">
-                            Phone Number:
-                          </span>
-                          <span>{selectedUser.phone_number || 'Not set'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-500">
-                            Last Login:
-                          </span>
-                          <span className="text-sm">
-                            {selectedUser.last_sign_in_at ? isoToDateTime({ isoString: selectedUser.last_sign_in_at }) : 'Null'}
-                          </span>
-                        </div>
+              <div className="space-y-3 mt-4">
+                <div className="flex gap-2">
+                  <span className="text-sm text-gray-500">Email:</span>
+                  <span className="text-sm font-medium">
+                    {selectedUser.email}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-sm text-gray-500">
+                    Phone Number:
+                  </span>
+                  <span>{selectedUser.phone_number || 'Not set'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">
+                    Last Login:
+                  </span>
+                  <span className="text-sm">
+                    {selectedUser.last_sign_in_at ? isoToDateTime({ isoString: selectedUser.last_sign_in_at }) : 'Null'}
+                  </span>
+                </div>
 
-                        {/* Role-specific information */}
-                        {selectedUser.role === "Admin" && (
-                          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                            <h5 className="font-medium text-blue-800">
-                              Admin Privileges
-                            </h5>
-                            <p className="text-sm text-blue-700 mt-1">
-                              Full system access and user management
-                              permissions.
-                            </p>
-                          </div>
-                        )}
-
-                        {selectedUser.role === "Mother" && (
-                          <div className="mt-4 p-3 bg-purple-50 rounded-lg">
-                            <h5 className="font-medium text-purple-800">
-                              Mother's Profile
-                            </h5>
-                            <p className="text-sm text-purple-700 mt-1">
-                              Access to maternal health resources and
-                              appointment scheduling.
-                            </p>
-                          </div>
-                        )}
-
-                        {selectedUser.role === "Provider" && (
-                          <div className="mt-4 p-3 bg-green-50 rounded-lg">
-                            <h5 className="font-medium text-green-800">
-                              Healthcare Provider
-                            </h5>
-                            <p className="text-sm text-green-700 mt-1">
-                              Access to patient records and appointment
-                              management.
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="mt-6 flex flex-wrap gap-5 justify-center items-center space-x-3">
-                      <button
-                        type="button"
-                        className="inline-flex justify-center border border-transparent bg-(--primary-500) px-10 rounded-full py-4 text-sm font-medium text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                        onClick={() => navigate('/admin/user-management/profile', { state: { user: selectedUser } })}
-                      >
-                        View Profile
-                      </button>
-                      <button
-                        type="button"
-                        className={`inline-flex justify-center rounded-full border border-transparent px-10 py-4 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
-                          selectedUser?.suspended
-                            ? "bg-green-100 text-green-900 hover:bg-green-200 focus-visible:ring-green-500"
-                            : "bg-red-100 text-red-900 hover:bg-red-200 focus-visible:ring-red-500"
-                        }`}
-                        onClick={() => handleSuspend(selectedUser)}
-                      >
-                        {selectedUser?.suspended
-                          ? "Activate User"
-                          : "Suspend User"}
-                      </button>
-                    </div>
-                  </>
+                {/* Role-specific information */}
+                {selectedUser.role === "admin" && (
+                  <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                    <h5 className="font-medium text-blue-800">
+                      Admin Privileges
+                    </h5>
+                    <p className="text-sm text-blue-700 mt-1">
+                      Full system access and user management
+                      permissions.
+                    </p>
+                  </div>
                 )}
+
+                {selectedUser.role === "mother" && (
+                  <div className="mt-4 p-3 bg-purple-50 rounded-lg">
+                    <h5 className="font-medium text-purple-800">
+                      Mother's Profile
+                    </h5>
+                    <p className="text-sm text-purple-700 mt-1">
+                      Access to maternal health resources and
+                      appointment scheduling.
+                    </p>
+                  </div>
+                )}
+
+                {selectedUser.role === "provider" && (
+                  <div className="mt-4 p-3 bg-green-50 rounded-lg">
+                    <h5 className="font-medium text-green-800">
+                      Healthcare Provider
+                    </h5>
+                    <p className="text-sm text-green-700 mt-1">
+                      Access to patient records and appointment
+                      management.
+                    </p>
+                  </div>
+                )}
+
+                {selectedUser.role === "vendor" && (
+                  <div className="mt-4 p-3 bg-yellow-50 rounded-lg">
+                    <h5 className="font-medium text-yellow-800">
+                      Vendor service Provider
+                    </h5>
+                    <p className="text-sm text-yellow-700 mt-1">
+                      Access to patient service bookings and appointment
+                      management.
+                    </p>
+                  </div>
+                )}                
               </div>
             </div>
-          </div>
-        </div>
+
+            <div className="mt-6 flex flex-wrap gap-5 justify-center items-center space-x-3">
+              <button
+                type="button"
+                className="cursor-pointer inline-flex justify-center border border-transparent bg-(--primary-500) px-10 rounded-full py-4 text-sm font-medium text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                onClick={handleViewProfile}
+              >
+                View Profile
+              </button>
+              <button
+                type="button"
+                className={`cursor-pointer inline-flex justify-center rounded-full border border-transparent px-10 py-4 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+                  selectedUser?.suspended
+                    ? "bg-green-100 text-green-900 hover:bg-green-200 focus-visible:ring-green-500"
+                    : "bg-red-100 text-red-900 hover:bg-red-200 focus-visible:ring-red-500"
+                }`}
+                onClick={() => handleSuspend(selectedUser)}
+              >
+                {selectedUser?.suspended
+                  ? "Activate User"
+                  : "Suspend User"}
+              </button>
+            </div>
+          </>
+        </Modal>
       )}
     </div>
   );
