@@ -107,8 +107,8 @@ const sidebarMenu = [
         path: "/admin/analytics/bookings",
       },
       { title: "Screening Outcomes", path: "/admin/analytics/screening" },
-      { title: "User Management", path: "/admin/analytics/user-mangagement" },
-      { title: "Provider and Vendor", path: "/admin/analytics/providers" },
+      { title: "User Management", path: "/admin/analytics/user-engagement" },
+      { title: "Provider and Vendor", path:"/admin/analytics/provider-and-vendors" },
       {
         title: "Custom Report Builder",
         path: "/admin/analytics/report-builder",
@@ -176,6 +176,8 @@ function Sidebar() {
   };
 
   return (
+    <>
+
     <div className="w-[260px] py-[24px] px-[8px] h-screen bg-(--primary-500) shadow-lg lg:block hidden sticky top-0 overflow-y-auto">
       <div className="p-4">
         <h2 className="text-xl font-bold text-white">
@@ -274,6 +276,15 @@ function Sidebar() {
         })}
       </nav>
     </div>
+
+    {/* menu bar icon */}
+    <div className="absolute left-[20px] lg:hidden z-[700] text-black top-[28px] w-[20px] h-[20px]">
+ <svg width="20" height="20" viewBox="0 0 36 41" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+<path d="M0 7.6875C0 6.27012 1.14911 5.125 2.57143 5.125H33.4286C34.8509 5.125 36 6.27012 36 7.6875C36 9.10488 34.8509 10.25 33.4286 10.25H2.57143C1.14911 10.25 0 9.10488 0 7.6875ZM0 20.5C0 19.0826 1.14911 17.9375 2.57143 17.9375H33.4286C34.8509 17.9375 36 19.0826 36 20.5C36 21.9174 34.8509 23.0625 33.4286 23.0625H2.57143C1.14911 23.0625 0 21.9174 0 20.5ZM36 33.3125C36 34.7299 34.8509 35.875 33.4286 35.875H2.57143C1.14911 35.875 0 34.7299 0 33.3125C0 31.8951 1.14911 30.75 2.57143 30.75H33.4286C34.8509 30.75 36 31.8951 36 33.3125Z" fill="black"/>
+</svg>
+
+    </div>
+</>
   );
 }
 

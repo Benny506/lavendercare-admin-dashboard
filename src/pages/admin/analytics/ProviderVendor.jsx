@@ -1,130 +1,59 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
-const summaryCards = [
+const providerDetails = [
   {
-    label: "Avg Daily Active Users",
-    icon: (
-      <svg
-        width="21"
-        height="20"
-        viewBox="0 0 21 20"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          d="M13.6667 17.5V15.8333C13.6667 14.9493 13.3155 14.1014 12.6904 13.4763C12.0652 12.8512 11.2174 12.5 10.3333 12.5H5.33333C4.44928 12.5 3.60143 12.8512 2.97631 13.4763C2.35119 14.1014 2 14.9493 2 15.8333V17.5"
-          stroke="#D2C3EF"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-        <path
-          d="M13.667 2.60669C14.3818 2.792 15.0148 3.20941 15.4667 3.79341C15.9186 4.37741 16.1638 5.09493 16.1638 5.83336C16.1638 6.57178 15.9186 7.28931 15.4667 7.8733C15.0148 8.4573 14.3818 8.87471 13.667 9.06002"
-          stroke="#D2C3EF"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-        <path
-          d="M18.667 17.5001V15.8334C18.6664 15.0948 18.4206 14.3774 17.9681 13.7937C17.5156 13.2099 16.8821 12.793 16.167 12.6084"
-          stroke="#D2C3EF"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-        <path
-          d="M7.83333 9.16667C9.67428 9.16667 11.1667 7.67428 11.1667 5.83333C11.1667 3.99238 9.67428 2.5 7.83333 2.5C5.99238 2.5 4.5 3.99238 4.5 5.83333C4.5 7.67428 5.99238 9.16667 7.83333 9.16667Z"
-          stroke="#D2C3EF"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
-    ),
-    value: "1,300",
-    sub: "Last 7 days",
-    change: "+5.3%",
+    name: "Dr. Jane Smith",
+    type: "Psychiatrist",
+    rating: "4.8",
+    responseRate: "95%",
+    totalServices: "124",
   },
   {
-    label: "Total Sign-ups",
-    icon: (
-      <svg
-        width="21"
-        height="20"
-        viewBox="0 0 21 20"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          d="M13.6667 17.5V15.8333C13.6667 14.9493 13.3155 14.1014 12.6904 13.4763C12.0652 12.8512 11.2174 12.5 10.3333 12.5H5.33333C4.44928 12.5 3.60143 12.8512 2.97631 13.4763C2.35119 14.1014 2 14.9493 2 15.8333V17.5"
-          stroke="#D2C3EF"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-        <path
-          d="M7.83333 9.16667C9.67428 9.16667 11.1667 7.67428 11.1667 5.83333C11.1667 3.99238 9.67428 2.5 7.83333 2.5C5.99238 2.5 4.5 3.99238 4.5 5.83333C4.5 7.67428 5.99238 9.16667 7.83333 9.16667Z"
-          stroke="#D2C3EF"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-        <path
-          d="M16.167 6.66675V11.6667"
-          stroke="#D2C3EF"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-        <path
-          d="M18.667 9.16675H13.667"
-          stroke="#D2C3EF"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
-    ),
-    value: "360",
-    sub: "Last 7 days",
-    change: "+3.3%",
+    name: "Dr. Jane Smith",
+    type: "Psychiatrist",
+    rating: "4.8",
+    responseRate: "95%",
+    totalServices: "124",
   },
   {
-    label: "Total Community Posts",
-    icon: (
-      <svg
-        width="21"
-        height="20"
-        viewBox="0 0 21 20"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          d="M7.24967 16.6666C8.84016 17.4825 10.6697 17.7035 12.4087 17.2898C14.1477 16.876 15.6818 15.8548 16.7345 14.4101C17.7871 12.9654 18.2892 11.1922 18.1502 9.41009C18.0111 7.62797 17.2402 5.9541 15.9762 4.69012C14.7122 3.42614 13.0383 2.65517 11.2562 2.51614C9.47408 2.37711 7.7009 2.87916 6.25619 3.93183C4.81148 4.9845 3.79025 6.51855 3.37653 8.25755C2.9628 9.99655 3.18379 11.8261 3.99967 13.4166L2.33301 18.3333L7.24967 16.6666Z"
-          stroke="#D2C3EF"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
-    ),
-    value: "570",
-    sub: "Last 7 days",
-    change: "+5.2%",
+    name: "Dr. Jane Smith",
+    type: "Psychiatrist",
+    rating: "4.8",
+    responseRate: "95%",
+    totalServices: "124",
+  },
+  {
+    name: "Dr. Jane Smith",
+    type: "Psychiatrist",
+    rating: "4.8",
+    responseRate: "95%",
+    totalServices: "124",
+  },
+  {
+    name: "Dr. Jane Smith",
+    type: "Psychiatrist",
+    rating: "4.8",
+    responseRate: "95%",
+    totalServices: "124",
+  },
+  {
+    name: "Dr. Jane Smith",
+    type: "Psychiatrist",
+    rating: "4.8",
+    responseRate: "95%",
+    totalServices: "124",
+  },
+  {
+    name: "Dr. Jane Smith",
+    type: "Psychiatrist",
+    rating: "4.8",
+    responseRate: "95%",
+    totalServices: "124",
   },
 ];
 
-const engagementDetails = [
-  { date: "Jan 01, 2023", dau: 1200, newUsers: 45, posts: 78, comments: 124 },
-  { date: "Jan 02, 2023", dau: 1150, newUsers: 38, posts: 110, comments: 119 },
-  { date: "Jan 03, 2023", dau: 1300, newUsers: 52, posts: 82, comments: 135 },
-  { date: "Jan 04, 2023", dau: 1250, newUsers: 47, posts: 75, comments: 127 },
-  { date: "Jan 05, 2023", dau: 1280, newUsers: 60, posts: 90, comments: 140 },
-  { date: "Jan 06, 2023", dau: 1320, newUsers: 55, posts: 88, comments: 138 },
-  { date: "Jan 07, 2023", dau: 1350, newUsers: 70, posts: 95, comments: 150 },
-];
-
-function UserEngagement() {
+function ProviderVendor() {
   return (
     <div className="pt-6 w-full mb-12 min-h-screen">
       {/* Breadcrumb */}
@@ -185,25 +114,22 @@ function UserEngagement() {
           </defs>
         </svg>
         <p className="text-(--primary-500) font-[600] text-[12px]">
-          User Engagement
+          Provider & Vendor
         </p>
       </div>
 
       {/* title */}
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4">
+      <div className="flex flex-col md:flex-row justify-between items-center w-full">
         <h2 className="text-lg sm:text-[24px] font-bold mb-4">
-          User Engagement
+          Provider & Vendor
         </h2>
 
         {/*  */}
         <div className="flex gap-2 text-[12px] w-max rounded-sm border-[#DEE0E3] border">
           <p className="py-1 w-max text-white bg-(--primary-500) rounded-l-sm px-2">
-            DAU
+            Providers
           </p>
-          <p className="py-1 w-max pr-2 border-r-[#DEE0E3] border-r">
-            Sign-ups
-          </p>
-          <p className="py-1 w-max pr-2">Posts</p>
+          <p className="py-1 w-max pr-2">Vendors</p>
         </div>
       </div>
 
@@ -352,85 +278,90 @@ function UserEngagement() {
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 mb-6">
-        {summaryCards.map((card, idx) => (
-          <div
-            key={idx}
-            className="bg-white rounded-xl  p-4 flex flex-col items-start"
-          >
-            <div className="flex justify-between items-center w-full">
-              <p className="text-xs text-gray-400 mb-1">{card.label}</p>
-              {card.icon}
-            </div>
-            <h2 className="text-2xl font-bold">{card.value}</h2>
-            <p className="text-xs text-gray-400 mt-1">
-              {card.sub}{" "}
-              <span className="text-green-500 font-semibold">
-                {card.change}
-              </span>
-            </p>
-          </div>
-        ))}
-      </div>
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div className="bg-white rounded-xl p-4 flex flex-col">
-          <div className="text-xs text-gray-400 mb-2">DAU Trend</div>
-          {/* Chart Placeholder */}
-          <div className="w-full h-40 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
-            [Line Chart]
-          </div>
-        </div>
-        <div className="bg-white rounded-xl p-4 flex flex-col">
-          <div className="text-xs text-gray-400 mb-2">New Sign-ups by Day</div>
-          {/* Chart Placeholder */}
-          <div className="w-full h-40 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
-            [Bar Chart]
-          </div>
-        </div>
-      </div>
-      {/* Engagement Details Table */}
+      {/* provider Details Table */}
       <div className="bg-white rounded-xl p-4">
-        <div className="text-lg font-bold mb-4">Engagement Details</div>
+        <div className="text-lg font-bold mb-4">
+          Top 10 providers by Performance
+        </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 text-xs sm:text-sm">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-3 sm:px-6 py-3 text-left font-medium text-gray-500">
-                  Date
+                  Name
                 </th>
                 <th className="px-3 sm:px-6 py-3 text-left font-medium text-gray-500">
-                  DAU
+                  Type
                 </th>
                 <th className="px-3 sm:px-6 py-3 text-left font-medium text-gray-500">
-                  New Users
+                  Rating
                 </th>
                 <th className="px-3 sm:px-6 py-3 text-left font-medium text-gray-500">
-                  Posts
+                  Response rate
                 </th>
                 <th className="px-3 sm:px-6 py-3 text-left font-medium text-gray-500">
-                  Comments
+                  Total services
+                </th>
+                <th className="px-3 sm:px-6 py-3 text-left font-medium text-gray-500">
+                  Actions
                 </th>
               </tr>
             </thead>
+
             <tbody className="bg-white divide-y divide-gray-200">
-              {engagementDetails.map((row, idx) => (
+              {providerDetails.map((row, idx) => (
                 <tr key={idx}>
                   <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                    {row.date}
+                    {row.name}
                   </td>
                   <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                    {row.dau}
+                    {row.type}
                   </td>
                   <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                    {row.newUsers}
+                    {row.rating}
                   </td>
                   <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                    {row.posts}
+                    {row.responseRate}
                   </td>
                   <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                    {row.comments}
+                    {row.totalServices}
+                  </td>
+                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                    <Link
+                      to={`/admin/provider/${row.id}`}
+                      className="text-(--primary-500) flex items-center gap-1 font-medium cursor-pointer"
+                    >
+                      View profile
+                      <svg
+                        width="15"
+                        height="14"
+                        viewBox="0 0 15 14"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M9.46875 1.75H12.9687V5.25"
+                          stroke="#6F3DCB"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                        <path
+                          d="M6.55225 8.16667L12.9689 1.75"
+                          stroke="#6F3DCB"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                        <path
+                          d="M11.2187 7.58333V11.0833C11.2187 11.3928 11.0958 11.6895 10.877 11.9083C10.6582 12.1271 10.3615 12.25 10.0521 12.25H3.63542C3.326 12.25 3.02925 12.1271 2.81046 11.9083C2.59167 11.6895 2.46875 11.3928 2.46875 11.0833V4.66667C2.46875 4.35725 2.59167 4.0605 2.81046 3.84171C3.02925 3.62292 3.326 3.5 3.63542 3.5H7.13542"
+                          stroke="#6F3DCB"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </Link>
                   </td>
                 </tr>
               ))}
@@ -438,8 +369,30 @@ function UserEngagement() {
           </table>
         </div>
       </div>
+
+      {/* Charts Section */}
+      <div className="grid mt-4 grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="bg-white rounded-xl p-4 flex flex-col">
+          <div className="text-xs text-gray-400 mb-2">
+            Response Rate Distribution
+          </div>
+          {/* Chart Placeholder */}
+          <div className="w-full h-40 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
+            [Line Chart]
+          </div>
+        </div>
+        <div className="bg-white rounded-xl p-4 flex flex-col">
+          <div className="text-xs text-gray-400 mb-2">
+            Services Delivered Over Time
+          </div>
+          {/* Chart Placeholder */}
+          <div className="w-full h-40 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
+            [Bar Chart]
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
-export default UserEngagement;
+export default ProviderVendor;

@@ -46,6 +46,8 @@ import UserManagementProfile from "../pages/admin/userManagement/UserManagementP
 import ConsulationVolumes from "../pages/admin/analytics/ConsulationVolumes";
 import ScreeningOutcomes from "../pages/admin/analytics/ScreeningOutcomes";
 import UserEngagement from "../pages/admin/analytics/UserEngagement";
+import ProviderVendor from "../pages/admin/analytics/ProviderVendor";
+import CustomReport from "../pages/admin/analytics/CustomReport";
 
 import MotherMessages from "../pages/admin/mothers/MotherMessages";
 import AllMothers from "../pages/admin/mothers/AllMothers";
@@ -189,7 +191,9 @@ function Routing() {
           <Route path="/admin/analytics/sales" element={<SalesAndRevenue />} />
           <Route path="/admin/analytics/bookings" element={<ConsulationVolumes />} />
           <Route path="/admin/analytics/screening" element={<ScreeningOutcomes />} />
-          {/* <Route path="/admin/analytics/user-management" element={<UserEngagement />} /> */}
+          <Route path="/admin/analytics/user-engagement" element={<UserEngagement />} />
+          <Route path="/admin/analytics/provider-and-vendors" element={<ProviderVendor />} />
+          <Route path="/admin/analytics/report-builder" element={<CustomReport />} />
 
 
 
