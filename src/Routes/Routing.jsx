@@ -1,6 +1,7 @@
+import React from "react";
+
 import { Route, Routes } from "react-router-dom";
 import Login from "../pages/admin/login/Login";
-import App from "../App";
 import VerifyEmail from "../pages/admin/verifyEmail/VerifyEmail";
 import RecoverAccount from "../pages/admin/recoverAccount/RecoverAccount";
 
@@ -15,9 +16,9 @@ import DisputeDetails from "../pages/admin/serviceProvider/DisputeDetails";
 import HealthcareProvider from "../pages/admin/healthcareProvider/HealthcareProvider";
 import Performance from "../pages/admin/serviceProvider/Performance";
 import ReviewCredential from "../pages/admin/healthcareProvider/ReviewCredential";
-import React from "react";
 import MentalHealthScreeningDetail from "../pages/admin/healthcareProvider/MentalHealthScreeningDetail";
 import MentalHealthScreening from "../pages/admin/healthcareProvider/MentalHealthScreening";
+import SalesAndRevenue from "../pages/admin/analytics/SalesAndRevenue";
 
 
 import CaseloadSummaries from "../pages/admin/healthcareProvider/CaseloadSummaries";
@@ -37,6 +38,14 @@ import General from "../pages/admin/settings/General";
 import EscalatedTickets from "../pages/admin/support/EscalatedTickets";
 import AllTickets from "../pages/admin/support/AllTickets";
 import TicketDetails from "../pages/admin/support/TicketDetails";
+import Refund from "../pages/admin/order/Refund";
+
+import ProtectedRoute from "../pages/admin/components/ProtectedRoute";
+import AutoLogin from "../pages/admin/components/AutoLogin";
+import UserManagementProfile from "../pages/admin/userManagement/UserManagementProfile";
+import ConsulationVolumes from "../pages/admin/analytics/ConsulationVolumes";
+import ScreeningOutcomes from "../pages/admin/analytics/ScreeningOutcomes";
+import UserEngagement from "../pages/admin/analytics/UserEngagement";
 
 import ProtectedRoute from "../pages/admin/components/ProtectedRoute";
 import AutoLogin from "../pages/admin/components/AutoLogin";
@@ -130,7 +139,7 @@ function Routing() {
           <Route path="/admin/marketplace/promotions" element={<MarketPromotions />} />
 
           {/* order and transactions */}
-          {/* <Route path="/admin/order" element={<Product />} /> */}
+          <Route path="/admin/order/refunds" element={<Refund />} />
           <Route path="/admin/order/payout-requests" element={<PayoutRequests />} />
           <Route path="/admin/order/transaction-history" element={<TransactionHistory />} />
 
@@ -139,6 +148,12 @@ function Routing() {
           <Route path="/admin/support/all-tickets" element={<AllTickets />} />
           <Route path="/admin/support/escalated-tickets" element={<EscalatedTickets />} />
           <Route path="/admin/support/ticket-details/:id" element={<TicketDetails />} />
+
+          {/* analytics */}
+          <Route path="/admin/analytics/sales" element={<SalesAndRevenue />} />
+          <Route path="/admin/analytics/bookings" element={<ConsulationVolumes />} />
+          <Route path="/admin/analytics/screening" element={<ScreeningOutcomes />} />
+          {/* <Route path="/admin/analytics/user-management" element={<UserEngagement />} /> */}
 
 
 
