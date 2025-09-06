@@ -97,7 +97,7 @@ function PayoutRequests() {
             </clipPath>
           </defs>
         </svg>
-        <span className="text-(--primary-500) font-semibold">Refunds</span>
+        <span className="text-(--primary-500) font-semibold">Vendor request payouts</span>
       </div>
 
       {/* payout titles */}

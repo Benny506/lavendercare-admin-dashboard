@@ -2,7 +2,7 @@ export default function PathHeader({
     paths = []
 }) {
     return (
-        <div className="flex py-[24px] items-center gap-1">
+        <div className="flex items-center gap-1">
             <svg
                 width="20"
                 height="20"
@@ -46,9 +46,7 @@ export default function PathHeader({
                                 </defs>
                             </svg>
 
-                            <p 
-                                className={`capitalize font-700 ${i === paths?.length-1 ? 'text-(--primary-500)' : 'text-gray-600'}`}
-                            >
+                            <p className={`capitalize text-[12px]  ${i === paths?.length-1 ? 'text-(--primary-500) font-semibold' : 'text-gray-600'}`}>
                                 { text }
                             </p>                            
                         </>

@@ -146,7 +146,7 @@ function EscalatedTickets() {
                   </td>
                   <td className="px-3 sm:px-6 py-4 whitespace-nowrap">{ticket.assignee}</td>
                   <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                    <button className="text-primary font-medium text-xs sm:text-sm">Assign</button>
+                    <button className="bg-(--primary-500) py-1 px-4 rounded-sm text-white font-medium text-xs sm:text-sm">Assign</button>
                   </td>
                 </tr>
               ))}
