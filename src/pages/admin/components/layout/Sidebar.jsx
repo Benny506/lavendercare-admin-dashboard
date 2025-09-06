@@ -120,7 +120,7 @@ const sidebarMenu = [
     Icon: ({ size, color }) => <Icons name={'communities'} size={size} color={color} />,
     path: "/admin/communities",
     submenu: [
-      { title: "All Communities", path: "/admin/communities" },
+      { title: "All Communities", path: "/admin/communities/all-communities" },
       { title: "Create Community", path: "/admin/communities/create" },
       { title: "Moderators", path: "/admin/communities/moderators" },
       { title: "Activity Feed", path: "/admin/communities/activity" },
@@ -140,14 +140,12 @@ const sidebarMenu = [
 ];
 
 function Sidebar() {
-
-  const { pathname } = useLocation()
+  const { pathname } = useLocation();
 
   const [openMenu, setOpenMenu] = useState(null);
-  const [activeNav, setActiveNav] = useState('Dashboard')
+  const [activeNav, setActiveNav] = useState('Dashboard');
 
   useEffect(() => {
-
     const navs = sidebarMenu.map(s => ({ 
       path: s.path,
       title: s.title
@@ -190,8 +188,6 @@ function Sidebar() {
 
           const { Icon } = item
 
-          // const Icon = () => <></>
-
           const isActive = item.title === activeNav ? true : false
 
           return (
@@ -208,7 +204,7 @@ function Sidebar() {
                           borderBottom: openMenu === index ? '1px solid white' : 'none',
                           backgroundColor: isActive ? "#FFF" : 'transparent'
                          }}
-                        className={`cursor-pointer flex items-center w-full px-4 py-3 text-left transition-colors duration-200 rounded-lg`}
+                        className={`cursor-pointer flex items-center w-full px-4 py-3 text-left transition-colors duration-200`}
                       >
                         <span className='mr-3 text-gray-500'>
                           <Icon color={isActive ? '#6F3DCB' : '#FFF'} />

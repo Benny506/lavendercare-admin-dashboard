@@ -56,6 +56,8 @@ import MotherProfile from "../pages/admin/userManagement/MotherProfile";
 import SingleHealthCareProvider from "../pages/admin/healthcareProvider/SingleHealthCareProvider";
 import SingleVendor from "../pages/admin/serviceProvider/SingleVendor";
 import ServiceDetails from "../pages/admin/serviceProvider/auxiliary/ServiceDetails";
+import CreateCommunity from "../pages/admin/communities/CreateCommunity";
+import Communities from "../pages/admin/communities/Communities";
 
 function Routing() {
   return (
@@ -194,6 +196,11 @@ function Routing() {
           <Route path="/admin/analytics/user-engagement" element={<UserEngagement />} />
           <Route path="/admin/analytics/provider-and-vendors" element={<ProviderVendor />} />
           <Route path="/admin/analytics/report-builder" element={<CustomReport />} />
+
+
+          {/* communities */}
+          <Route path="/admin/communities/all-communities" element={<Communities />} />
+          <Route path="/admin/communities/create" element={<CreateCommunity />} />
 
 
 
