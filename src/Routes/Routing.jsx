@@ -51,6 +51,11 @@ import CustomReport from "../pages/admin/analytics/CustomReport";
 
 import MotherMessages from "../pages/admin/mothers/MotherMessages";
 import AllMothers from "../pages/admin/mothers/AllMothers";
+import BookingInformation from "../pages/admin/userManagement/BookingInformation";
+import MotherProfile from "../pages/admin/userManagement/MotherProfile";
+import SingleHealthCareProvider from "../pages/admin/healthcareProvider/SingleHealthCareProvider";
+import SingleVendor from "../pages/admin/serviceProvider/SingleVendor";
+import ServiceDetails from "../pages/admin/serviceProvider/auxiliary/ServiceDetails";
 
 function Routing() {
   return (
@@ -69,11 +74,16 @@ function Routing() {
           {/* user management */}
           <Route path="/admin/user-management" element={<UserManagement />} />
           <Route path="/admin/user-management/profile" element={<UserManagementProfile />} />
-          <Route path="/admin/activity-logs" element={<ActivityLogs />} />
+          <Route path="/admin/user-management/booking-information" element={<BookingInformation />} />
+          <Route path="/admin/user-management/activity-logs" element={<ActivityLogs />} />
           <Route
             path="/admin/user-management/invite-user"
             element={<InviteUsers />}
           />
+
+
+
+
 
           {/* Mothers  */}
           <Route
@@ -81,15 +91,31 @@ function Routing() {
             element={<AllMothers />}
           />               
           <Route
-            path="/admin/mother-messages"
+            path="/admin/mothers/single-mother"
+            element={<MotherProfile />}
+          />           
+          <Route
+            path="/admin/mothers/mother-messages"
             element={<MotherMessages />}
           />          
+
+
+
+
 
           {/* service providers */}
           <Route
             path="/admin/service-providers"
             element={<ServiceProvider />}
           />
+          <Route
+            path="/admin/service-provider/single-vendor"
+            element={<SingleVendor />}
+          />          
+          <Route
+            path="/admin/service-provider/single-vendor/service-details"
+            element={<ServiceDetails />}
+          />             
           <Route
             path="/admin/service-provider/disputes"
             element={<Disputes />}
@@ -103,26 +129,39 @@ function Routing() {
             element={<DisputeDetails />}
           />
 
+
+
+
+
           {/* healthcare provider */}
           <Route
             path="/admin/healthcare-provider"
             element={<HealthcareProvider />}
           />
           <Route
-            path="/admin/credentials-review"
+            path="/admin/healthcare-provider/single-provider"
+            element={<SingleHealthCareProvider />}
+          />          
+          <Route
+            path="/admin/healthcare-provider/credentials-review"
             element={<ReviewCredential />}
           />
           {/* mental health screening */}
           <Route
-            path="/admin/mental-health-screening"
+            path="/admin/healthcare-provider/mental-health-screening"
             element={<MentalHealthScreening />}
           />
           <Route
-            path="/admin/mental-health-screening/:id"
+            path="/admin/healthcare-provider/mental-health-screening/:id"
             element={<MentalHealthScreeningDetail />}
           />
-          <Route path="/admin/caseloads" element={<CaseloadSummaries />} />
-          <Route path="/admin/all-caseload" element={<AllCaseload />} />
+          <Route path="/admin/healthcare-provider/caseloads" element={<CaseloadSummaries />} />
+          <Route path="/admin/healthcare-provider/all-caseload" element={<AllCaseload />} />
+
+
+
+
+
 
           {/* blog */}
           <Route path="/admin/content/blog" element={<Blog />} />

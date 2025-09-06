@@ -122,7 +122,7 @@ export default function Collapse({
           overflow: maxHeight === "none" ? "visible" : "hidden",
         }}
       >
-        <div ref={contentRef} className="pt-3">
+        <div ref={contentRef} className="pt-0">
           {children}
         </div>
       </div>

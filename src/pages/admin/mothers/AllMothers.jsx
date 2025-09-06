@@ -36,13 +36,13 @@ function AllMothers() {
   useEffect(() => {
     const { isLoading, data } = apiReqs
 
-    if(isLoading) dispatch(appLoadStart());
+    if (isLoading) dispatch(appLoadStart());
     else dispatch(appLoadStop())
 
-    if(isLoading && data){
+    if (isLoading && data) {
       const { type, requestInfo } = data
 
-      if(type === 'deleteUser'){
+      if (type === 'deleteUser') {
         onRequestApi({
           requestInfo,
           successCallBack: deleteUserSuccess,
@@ -50,7 +50,7 @@ function AllMothers() {
         })
       }
 
-      if(type === 'suspendUser'){
+      if (type === 'suspendUser') {
         onRequestApi({
           requestInfo,
           successCallBack: suspendUserSuccess,
@@ -68,7 +68,7 @@ function AllMothers() {
       const existingGroupedUsers = role === 'mother' ? mothers : role === 'vendor' ? vendors : role === 'provider' ? providers : null
       const adminStateKey = role === 'mother' ? 'mothers' : role === 'vendor' ? 'vendors' : role === 'provider' ? 'providers' : null
 
-      if(!existingGroupedUsers || !adminStateKey) throw new Error();
+      if (!existingGroupedUsers || !adminStateKey) throw new Error();
 
       setUsers(prev => prev?.filter(u => u?.id !== id))
 
@@ -77,13 +77,13 @@ function AllMothers() {
       }))
 
       setApiReqs({ isLoading: false, data: null, errorMsg: null })
-      
+
       toast.success("User deleted")
 
       closeModal()
 
       return;
-      
+
     } catch (error) {
       console.log(error)
       return deleteUserFailure({ errorMsg: 'Something went wrong! Try again' })
@@ -102,12 +102,12 @@ function AllMothers() {
       const { tableName, role, id, suspended, idColumnName } = requestInfo?.data
 
       const existingGroupedUsers = role === 'mother' ? mothers : role === 'vendor' ? vendors : role === 'provider' ? providers : null
-      const adminStateKey = role === 'mother' ? 'mothers' : role === 'vendor' ? 'vendors' : role === 'provider' ? 'providers' : null      
+      const adminStateKey = role === 'mother' ? 'mothers' : role === 'vendor' ? 'vendors' : role === 'provider' ? 'providers' : null
 
-      if(!existingGroupedUsers || !adminStateKey) throw new Error();
+      if (!existingGroupedUsers || !adminStateKey) throw new Error();
 
       setUsers(prev => prev?.map(u => {
-        if(u?.id === id){
+        if (u?.id === id) {
           return {
             ...u,
             suspended: !suspended
@@ -119,7 +119,7 @@ function AllMothers() {
 
       dispatch(setAdminState({
         [adminStateKey]: existingGroupedUsers.filter(u => {
-          if(u?.id === id){
+          if (u?.id === id) {
             return {
               ...u,
               suspended: !suspended
@@ -131,11 +131,11 @@ function AllMothers() {
       }))
 
       setApiReqs({ isLoading: false, data: null, errorMsg: null })
-      
+
       toast.success("Suspension status updated")
 
-      closeModal()      
-      
+      closeModal()
+
     } catch (error) {
       console.log(error)
       return suspendUserFailure({ errorMsg: 'Something went wrong! Try again.' })
@@ -177,7 +177,7 @@ function AllMothers() {
         }
       }
     })
-    
+
     return
   };
 
@@ -189,13 +189,13 @@ function AllMothers() {
       const email = user?.email || ''
 
       const matchesFilter =
-        name.toLowerCase().includes(searchTerm.toLowerCase()) 
+        name.toLowerCase().includes(searchTerm.toLowerCase())
         ||
-        searchTerm.toLowerCase().includes(name.toLowerCase()) 
+        searchTerm.toLowerCase().includes(name.toLowerCase())
         ||
-        email.toLowerCase().includes(searchTerm.toLowerCase()) 
+        email.toLowerCase().includes(searchTerm.toLowerCase())
         ||
-        searchTerm.toLowerCase().includes(email.toLowerCase())         
+        searchTerm.toLowerCase().includes(email.toLowerCase())
 
       return matchesFilter
     }
@@ -211,7 +211,7 @@ function AllMothers() {
           url: 'https://tzsbbbxpdlupybfrgdbs.supabase.co/functions/v1/delete-user',
           method: 'POST',
           data: {
-            user_id: user?.id, role: user?.role 
+            user_id: user?.id, role: user?.role
           }
         }
       }
@@ -403,7 +403,7 @@ function AllMothers() {
                         <div className="flex items-center">
                           <div className="ml-4">
                             <button className="text-sm font-medium text-gray-900 hover:text-primary-500">
-                              { name }
+                              {name}
                             </button>
                           </div>
                         </div>
@@ -413,13 +413,12 @@ function AllMothers() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`px-2 inline-flex items-center text-center text-xs leading-5 font-[500] rounded-full ${
-                            user?.suspended
+                          className={`px-2 inline-flex items-center text-center text-xs leading-5 font-[500] rounded-full ${user?.suspended
                               ? "bg-(--success) text-(--success_text)"
                               : "bg-(--error) text-red-800"
-                          }`}
+                            }`}
                         >
-                          { user?.suspended ? 'Suspended' : 'Active' }
+                          {user?.suspended ? 'Suspended' : 'Active'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -427,7 +426,7 @@ function AllMothers() {
                           onClick={() => openUserModal(user)}
                           className="fill-indigo-600 bg-purple-600 px-2 py-1 text-white rounded-lg hover:fill-indigo-900 mr-4 hover:cursor-pointer"
                         >
-                            View
+                          View
                           {/* <svg
                             width="20"
                             height="20"
@@ -446,14 +445,15 @@ function AllMothers() {
                         </button>
                       </td>
                     </tr>
-                )})
+                  )
+                })
               ) : (
                 <tr>
                   <td
                     colSpan="6"
                     className="px-6 py-4 text-center text-sm text-gray-500"
                   >
-                    <ZeroItems 
+                    <ZeroItems
                       zeroText={'No users found'}
                     />
                   </td>
@@ -468,111 +468,107 @@ function AllMothers() {
       <Modal
         isOpen={isModalOpen}
         onClose={closeModal}
-      >        
+      >
         {selectedUser && (
-            <>
+          <>
             <p
-                className="text-sm text-(--primary-500) z-10 font-medium leading-6 hover:cursor-pointer flex gap-2 items-center"
-                onClick={closeModal}
+              className="text-sm text-(--primary-500) z-10 font-medium leading-6 hover:cursor-pointer flex gap-2 items-center"
+              onClick={closeModal}
             >
-                <svg
+              <svg
                 width="20"
                 height="20"
                 viewBox="0 0 20 20"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
-                >
+              >
                 <g clip-path="url(#clip0_1918_40368)">
-                    <path
+                  <path
                     d="M16.6668 9.16732H6.52516L11.1835 4.50898L10.0002 3.33398L3.3335 10.0007L10.0002 16.6673L11.1752 15.4923L6.52516 10.834H16.6668V9.16732Z"
                     fill="#6F3DCB"
-                    />
+                  />
                 </g>
                 <defs>
-                    <clipPath id="clip0_1918_40368">
+                  <clipPath id="clip0_1918_40368">
                     <rect width="20" height="20" fill="white" />
-                    </clipPath>
+                  </clipPath>
                 </defs>
-                </svg>
-                Back
+              </svg>
+              Back
             </p>
             <div className="mt-4">
-                <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center mb-4">
-                    <div className="h-[50px] w-[50px] rounded-full bg-gray-200 flex items-center justify-center text-2xl font-bold text-gray-600">
+                  <div className="h-[50px] w-[50px] rounded-full bg-gray-200 flex items-center justify-center text-2xl font-bold text-gray-600">
                     {(selectedUser.name || selectedUser?.provider_name || selectedUser?.business_name).charAt(0)}
-                    </div>
-                    <div className="ml-4">
+                  </div>
+                  <div className="ml-4">
                     <h4 className="text-lg font-semibold">
-                        {selectedUser?.name}
+                      {selectedUser?.name}
                     </h4>
                     <p className="text-sm text-gray-500">
-                        {selectedUser.role}
+                      {selectedUser.role}
                     </p>
-                    </div>
+                  </div>
                 </div>
 
                 <div className="text-sm">{selectedUser?.suspended ? 'Suspended' : 'Active'}</div>
-                </div>
+              </div>
 
-                <div className="space-y-3 mt-4">
+              <div className="space-y-3 mt-4">
                 <div className="flex gap-2">
-                    <span className="text-sm text-gray-500">Email:</span>
-                    <span className="text-sm font-medium">
+                  <span className="text-sm text-gray-500">Email:</span>
+                  <span className="text-sm font-medium">
                     {selectedUser.email}
-                    </span>
+                  </span>
                 </div>
                 <div className="flex gap-2">
-                    <span className="text-sm text-gray-500">
+                  <span className="text-sm text-gray-500">
                     Phone Number:
-                    </span>
-                    <span>{selectedUser.phone_number || 'Not set'}</span>
+                  </span>
+                  <span>{selectedUser.phone_number || 'Not set'}</span>
                 </div>
                 <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">
+                  <span className="text-sm text-gray-500">
                     Last Login:
-                    </span>
-                    <span className="text-sm">
+                  </span>
+                  <span className="text-sm">
                     {selectedUser.last_sign_in_at ? isoToDateTime({ isoString: selectedUser.last_sign_in_at }) : 'Null'}
-                    </span>
+                  </span>
                 </div>
 
                 <div className="mt-4 p-3 bg-purple-50 rounded-lg">
-                    <h5 className="font-medium text-purple-800">
-                        Mother's Profile
-                    </h5>
-                    <p className="text-sm text-purple-700 mt-1">
-                        Access to maternal health resources and
-                        appointment scheduling.
-                    </p>
+                  <h5 className="font-medium text-purple-800">
+                    Mother's Profile
+                  </h5>
+                  <p className="text-sm text-purple-700 mt-1">
+                    Access to maternal health resources and
+                    appointment scheduling.
+                  </p>
                 </div>
-                </div>
+              </div>
             </div>
 
             <div className="mt-6 flex justify-end space-x-3">
-                <button
+              <button
                 type="button"
-                className="inline-flex justify-center border border-transparent bg-(--primary-500) px-10 rounded-full py-4 text-sm font-medium text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                onClick={() => {
-                    // In a real app, this would navigate to the full profile
-                    
-                }}
-                >
+                className="cursor-pointer inline-flex justify-center border border-transparent bg-(--primary-500) px-10 rounded-full py-4 text-sm font-medium text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                onClick={() => navigate('/admin/mothers/single-mother', { state: { user: selectedUser } })}
+              >
                 View Profile
-                </button>
-                <button
+              </button>
+              <button
                 type="button"
-                className={`inline-flex justify-center rounded-full border border-transparent px-10 py-4 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
-                    "bg-red-100 cursor-pointer text-red-900 hover:bg-red-200 focus-visible:ring-red-500"
-                }`}
-                onClick={() => navigate('/admin/mother-messages', { state: { mother: selectedUser } })}
-                >
+                className={`inline-flex justify-center rounded-full border border-transparent px-10 py-4 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${"bg-red-100 cursor-pointer text-red-900 hover:bg-red-200 focus-visible:ring-red-500"
+                  }`}
+                onClick={() => navigate('/admin/mothers/mother-messages', { state: { mother: selectedUser } })}
+              >
                 Message
-                </button>
+              </button>
             </div>
-            </>
+          </>
         )}
-        </Modal>
+      </Modal>
     </div>
   );
 }

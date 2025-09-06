@@ -1,6 +1,28 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { getAppointmentStatus, sortByStatusPriority } from "../../lib/utils";
 
+export const formatBookings = ({ bookings = [] }) => {
+    const bookingsWithCorrectStatus = (bookings || []).map(b => {
+        const { status, day } = b
+
+        const date_ISO = new Date(day).toISOString()
+        const startHour = b?.hour || b?.start_hour
+        const duration_secs = b?.duration || (Math.abs(b?.end_hour - b?.start_hour) * 3600)
+
+        const computedStatus = getAppointmentStatus({ status, date_ISO, startHour, duration_secs })
+
+        return {
+            ...b,
+            status: computedStatus
+        }
+    })
+
+    const sortedWithPriority = sortByStatusPriority(bookingsWithCorrectStatus)
+
+    return sortedWithPriority
+}   
+
+
 const adminState = createSlice({
     name: 'adminState',
     initialState: {
@@ -51,22 +73,7 @@ const adminState = createSlice({
             }     
             
             if(action.payload?.bookings){
-                const bookingsWithCorrectStatus = (action.payload?.bookings || []).map(b => {
-                    const { status, hour, duration, day } = b
-
-                    const date_ISO = new Date(day).toISOString()
-
-                    const computedStatus = getAppointmentStatus({ status, date_ISO, startHour: hour, duration_secs: duration })
-
-                    return {
-                        ...b,
-                        status: computedStatus
-                    }
-                })
-
-                const sortedWithPriority = sortByStatusPriority(bookingsWithCorrectStatus)
-
-                state.bookings = sortedWithPriority
+                state.bookings = formatBookings({ bookings: action?.payload?.bookings })
             }             
         },                
     }

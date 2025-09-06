@@ -72,7 +72,7 @@ function MotherMessages() {
             <div className="flex flex-col p-3 gap-4 flex-1">
                 {/* Chat Section */}
                 <div className="flex gap-2 items-center pb-3 border-b border-b-gray-300">
-                    <Link to="/admin/mothers">
+                    <Link to="/admin/mothers/single-mother" state={{ user: mother }}>
                         <svg
                             width="24"
                             height="24"

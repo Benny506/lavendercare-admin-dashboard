@@ -1,99 +1,28 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import PatientInfo from "../healthcareProvider/auxiliary/PatientInfo";
 import { useDispatch, useSelector } from "react-redux";
 import { appLoadStart, appLoadStop } from "../../../redux/slices/appLoadingSlice";
 import useApiReqs from "../../../hooks/useApiReqs";
 import { getUserDetailsState } from "../../../redux/slices/userDetailsSlice";
-import { isoToDateTime, removeDuplicatesByKey, sortByDate } from "../../../lib/utils";
+import { formatDate1, isoToDateTime, removeDuplicatesByKey, sortByDate, timeToAMPM_FromHour } from "../../../lib/utils";
 import ProfileImg from "../components/ProfileImg";
 import { getStatusBadge } from "../../../lib/utils_Jsx";
+import PathHeader from "../components/PathHeader";
+import { usePagination } from "../../../hooks/usePagination";
+import Pagination from "../components/Pagination";
+import { toast } from "react-toastify";
+import PatientInfo from "../mothers/PatientInfo";
 
-// Mock data
-const patient = {
-    name: "Chinenye Okeke",
-    role: "Mother",
-    status: "Active",
-    age: 29,
-    postpartum: 21,
-    contact: "email@example.com",
-    phone: "0801 234 5678",
-    pregnancyStatus: "Postpartum",
-};
 
-const assignedProvider = {
-    name: "Dr. Evelyn Reed",
-    role: "Doctor",
-    avatar: "https://randomuser.me/api/portraits/women/44.jpg",
-};
 
-const timelineData = [
-    {
-        type: "Consultation",
-        date: "07/15/2025, 2:00 PM",
-        note: "Patient is experiencing mild anxiety...",
-    },
-    {
-        type: "Booking made",
-        date: "07/17/2025, 2:00 PM",
-    },
-    {
-        type: "Screening Completed",
-        date: "07/09/2025",
-    },
-    {
-        type: "Prescription issued",
-        date: "",
-        note: "Sertraline, Dosage: 50mg",
-    },
-    {
-        type: "Therapy Notes Added",
-        date: "07/10/2024",
-    },
-    {
-        type: "Consultation",
-        date: "07/01/2024, 10:00 AM",
-        note: "Initial assessment and treatment plan...",
-    },
-];
-
-const bookingsData = [
-    {
-        service: "Medical Consultation",
-        date: "Jul 15, 2025",
-        time: "10:00 AM",
-        status: "Accepted",
-    },
-    {
-        service: "Therapy Session",
-        date: "Jul 10, 2025",
-        time: "2:00 PM",
-        status: "Accepted",
-    },
-    {
-        service: "Psychiatric Evaluation",
-        date: "Jul 5, 2025",
-        time: "11:30 AM",
-        status: "Completed",
-    },
-    {
-        service: "Medical Consultation",
-        date: "Jun 28, 2025",
-        time: "9:00 AM",
-        status: "Completed",
-    },
-    {
-        service: "Therapy Session",
-        date: "Jun 20, 2025",
-        time: "4:00 PM",
-        status: "Declined",
-    },
-];
-
-function MotherProfile({ user }) {
+function MotherProfile() {
     const dispatch = useDispatch()
 
     const navigate = useNavigate()
+
+    const { state } = useLocation()
+
+    const user = state?.user  
 
     const { fetchMotherBookings } = useApiReqs()
 
@@ -105,6 +34,8 @@ function MotherProfile({ user }) {
     const [vendors, setVendors] = useState([])
     const [timelines, setTimelines] = useState([])
     const [apiReqs, setApiReqs] = useState({ isLoading: false, errorMsg: null, data: null })
+    const [currentPage, setCurrentPage] = useState(0)
+    const [pageListIndex, setPageListIndex] = useState(0)      
 
     useEffect(() => {
         setApiReqs({
@@ -115,6 +46,13 @@ function MotherProfile({ user }) {
             }
         })
     }, [])
+
+    useEffect(() => {
+        if (!user) {
+            navigate('/admin/user-management')
+            toast.info("Could load mother profile")
+        }
+    }, [])     
 
     useEffect(() => {
         const { isLoading, data } = apiReqs
@@ -148,12 +86,7 @@ function MotherProfile({ user }) {
     }, [v_bookings])
 
     useEffect(() => {
-        const allBookings = sortByDate({
-            arr: [...p_bookings, ...v_bookings],
-            key: 'created_at'
-        })
-
-        setTimelines(allBookings)
+        setTimelines([...p_bookings, ...v_bookings])
     }, [p_bookings, v_bookings])
 
     const initialFetch = async () => {
@@ -174,6 +107,37 @@ function MotherProfile({ user }) {
         }
     }
 
+
+    const { pageItems, totalPages, pageList, totalPageListIndex } = usePagination({
+        arr: timelines,
+        maxShow: 4,
+        index: currentPage,
+        maxPage: 5,
+        pageListIndex
+    });  
+
+    const incrementPageListIndex = () => {
+        if(pageListIndex === totalPageListIndex){
+            setPageListIndex(0)
+        
+        } else{
+            setPageListIndex(prev => prev+1)
+        }
+
+        return
+    }
+
+    const decrementPageListIndex = () => {
+        if(pageListIndex == 0){
+            setPageListIndex(totalPageListIndex)
+        
+        } else{
+            setPageListIndex(prev => prev-1)
+        }
+
+        return
+    }      
+
     if (!user) return <></>
 
     return (
@@ -181,80 +145,30 @@ function MotherProfile({ user }) {
             {/* Main Content */}
             <div className="flex-1 w-full flex flex-col">
 
-                {/* breadcrumbs */}
-                <div className="flex py-[24px] items-center gap-1">
-                    <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 20 20"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                    >
-                        <path
-                            d="M6.66667 14.1663H13.3333M9.18141 2.30297L3.52949 6.6989C3.15168 6.99276 2.96278 7.13968 2.82669 7.32368C2.70614 7.48667 2.61633 7.67029 2.56169 7.86551C2.5 8.0859 2.5 8.32521 2.5 8.80384V14.833C2.5 15.7664 2.5 16.2331 2.68166 16.5896C2.84144 16.9032 3.09641 17.1582 3.41002 17.318C3.76654 17.4996 4.23325 17.4996 5.16667 17.4996H14.8333C15.7668 17.4996 16.2335 17.4996 16.59 17.318C16.9036 17.1582 17.1586 16.9032 17.3183 16.5896C17.5 16.2331 17.5 15.7664 17.5 14.833V8.80384C17.5 8.32521 17.5 8.0859 17.4383 7.86551C17.3837 7.67029 17.2939 7.48667 17.1733 7.32368C17.0372 7.13968 16.8483 6.99276 16.4705 6.69891L10.8186 2.30297C10.5258 2.07526 10.3794 1.9614 10.2178 1.91763C10.0752 1.87902 9.92484 1.87902 9.78221 1.91763C9.62057 1.9614 9.47418 2.07526 9.18141 2.30297Z"
-                            stroke="#8B8B8A"
-                            stroke-width="1.66667"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                        />
-                    </svg>
-
-                    <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 16 16"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                    >
-                        <g clip-path="url(#clip0_1918_35894)">
-                            <path
-                                d="M6.66656 4L5.72656 4.94L8.7799 8L5.72656 11.06L6.66656 12L10.6666 8L6.66656 4Z"
-                                fill="#8B8B8A"
-                            />
-                        </g>
-                        <defs>
-                            <clipPath id="clip0_1918_35894">
-                                <rect width="16" height="16" fill="white" />
-                            </clipPath>
-                        </defs>
-                    </svg>
-                    <p className="text-[12px]">Service providers</p>
-                    <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 16 16"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                    >
-                        <g clip-path="url(#clip0_1918_35894)">
-                            <path
-                                d="M6.66656 4L5.72656 4.94L8.7799 8L5.72656 11.06L6.66656 12L10.6666 8L6.66656 4Z"
-                                fill="#8B8B8A"
-                            />
-                        </g>
-                        <defs>
-                            <clipPath id="clip0_1918_35894">
-                                <rect width="16" height="16" fill="white" />
-                            </clipPath>
-                        </defs>
-                    </svg>
-                    <p className="text-(--primary-500) font-[600] text-[12px]">
-                        View all
-                    </p>
-                </div>
+                <PathHeader 
+                    paths={[
+                        { type: 'text', text: 'Mothers' },
+                        { type: 'text', text: user?.name },
+                    ]}
+                />
 
                 {/* Main grid */}
                 <div className="flex flex-col md:flex-row gap-6">
                     {/* Left: Patient Info */}
                     <div className="w-full md:w-1/3 bg-white rounded-xl p-4 md:p-6">
-                        <div className="mt-4 space-y-2">
-                            <PatientInfo
-                                screeningInfo={{
-                                    user_profile: user
-                                }}
-                                noMentalHealth={true}
-                            />
-                        </div>
+                        <button 
+                            onClick={() => navigate('/admin/mothers/mother-messages', { state: { mother: user } })}
+                            className="px-3 py-2 rounded-lg bg-purple-100 text-purple-600 font-medium text-sm cursor-pointer"
+                        >
+                            Send a message
+                        </button>
+                        <PatientInfo
+                            screeningInfo={{
+                                user_profile: user
+                            }}
+                            noMentalHealth={true}
+                        />
+                        <hr />
                         <div className="flex gap-2 mt-6">
                             <button className="bg-red-100 text-red-700 px-4 py-2 rounded">
                                 Suspend
@@ -294,7 +208,10 @@ function MotherProfile({ user }) {
                                                 </div>
                                             </div>
 
-                                            <button className="bg-purple-600 text-white px-3 py-1 rounded-lg cursor-pointer text-purple-600 text-xs font-medium">
+                                            <button 
+                                                onClick={() => navigate('/admin/healthcare-provider/single-provider', { state: { user: p } })}
+                                                className="bg-purple-600 text-white px-3 py-1 rounded-lg cursor-pointer text-purple-600 text-xs font-medium"
+                                            >
                                                 View
                                             </button>
                                         </div>
@@ -331,7 +248,10 @@ function MotherProfile({ user }) {
                                                 </div>
                                             </div>
 
-                                            <button className="bg-purple-600 text-white px-3 py-1 rounded-lg cursor-pointer text-purple-600 text-xs font-medium">
+                                            <button 
+                                                onClick={() => navigate('/admin/service-provider/single-vendor', { state: { user: v } })}
+                                                className="bg-purple-600 text-white px-3 py-1 rounded-lg cursor-pointer text-purple-600 text-xs font-medium"
+                                            >
                                                 View
                                             </button>
                                         </div>
@@ -343,7 +263,7 @@ function MotherProfile({ user }) {
 
                         {/* Past Bookings */}
                         <div className="bg-white rounded-xl p-4 md:p-6">
-                            <div className="text-sm text-gray-500 mb-3">Past Bookings</div>
+                            <div className="text-sm text-gray-500 mb-3">Bookings</div>
                             {timelines.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-12">
                                     <svg width="48" height="48" fill="none" viewBox="0 0 48 48">
@@ -378,6 +298,7 @@ function MotherProfile({ user }) {
                                         <thead>
                                             <tr className="text-left text-gray-400">
                                                 <th className="py-2 pr-4">Type</th>
+                                                <th className="py-2 pr-4">Who</th>
                                                 <th className="py-2 pr-4">Date & Time</th>
                                                 <th className="py-2 pr-4">Service / Profession</th>
                                                 <th className="py-2 pr-4">Status</th>
@@ -387,15 +308,19 @@ function MotherProfile({ user }) {
                                         <tbody>
                                             {timelines.map((b, idx) => {
 
-                                                const date = isoToDateTime({ isoString: b?.created_at })
+                                                const date = 
+                                                    `${formatDate1({ dateISO: new Date(b?.day).toISOString() })}, ${timeToAMPM_FromHour({ hour: b?.hour || b?.start_hour })}`
 
                                                 const type = b?.provider_profile ? 'Provider consultation' : 'Vendor service booked'
 
                                                 const service_profession = b?.provider_profile?.professional_title || b?.vendor_profile?.service_name
 
+                                                const name = b?.provider_profile?.provider_name || b?.vendor_profile?.business_name
+
                                                 return (
                                                     <tr key={idx} className="border-t border-gray-100">
                                                         <td className="py-2 pr-4 font-medium">{type}</td>
+                                                        <td className="py-2 pr-4 font-medium">{name}</td>
                                                         <td className="py-2 pr-4">{date}</td>
                                                         <td className="py-2 pr-4">{service_profession}</td>
                                                         <td className="py-2 pr-4">
@@ -412,7 +337,10 @@ function MotherProfile({ user }) {
                                                             </span> */}
                                                         </td>
                                                         <td className="py-2 pr-4">
-                                                            <button className="bg-purple-100 text-purple-700 px-3 py-1 rounded">
+                                                            <button
+                                                                onClick={() => navigate('/admin/user-management/booking-information', { state: { bookingInfo: b, mother: user } })} 
+                                                                className="bg-purple-100 text-purple-700 px-3 py-1 rounded-lg cursor-pointer"
+                                                            >
                                                                 View Details
                                                             </button>
                                                         </td>
@@ -421,6 +349,17 @@ function MotherProfile({ user }) {
                                             })}
                                         </tbody>
                                     </table>
+
+                                    <Pagination
+                                        currentPage={currentPage}
+                                        pageItems={pageItems}
+                                        pageListIndex={pageListIndex}
+                                        pageList={pageList}
+                                        totalPageListIndex={totalPageListIndex}
+                                        decrementPageListIndex={decrementPageListIndex}
+                                        incrementPageListIndex={incrementPageListIndex}
+                                        setCurrentPage={setCurrentPage}
+                                    />                                    
                                 </div>
                             )}
                         </div>

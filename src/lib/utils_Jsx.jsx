@@ -12,6 +12,48 @@ export const vendorStatusColors = {
   approved: "bg-green-100 text-green-600",
   rejected: "bg-red-100 text-red-600",
 };
+//services
+export const serviceStatuses = [
+  'pending', 'approved', 'hidden', 'rejected'
+]
+export const servicesMap = {
+    approved: {
+        color: "bg-green-100 text-green-600",
+        feedBack: 'Prospective clients can see this service'
+    },
+    pending: {
+        color: "bg-orange-100 text-orange-600",
+        feedBack: 'Awaiting approval from admin.'
+    },
+    rejected: {
+        color: "bg-red-100 text-red-600",
+        feedBack: 'Rejected by admin. Edit and re-submit for approval'
+    },
+    hidden: {
+        color: "bg-gray-500 text-gray-500",
+        feedBack: "Prospective clients can not see this service"
+    }
+}
+
+export const getServiceStatusBadge = ({ status }) => {
+    const serviceStatus = serviceStatuses.filter(s => s === status)[0]
+
+    if(!serviceStatus) return;
+
+    return (
+        <div className='flex items-center justify-start'>
+            <p
+                className={`${servicesMap[status]?.color} text-xs rounded-lg px-3 py-1`}
+            >
+                { status }
+            </p>
+        </div>
+    )
+}
+
+export const getServiceStatusFeedBack = ({ status }) => servicesMap[status]?.feedBack
+
+export const getServiceStatusColor = ({ status }) => servicesMap[status]?.color
 
 
 
@@ -20,9 +62,9 @@ export const vendorStatusColors = {
 // PROVIDERS 
 export const providerStatus = ['pending', 'approved', 'rejected']
 export const providerStatusColors = {
-  pending: "bg-orange-100 text-orange-600",
-  approved: "bg-green-100 text-green-600",
-  rejected: "bg-red-100 text-red-600",
+  pending: "bg-orange-100 text-orange-600 px-3 py-1 rounded-lg",
+  approved: "bg-green-100 text-green-600 px-3 py-1 rounded-lg",
+  rejected: "bg-red-100 text-red-600 px-3 py-1 rounded-lg",
 };
 
 
