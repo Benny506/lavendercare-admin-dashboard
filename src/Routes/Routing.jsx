@@ -58,6 +58,9 @@ import SingleVendor from "../pages/admin/serviceProvider/SingleVendor";
 import ServiceDetails from "../pages/admin/serviceProvider/auxiliary/ServiceDetails";
 import CreateCommunity from "../pages/admin/communities/CreateCommunity";
 import Communities from "../pages/admin/communities/Communities";
+import Role from "../pages/admin/settings/Role";
+import Permissions from "../pages/admin/settings/Permissions";
+import NewRole from "../pages/admin/settings/NewRole";
 
 function Routing() {
   return (
@@ -206,6 +209,9 @@ function Routing() {
 
           {/* settings */}
           <Route path="/admin/settings/general" element={<General />} />
+          <Route path="/admin/settings/roles" element={<Role />} />
+          <Route path="/admin/settings/roles/new" element={<NewRole />} />
+          <Route path="/admin/settings/permissions" element={<Permissions />} />
         </Route>
       </Routes>
     </AutoLogin>
