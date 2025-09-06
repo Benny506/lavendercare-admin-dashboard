@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 function NewRole() {
   return (
@@ -102,12 +103,11 @@ function NewRole() {
             />
           </div>
           <div className="flex gap-2 justify-between mt-4">
-            <button
-              type="button"
+            <Link to="/admin/settings/roles"
               className="py-2 px-4 rounded-lg bg-white border border-gray-200 text-gray-700 font-medium text-xs sm:text-sm"
             >
               Back
-            </button>
+            </Link>
             <button
               type="submit"
               className="py-2 px-4 rounded-lg bg-(--primary-500) text-white font-medium text-xs sm:text-sm"

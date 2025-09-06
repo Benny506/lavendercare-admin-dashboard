@@ -29,7 +29,9 @@ function Permissions() {
         <div className="pt-6 w-full min-h-screen">
             <h2 className="text-lg sm:text-xl font-bold mb-4">Permissions</h2>
             <NavComponent />
-            <div className="bg-white rounded-xl shadow-sm p-4">
+
+
+            <div className="bg-white rounded-xl mb-8 p-4">
                 <div className="flex flex-col sm:flex-row items-center justify-between mb-4 gap-2">
                     <div className="flex items-center gap-2">
                         <label className="text-sm font-medium">Select Role</label>
@@ -69,7 +71,7 @@ function Permissions() {
                 </div>
                 <div className="flex gap-2 justify-end mt-4">
                     <button className="py-2 px-4 rounded-lg bg-white border border-gray-200 text-gray-700 font-medium text-xs sm:text-sm">Reset</button>
-                    <button className="py-2 px-4 rounded-lg bg-primary text-white font-medium text-xs sm:text-sm">Save Changes</button>
+                    <button className="py-2 px-4 rounded-lg bg-(--primary-500) text-white font-medium text-xs sm:text-sm">Save Changes</button>
                 </div>
                 <div className="text-xs text-gray-400 mt-2">Last edited by Anna Ogunyemi on Jul 10, 2023</div>
             </div>
