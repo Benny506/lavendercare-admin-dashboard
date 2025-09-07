@@ -63,6 +63,7 @@ import Permissions from "../pages/admin/settings/Permissions";
 import NewRole from "../pages/admin/settings/NewRole";
 import OrderDetail from "../pages/admin/order/OrderDetail";
 import Order from "../pages/admin/order/Order";
+import BlogDetail from "../pages/admin/content/BlogDetail";
 
 function Routing() {
   return (
@@ -172,6 +173,7 @@ function Routing() {
 
           {/* blog */}
           <Route path="/admin/content/blog" element={<Blog />} />
+          <Route path="/admin/content/blog-detail" element={<BlogDetail />} />
           <Route path="/admin/content/resource" element={<Resource />} />
           <Route path="/admin/content/promotions" element={<Promotions />} />
 
