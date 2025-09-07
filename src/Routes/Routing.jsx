@@ -61,6 +61,8 @@ import Communities from "../pages/admin/communities/Communities";
 import Role from "../pages/admin/settings/Role";
 import Permissions from "../pages/admin/settings/Permissions";
 import NewRole from "../pages/admin/settings/NewRole";
+import OrderDetail from "../pages/admin/order/OrderDetail";
+import Order from "../pages/admin/order/Order";
 
 function Routing() {
   return (
@@ -182,9 +184,11 @@ function Routing() {
           <Route path="/admin/marketplace/promotions" element={<MarketPromotions />} />
 
           {/* order and transactions */}
+          <Route path="/admin/orders" element={<Order />} />
           <Route path="/admin/order/refunds" element={<Refund />} />
           <Route path="/admin/order/payout-requests" element={<PayoutRequests />} />
           <Route path="/admin/order/transaction-history" element={<TransactionHistory />} />
+          <Route path="/admin/order/detail" element={<OrderDetail />} />
 
 
           {/* support */}
