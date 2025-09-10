@@ -56,6 +56,14 @@ import MotherProfile from "../pages/admin/userManagement/MotherProfile";
 import SingleHealthCareProvider from "../pages/admin/healthcareProvider/SingleHealthCareProvider";
 import SingleVendor from "../pages/admin/serviceProvider/SingleVendor";
 import ServiceDetails from "../pages/admin/serviceProvider/auxiliary/ServiceDetails";
+import CreateCommunity from "../pages/admin/communities/CreateCommunity";
+import Communities from "../pages/admin/communities/Communities";
+import Role from "../pages/admin/settings/Role";
+import Permissions from "../pages/admin/settings/Permissions";
+import NewRole from "../pages/admin/settings/NewRole";
+import OrderDetail from "../pages/admin/order/OrderDetail";
+import Order from "../pages/admin/order/Order";
+import BlogDetail from "../pages/admin/content/BlogDetail";
 
 function Routing() {
   return (
@@ -165,6 +173,7 @@ function Routing() {
 
           {/* blog */}
           <Route path="/admin/content/blog" element={<Blog />} />
+          <Route path="/admin/content/blog-detail" element={<BlogDetail />} />
           <Route path="/admin/content/resource" element={<Resource />} />
           <Route path="/admin/content/promotions" element={<Promotions />} />
 
@@ -177,9 +186,11 @@ function Routing() {
           <Route path="/admin/marketplace/promotions" element={<MarketPromotions />} />
 
           {/* order and transactions */}
+          <Route path="/admin/orders" element={<Order />} />
           <Route path="/admin/order/refunds" element={<Refund />} />
           <Route path="/admin/order/payout-requests" element={<PayoutRequests />} />
           <Route path="/admin/order/transaction-history" element={<TransactionHistory />} />
+          <Route path="/admin/order/detail" element={<OrderDetail />} />
 
 
           {/* support */}
@@ -196,9 +207,17 @@ function Routing() {
           <Route path="/admin/analytics/report-builder" element={<CustomReport />} />
 
 
+          {/* communities */}
+          <Route path="/admin/communities/all-communities" element={<Communities />} />
+          <Route path="/admin/communities/create" element={<CreateCommunity />} />
+
+
 
           {/* settings */}
           <Route path="/admin/settings/general" element={<General />} />
+          <Route path="/admin/settings/roles" element={<Role />} />
+          <Route path="/admin/settings/roles/new" element={<NewRole />} />
+          <Route path="/admin/settings/permissions" element={<Permissions />} />
         </Route>
       </Routes>
     </AutoLogin>

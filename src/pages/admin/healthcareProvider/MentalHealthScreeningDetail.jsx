@@ -70,7 +70,7 @@ function MentalHealthScreeningDetail() {
         ]}
       />
 
-      <div className="flex flex-col lg:flex-row gap-6">
+      <div className="flex flex-col mt-8 lg:flex-row gap-6">
         {/* Left: Patient Info */}
         <PatientInfo 
           screeningInfo={latestScreeningInfo}
