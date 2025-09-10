@@ -1,6 +1,5 @@
-
 import React, { useState } from "react";
-import banner from "../../../../assets/banner.png"
+import banner from "../../../../assets/banner.png";
 
 function Header() {
   return (
@@ -37,14 +36,56 @@ function Header() {
         {/*  */}
         <div className="flex gap-2">
           <div className="w-10 h-10 rounded-full">
-            <img src={banner} alt="user profile"/>
+            <img src={banner} alt="user profile" />
           </div>
           <div className="hidden lg:block">
-            <p className="text-[18px] font-[500] leading-tight">Anna Ogunyemi</p>
+            <p className="text-[18px] font-[500] leading-tight">
+              Anna Ogunyemi
+            </p>
             <p className="text-[14px] text-gray-400 font-[400]">Super admin</p>
           </div>
         </div>
       </div>
+
+      {/* Search Modal for mobile/tab */}
+      {/* {showSearchModal && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 bg-opacity-30 lg:hidden">
+          <div className="bg-white rounded-xl w-[90%] shadow-lg p-6 max-w-md relative animate-fadeIn">
+            <button
+              className="absolute flex items-center left-4 top-4 text-(--primary-500) font-medium"
+              onClick={() => setShowSearchModal(false)}
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <g clip-path="url(#clip0_2298_4778)">
+                  <path
+                    d="M16.6668 9.16634H6.52516L11.1835 4.50801L10.0002 3.33301L3.3335 9.99967L10.0002 16.6663L11.1752 15.4913L6.52516 10.833H16.6668V9.16634Z"
+                    fill="#6F3DCB"
+                  />
+                </g>
+                <defs>
+                  <clipPath id="clip0_2298_4778">
+                    <rect width="20" height="20" fill="white" />
+                  </clipPath>
+                </defs>
+              </svg>
+              Back
+            </button>
+            <h3 className="text-lg font-bold text-center pt-8 mb-4">Search</h3>
+            <input
+              type="text"
+              placeholder="Search anything..."
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              autoFocus
+            />
+          </div>
+        </div>
+      )} */}
     </div>
   );
 }

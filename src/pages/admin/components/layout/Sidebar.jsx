@@ -9,13 +9,17 @@ import SideDrawer from "../ui/SideDrawer";
 const sidebarMenu = [
   {
     title: "Dashboard",
-    Icon: ({ size, color }) => <Icons name={'dashboard'} size={size} color={color} />,
+    Icon: ({ size, color }) => (
+      <Icons name={"dashboard"} size={size} color={color} />
+    ),
     path: "/admin/dashboard",
     submenu: [],
   },
   {
     title: "User Management",
-    Icon: ({ size, color }) => <Icons name={'userManagement'} size={size} color={color} />,
+    Icon: ({ size, color }) => (
+      <Icons name={"userManagement"} size={size} color={color} />
+    ),
     path: "/admin/user-management",
     submenu: [
       { title: "All Users", path: "/admin/user-management" },
@@ -24,7 +28,9 @@ const sidebarMenu = [
   },
   {
     title: "Mothers",
-    Icon: ({ size, color }) => <Icons name={'serviceProviders'} size={size} color={color} />,
+    Icon: ({ size, color }) => (
+      <Icons name={"serviceProviders"} size={size} color={color} />
+    ),
     path: "/admin/mothers",
     submenu: [
       { title: "View All", path: "/admin/mothers" },
@@ -33,7 +39,9 @@ const sidebarMenu = [
   },
   {
     title: "Service Providers",
-    Icon: ({ size, color }) => <Icons name={'serviceProviders'} size={size} color={color} />,
+    Icon: ({ size, color }) => (
+      <Icons name={"serviceProviders"} size={size} color={color} />
+    ),
     path: "/admin/service-provider",
     submenu: [
       { title: "View All", path: "/admin/service-providers" },
@@ -50,12 +58,18 @@ const sidebarMenu = [
     path: "/admin/healthcare-provider",
     submenu: [
       { title: "View All", path: "/admin/healthcare-provider" },
-      { title: "Review Credentials", path: "/admin/healthcare-provider/credentials-review" },
+      {
+        title: "Review Credentials",
+        path: "/admin/healthcare-provider/credentials-review",
+      },
       {
         title: "Mental Health Screening",
         path: "/admin/healthcare-provider/mental-health-screening",
       },
-      { title: "Caseloads Summaries", path: "/admin/healthcare-provider/caseloads" },
+      {
+        title: "Caseloads Summaries",
+        path: "/admin/healthcare-provider/caseloads",
+      },
     ],
   },
   {
@@ -74,7 +88,10 @@ const sidebarMenu = [
     path: "/admin/marketplace",
     submenu: [
       { title: "Manage Products", path: "/admin/marketplace/manage-product" },
-      { title: "Promotions and Discounts", path: "/admin/marketplace/promotions" },
+      {
+        title: "Promotions and Discounts",
+        path: "/admin/marketplace/promotions",
+      },
     ],
   },
   {
@@ -85,12 +102,17 @@ const sidebarMenu = [
       { title: "Orders", path: "/admin/orders" },
       { title: "Refunds", path: "/admin/order/refunds" },
       { title: "Vendor Payout Requests", path: "/admin/order/payout-requests" },
-      { title: "Transaction History", path: "/admin/order/transaction-history" },
+      {
+        title: "Transaction History",
+        path: "/admin/order/transaction-history",
+      },
     ],
   },
   {
     title: "Support Tickets",
-    Icon: ({ size, color }) => <Icons name={'supportTickets'} size={size} color={color} />,
+    Icon: ({ size, color }) => (
+      <Icons name={"supportTickets"} size={size} color={color} />
+    ),
     path: "/admin/support",
     submenu: [
       { title: "All Tickets", path: "/admin/support/all-tickets" },
@@ -99,7 +121,9 @@ const sidebarMenu = [
   },
   {
     title: "Analytics",
-    Icon: ({ size, color }) => <Icons name={'analytics'} size={size} color={color} />,
+    Icon: ({ size, color }) => (
+      <Icons name={"analytics"} size={size} color={color} />
+    ),
     path: "/admin/analytics",
     submenu: [
       { title: "Sales and Revenue Reports", path: "/admin/analytics/sales" },
@@ -118,10 +142,12 @@ const sidebarMenu = [
   },
   {
     title: "Communities",
-    Icon: ({ size, color }) => <Icons name={'communities'} size={size} color={color} />,
+    Icon: ({ size, color }) => (
+      <Icons name={"communities"} size={size} color={color} />
+    ),
     path: "/admin/communities",
     submenu: [
-      { title: "All Communities", path: "/admin/communities" },
+      { title: "All Communities", path: "/admin/communities/all-communities" },
       { title: "Create Community", path: "/admin/communities/create" },
       { title: "Moderators", path: "/admin/communities/moderators" },
       { title: "Activity Feed", path: "/admin/communities/activity" },
@@ -130,7 +156,9 @@ const sidebarMenu = [
   },
   {
     title: "Settings",
-    Icon: ({ size, color }) => <Icons name={'settings'} size={size} color={color} />,
+    Icon: ({ size, color }) => (
+      <Icons name={"settings"} size={size} color={color} />
+    ),
     path: "/admin/settings",
     submenu: [
       { title: "General Settings", path: "/admin/settings/general" },
@@ -141,22 +169,18 @@ const sidebarMenu = [
 ];
 
 function Sidebar() {
-
-  const { pathname } = useLocation()
+  const { pathname } = useLocation();
 
   const [openMenu, setOpenMenu] = useState(null);
   const [activeNav, setActiveNav] = useState('Dashboard')
-  const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    setOpen(false)
-    
-    const navs = sidebarMenu.map(s => ({
+    const navs = sidebarMenu.map((s) => ({
       path: s.path,
-      title: s.title
-    }))
+      title: s.title,
+    }));
 
-    let active = ''
+    let active = "";
 
     for (let i = 0; i < navs?.length; i++) {
       if (pathname.includes(navs[i].path)) {
@@ -172,7 +196,7 @@ function Sidebar() {
     } else {
       setActiveNav(active)
     }
-  }, [pathname])
+  }, [pathname]);
 
   const toggleMenu = (title, index) => {
     setOpenMenu(index);
@@ -270,39 +294,164 @@ function Sidebar() {
       })}
     </nav>
   )
+  useEffect(() => {
+    openSidebar
+      ? (document.body.style.overflow = "hidden")
+      : (document.body.style.overflow = "auto");
+  }, [openSidebar]);
 
   return (
     <>
-
-      <div className="w-[260px] py-[24px] px-[8px] h-screen bg-(--primary-500) shadow-lg lg:block hidden sticky top-0 overflow-y-auto">
+      <div
+        onClick={() => {
+          setOpenSidebar(false);
+        }}
+        className={`${
+          openSidebar
+            ? "bg-black/80 w-full z-[1000] h-screen cursor-pointer fixed top-0 left-0 lg:hidden"
+            : ""
+        }`}
+      />
+      <div
+        className={`${
+          openSidebar ? "fixed top-0 left-0 z-[4000]" : "hidden"
+        } w-[260px] py-[24px] px-[8px] h-screen bg-(--primary-500) shadow-lg lg:block top-0 lg:sticky overflow-y-auto`}
+      >
         <div className="p-4">
-          <h2 className="text-xl font-bold text-white">
-
-            LavenderCare</h2>
+          <h2 className="text-xl font-bold text-white">LavenderCare</h2>
         </div>
 
-        <Nav />
+        <nav className="mt-4">
+          {sidebarMenu.map((item, index) => {
+            const { Icon } = item;
+
+            const isActive = item.title === activeNav ? true : false;
+
+            return (
+              <div key={index} className="mb-1">
+                {item.submenu.length > 0 ? (
+                  <div key={index}>
+                    <Collapse
+                      header={
+                        <div
+                          // onClick={() => toggleMenu(index)}
+                          style={{
+                            borderBottom:
+                              openMenu === index ? "1px solid white" : "none",
+                            backgroundColor: isActive ? "#FFF" : "transparent",
+                          }}
+                          className={`cursor-pointer flex items-center w-full px-4 py-3 text-left transition-colors duration-200`}
+                        >
+                          <span className="mr-3 text-gray-500">
+                            <Icon color={isActive ? "#6F3DCB" : "#FFF"} />
+                          </span>
+                          <span
+                            className={`flex-1 text-[14px] ${
+                              isActive ? "text-[#6F3DCB]" : "text-white"
+                            }`}
+                          >
+                            {item.title}
+                          </span>
+                          <span className="text-white">
+                            {openMenu === index ? (
+                              <FaChevronDown
+                                size={13}
+                                color={isActive ? "#6F3DCB" : "#FFF"}
+                              />
+                            ) : (
+                              <FaChevronUp
+                                size={13}
+                                color={isActive ? "#6F3DCB" : "#FFF"}
+                              />
+                            )}
+                          </span>
+                        </div>
+                      }
+                      isOpen={openMenu === index}
+                      onToggle={() => toggleMenu(item.title, index)}
+                      duration={250}
+                    >
+                      <div className="ml-2 mt-1 space-y-1">
+                        {item.submenu.map((subItem, subIndex) => (
+                          <NavLink
+                            onClick={() => setActiveNav(item.title)}
+                            key={subIndex}
+                            to={subItem.path}
+                            className={({ isActive }) =>
+                              `block px-4 py-2 text-sm text-white text-[14px] relative rounded-r-lg transition-colors duration-200`
+                            }
+                          >
+                            {({ isActive }) => (
+                              <>
+                                {isActive && (
+                                  <span
+                                    className={`absolute right-4 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-white`}
+                                  ></span>
+                                )}
+                                {subItem.title}
+                              </>
+                            )}
+                          </NavLink>
+                        ))}
+                      </div>
+                    </Collapse>
+                  </div>
+                ) : (
+                  <NavLink
+                    to={item.path}
+                    style={{
+                      backgroundColor: isActive ? "#FFF" : "transparent",
+                    }}
+                    onClick={() => setActiveNav(item?.title)}
+                    className={({ isActive }) =>
+                      `flex items-center px-4 rounded-lg text-[14px] py-3  border-b border-(--primary-500) text-white transition-colors duration-200 ${
+                        isActive
+                          ? "text-blue-600 font-medium border-[#9F7DDC]"
+                          : ""
+                      }`
+                    }
+                  >
+                    <span
+                      className={`mr-3 ${
+                        isActive ? "text-[#6F3DCB]" : "text-white"
+                      }`}
+                    >
+                      <Icon color={isActive ? "#6F3DCB" : "#FFF"} />
+                    </span>
+                    <span
+                      className={`${
+                        isActive ? "text-[#6F3DCB]" : "text-white"
+                      }`}
+                    >
+                      {item.title}
+                    </span>
+                  </NavLink>
+                )}
+              </div>
+            );
+          })}
+        </nav>
       </div>
 
       {/* menu bar icon */}
-      <div className="lg:hidden">
-        <SideDrawer 
-          open={open}
-          setOpen={setOpen}
-          trigger={
-            <div className="absolute fixed left-[20px] lg:hidden z-[900] text-black top-[28px] w-[20px] h-[20px]">
-              <svg width="20" height="20" viewBox="0 0 36 41" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                <path d="M0 7.6875C0 6.27012 1.14911 5.125 2.57143 5.125H33.4286C34.8509 5.125 36 6.27012 36 7.6875C36 9.10488 34.8509 10.25 33.4286 10.25H2.57143C1.14911 10.25 0 9.10488 0 7.6875ZM0 20.5C0 19.0826 1.14911 17.9375 2.57143 17.9375H33.4286C34.8509 17.9375 36 19.0826 36 20.5C36 21.9174 34.8509 23.0625 33.4286 23.0625H2.57143C1.14911 23.0625 0 21.9174 0 20.5ZM36 33.3125C36 34.7299 34.8509 35.875 33.4286 35.875H2.57143C1.14911 35.875 0 34.7299 0 33.3125C0 31.8951 1.14911 30.75 2.57143 30.75H33.4286C34.8509 30.75 36 31.8951 36 33.3125Z" fill="black" />
-              </svg>
-            </div>            
-          }
+      <div
+        onClick={() => {
+          setOpenSidebar((prev) => !prev);
+        }}
+        className="absolute left-[20px] lg:hidden z-[700] text-black top-[28px] w-[20px] h-[20px]"
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 36 41"
+          fill="currentColor"
+          xmlns="http://www.w3.org/2000/svg"
         >
-          <div 
-            className="py-[24px] px-[8px] h-screen bg-(--primary-500) shadow-lg overflow-y-auto" 
-          >  
-            <Nav />
-          </div>
-        </SideDrawer>
+          <path
+            d="M0 7.6875C0 6.27012 1.14911 5.125 2.57143 5.125H33.4286C34.8509 5.125 36 6.27012 36 7.6875C36 9.10488 34.8509 10.25 33.4286 10.25H2.57143C1.14911 10.25 0 9.10488 0 7.6875ZM0 20.5C0 19.0826 1.14911 17.9375 2.57143 17.9375H33.4286C34.8509 17.9375 36 19.0826 36 20.5C36 21.9174 34.8509 23.0625 33.4286 23.0625H2.57143C1.14911 23.0625 0 21.9174 0 20.5ZM36 33.3125C36 34.7299 34.8509 35.875 33.4286 35.875H2.57143C1.14911 35.875 0 34.7299 0 33.3125C0 31.8951 1.14911 30.75 2.57143 30.75H33.4286C34.8509 30.75 36 31.8951 36 33.3125Z"
+            fill="black"
+          />
+        </svg>
       </div>
     </>
   );
