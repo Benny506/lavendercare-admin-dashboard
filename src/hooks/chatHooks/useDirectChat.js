@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { sendNotifications } from '../../lib/notifications';
 
-export function useDirectChat({ topic, meId, peerId }) {
+export function useDirectChat({ topic, meId }) {
 
   const channelRef = useRef(null);
   const insertSubRef = useRef(null);
@@ -17,7 +17,7 @@ export function useDirectChat({ topic, meId, peerId }) {
   const [onlineUsers, setOnlineUsers] = useState([]);
 
   const sendMessage = useCallback(
-    async ({ text, toUser, user_notification_token }) => {
+    async ({ text, toUser, user_notification_token, peerId }) => {
       if (!text?.trim()) return;
 
       const peerOnline = onlineUsers.includes(peerId)
@@ -68,7 +68,7 @@ export function useDirectChat({ topic, meId, peerId }) {
         );
       
       } else{
-        if(!peerOnline){
+        // if(!peerOnline){
           await sendNotifications({
               tokens: [user_notification_token],
               // sound: null,
@@ -76,7 +76,7 @@ export function useDirectChat({ topic, meId, peerId }) {
               body: `${text}`,
               data: {}
           });          
-        } 
+        // } 
 
         channelRef.current?.send({
           type: 'broadcast',
@@ -142,6 +142,37 @@ export function useDirectChat({ topic, meId, peerId }) {
     return data; // updated message
   }
 
+  // const bulkMsgsRead = async (msgsIds) => {
+
+  //   if(!msgsIds?.length) return;
+
+  //   const read_at = new Date().toISOString()
+
+  //   const { data, error } = await supabase
+  //     .from('admin_mothers_chat')
+  //     .update({ read_at })
+  //     .in("id", msgsIds)
+  //     .select("id")
+
+  //   if (error) {
+  //     console.error("bulkMsgsRead error:", error);
+  //     return null;
+  //   }
+
+  //   channelRef.current?.send({
+  //     type: 'broadcast',
+  //     event: 'bulkMsgsRead',
+  //     payload: {
+  //       msgsIds,
+  //       read_at
+  //     }
+  //   })  
+    
+  //   markMessagesRead(messages, msgsIds, read_at)
+
+  //   return data; // updated messages
+  // }     
+
   const onMsgReceived = (msg) => {
     if(msg?.to_user === meId){
 
@@ -171,7 +202,7 @@ export function useDirectChat({ topic, meId, peerId }) {
 
     console.log("Messages loaded by other user")
 
-    //all msgs sent to "by_id" that aren't read/delivered are now read/delivered at timestamp  
+    //all msgs sent to "by_id" that aren't delivered are now delivered at timestamp  
 
     const updatedMsgs = [...msgsRef.current];
 
@@ -181,7 +212,6 @@ export function useDirectChat({ topic, meId, peerId }) {
         updatedMsgs[i] = {
           ...msg,
           delivered_at: msg.delivered_at || timestamp,
-          read_at: msg.read_at || timestamp
         };
       }
     }     
@@ -212,6 +242,19 @@ export function useDirectChat({ topic, meId, peerId }) {
 
     return dedupeMessages(replacedMsgs)
   }
+
+  const markMessagesRead = (msgs, ids, readAt) => {
+    if (!ids?.length) return msgs;
+
+    const idSet = new Set(ids); // faster lookup
+
+    return msgs.map(msg => {
+      if (idSet.has(msg.id)) {
+        return { ...msg, read_at: readAt };
+      }
+      return msg;
+    });
+  };  
 
   const loadMessages = async ({ msgLoadedTimeStamp }) => {
     const { data, error } = await supabase
@@ -262,6 +305,13 @@ export function useDirectChat({ topic, meId, peerId }) {
 
       setMessages((prev) => replaceOptimisticMessages(prev || [], msg));
     }) 
+
+    channel.on('broadcast', { event: 'bulkMsgsRead' }, (payload) => {
+      const msgsIds = payload.payload?.msgsIds
+      const read_at = payload.payload?.read_at
+
+      setMessages((prev) => markMessagesRead(prev || [], msgsIds, read_at));
+    })       
     
     channel.on('broadcast', { event: 'messageDelivered' }, (payload) => {
       const msg = payload.payload
@@ -357,7 +407,6 @@ export function useDirectChat({ topic, meId, peerId }) {
           const newMsg = payload.new;
           // console.log(newMsg)
           setMessages((prev) => replaceOptimisticMessages(prev || [], newMsg));
-
           onMsgRead(newMsg)
         }
       )
@@ -393,5 +442,6 @@ export function useDirectChat({ topic, meId, peerId }) {
     insertSubStatus,
     updateSubStatus,
     onlineUsers,
+    // bulkMsgsRead
   };
 }

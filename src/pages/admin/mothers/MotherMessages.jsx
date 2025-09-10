@@ -32,7 +32,7 @@ function MotherMessages() {
     const topic = peerId //Mother_id is the topic!
 
     const {
-        sendMessage, messages, status, insertSubStatus, updateSubStatus, onlineUsers,
+        sendMessage, messages, status, insertSubStatus, updateSubStatus, onlineUsers
     } = useDirectChat({
         topic,
         meId,
@@ -44,6 +44,7 @@ function MotherMessages() {
     useEffect(() => {
         if (!mother) {
             navigate('/admin/mothers')
+        
         }
     }, [])
 

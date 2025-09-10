@@ -3,42 +3,8 @@ import React, { useState } from "react";
 import banner from "../../../../assets/banner.png"
 
 function Header() {
-  const [showSearchModal, setShowSearchModal] = useState(false);
-
   return (
-    <div className="flex sticky items-center py-3 px-[12px] lg:px-[32px] top-0 bg-white z-[500] justify-between">
-      <div className="relative">
-        {/* Search Icon (shows modal on mobile/tab) */}
-        <svg
-          className="absolute top-[-8px] lg:top-[12px] left-[174px] lg:left-[14px] cursor-pointer block lg:hidden"
-          width="20"
-          height="20"
-          viewBox="0 0 20 20"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          onClick={() => setShowSearchModal(true)}
-        >
-          <g clipPath="url(#clip0_1918_29784)">
-            <path
-              d="M12.9167 11.6667H12.2583L12.025 11.4417C12.8417 10.4917 13.3333 9.25833 13.3333 7.91667C13.3333 4.925 10.9083 2.5 7.91667 2.5C4.925 2.5 2.5 4.925 2.5 7.91667C2.5 10.9083 4.925 13.3333 7.91667 13.3333C9.25833 13.3333 10.4917 12.8417 11.4417 12.025L11.6667 12.2583V12.9167L15.8333 17.075L17.075 15.8333L12.9167 11.6667ZM7.91667 11.6667C5.84167 11.6667 4.16667 9.99167 4.16667 7.91667C4.16667 5.84167 5.84167 4.16667 7.91667 4.16667C9.99167 4.16667 11.6667 5.84167 11.6667 7.91667C11.6667 9.99167 9.99167 11.6667 7.91667 11.6667Z"
-              fill="#020201"
-            />
-          </g>
-          <defs>
-            <clipPath id="clip0_1918_29784">
-              <rect width="20" height="20" fill="white" />
-            </clipPath>
-          </defs>
-        </svg>
-
-        {/* Search input for desktop */}
-        <input
-          type="text"
-          placeholder="Search anything..."
-          className="border lg:block hidden py-[10px] h-[44px] focus:border-black w-[180px] md:w-[320px] focus:outline-1 pr-[14px] pl-[40px] border-gray-300  rounded-sm text-(--gray-500)"
-        />
-      </div>
-
+    <div className="flex sticky items-center py-3 px-[12px] lg:px-[32px] top-0 bg-white z-[500] justify-end">
       <div className="flex gap-1 md:gap-4">
         {/*  */}
         <div className="border-[3px] border-gray-200 rounded-sm w-max p-2">
@@ -79,22 +45,6 @@ function Header() {
           </div>
         </div>
       </div>
-
-      {/* Search Modal for mobile/tab */}
-      {showSearchModal && (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black bg-opacity-30 lg:hidden">
-          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md relative animate-fadeIn">
-            <button className="absolute left-4 top-4 text-primary font-medium" onClick={() => setShowSearchModal(false)}>&lt; Back</button>
-            <h3 className="text-lg font-bold text-center mb-4">Search</h3>
-            <input
-              type="text"
-              placeholder="Search anything..."
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-              autoFocus
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }
