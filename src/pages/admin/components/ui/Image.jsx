@@ -4,7 +4,7 @@ export default function Image({ src, alt, className, onClick }){
 
     return(
         <img 
-            src={`${import.meta.env.BASE_URL}${src}`}
+            src={`${src}`}
             alt={alt}
             className={className}
             onClick={handleImgClick}

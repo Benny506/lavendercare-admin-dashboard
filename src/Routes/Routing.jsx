@@ -66,6 +66,7 @@ import Order from "../pages/admin/order/Order";
 import BlogDetail from "../pages/admin/content/BlogDetail";
 import NewBlog from "../pages/admin/content/NewBlog";
 import CreateAccount from "../pages/admin/createAccount/CreateAccount";
+import NotFound from "../pages/admin/notFound/NotFound";
 
 function Routing() {
   return (
@@ -125,10 +126,10 @@ function Routing() {
             path="/admin/service-provider/single-vendor/service-details"
             element={<ServiceDetails />}
           />             
-          <Route
+          {/* <Route
             path="/admin/service-provider/disputes"
             element={<Disputes />}
-          />
+          /> */}
           <Route
             path="/admin/service-provider/performance"
             element={<Performance />}
@@ -176,37 +177,37 @@ function Routing() {
           <Route path="/admin/content/blog" element={<Blog />} />
           <Route path="/admin/content/new-blog" element={<NewBlog />} />
           <Route path="/admin/content/blog-detail" element={<BlogDetail />} />
-          <Route path="/admin/content/resource" element={<Resource />} />
-          <Route path="/admin/content/promotions" element={<Promotions />} />
+          {/* <Route path="/admin/content/resource" element={<Resource />} /> */}
+          {/* <Route path="/admin/content/promotions" element={<Promotions />} /> */}
 
 
 
           {/* marketplace */}
-          <Route path="/admin/marketplace/manage-product" element={<Product />} />
+          {/* <Route path="/admin/marketplace/manage-product" element={<Product />} />
           <Route path="/admin/marketplace/add-product" element={<AddProduct />} />
           <Route path="/admin/marketplace/yoga-mat" element={<ProductPreview />} />
-          <Route path="/admin/marketplace/promotions" element={<MarketPromotions />} />
+          <Route path="/admin/marketplace/promotions" element={<MarketPromotions />} /> */}
 
           {/* order and transactions */}
-          <Route path="/admin/orders" element={<Order />} />
+          {/* <Route path="/admin/orders" element={<Order />} />
           <Route path="/admin/order/refunds" element={<Refund />} />
           <Route path="/admin/order/payout-requests" element={<PayoutRequests />} />
           <Route path="/admin/order/transaction-history" element={<TransactionHistory />} />
-          <Route path="/admin/order/detail" element={<OrderDetail />} />
+          <Route path="/admin/order/detail" element={<OrderDetail />} /> */}
 
 
           {/* support */}
           <Route path="/admin/support/all-tickets" element={<AllTickets />} />
-          <Route path="/admin/support/escalated-tickets" element={<EscalatedTickets />} />
+          {/* <Route path="/admin/support/escalated-tickets" element={<EscalatedTickets />} /> */}
           <Route path="/admin/support/ticket-details/:id" element={<TicketDetails />} />
 
           {/* analytics */}
-          <Route path="/admin/analytics/sales" element={<SalesAndRevenue />} />
+          {/* <Route path="/admin/analytics/sales" element={<SalesAndRevenue />} />
           <Route path="/admin/analytics/bookings" element={<ConsulationVolumes />} />
           <Route path="/admin/analytics/screening" element={<ScreeningOutcomes />} />
           <Route path="/admin/analytics/user-engagement" element={<UserEngagement />} />
           <Route path="/admin/analytics/provider-and-vendors" element={<ProviderVendor />} />
-          <Route path="/admin/analytics/report-builder" element={<CustomReport />} />
+          <Route path="/admin/analytics/report-builder" element={<CustomReport />} /> */}
 
 
           {/* communities */}
@@ -216,11 +217,13 @@ function Routing() {
 
 
           {/* settings */}
-          <Route path="/admin/settings/general" element={<General />} />
+          {/* <Route path="/admin/settings/general" element={<General />} />
           <Route path="/admin/settings/roles" element={<Role />} />
           <Route path="/admin/settings/roles/new" element={<NewRole />} />
-          <Route path="/admin/settings/permissions" element={<Permissions />} />
+          <Route path="/admin/settings/permissions" element={<Permissions />} /> */}
         </Route>
+
+        <Route path="*" element={<NotFound />} />        
       </Routes>
     </AutoLogin>
   );

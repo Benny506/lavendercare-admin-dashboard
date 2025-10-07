@@ -188,3 +188,55 @@ export function getStatusBadge(status) {
         </p>
     );
 }
+
+
+
+
+
+// tickets 
+export const ticketsMap = {
+    low: {
+        color: "bg-green-50 text-green-600",
+    },
+    medium: {
+        color: "bg-orange-50 text-orange-700",
+    },
+    high: {
+        color: "bg-purple-50 text-purple-700",
+    },
+    critical: {
+        color: "bg-red-50 text-red-700",
+    }
+}
+export const getTicketPriorityBadge = ({ status }) => {
+    return (
+        <div className='flex items-center justify-start'>
+            <p
+                className={`${ticketsMap[status]?.color} text-xs rounded-lg px-3 py-1`}
+            >
+                { status }
+            </p>
+        </div>
+    )
+}
+
+export const ticketStatusMap = {
+    open: {
+        color: "bg-green-50 text-green-600"
+    },
+    closed: {
+        color: "bg-gray-100 text-gray-600"
+    }
+}
+
+export const getTicketStatusBadge = ({ status }) => {
+    return (
+        <div className='flex items-center justify-start'>
+            <p
+                className={`${ticketStatusMap[status]?.color} text-xs rounded-lg px-3 py-1`}
+            >
+                { status }
+            </p>
+        </div>
+    )
+}

@@ -459,7 +459,7 @@ function Communities() {
                             </defs>
                           </svg>
                         </button>
-                        <button
+                        {/* <button
                           className="text-red-500"
                           onClick={(e) => handleDelete(community, e)}
                         >
@@ -506,7 +506,7 @@ function Communities() {
                               stroke-linejoin="round"
                             />
                           </svg>
-                        </button>
+                        </button> */}
                       </td>
                     </tr>
                   ))
@@ -584,12 +584,12 @@ function Communities() {
                       <button className="text-gray-500 border border-gray-300 rounded px-3 py-1 text-xs">
                         Edit
                       </button>
-                      <button
+                      {/* <button
                         className="text-red-500 border border-red-300 rounded px-3 py-1 text-xs"
                         onClick={(e) => handleDelete(community, e)}
                       >
                         Delete
-                      </button>
+                      </button> */}
                     </div>
                   </div>
                 )

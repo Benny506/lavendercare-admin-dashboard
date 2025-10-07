@@ -51,7 +51,12 @@ function CaseloadSummaries() {
     }
   }, [bookings])
 
-  const top5Providers = getTopProviders(bookings)
+  const providerBookings = bookings?.filter(b => b?.provider_profile ? true : false)
+  const totalCases = providerBookings?.length
+  const openCases = providerBookings?.filter(b => b?.status === 'new' || b?.status === 'awaiting_completion' || b?.status === 'ongoing')?.length
+  const closedCases = providerBookings?.filter(b => b?.status === 'completed' || b?.status === 'cancelled' || b?.status === 'missed')?.length  
+
+  const top5Providers = getTopProviders(providerBookings)
 
   const filteredData = (top5Providers || [])?.filter(p => {
 
@@ -71,10 +76,6 @@ function CaseloadSummaries() {
 
     return matchesSearch
   })
-
-  const totalCases = bookings?.length
-  const openCases = bookings?.filter(b => b?.status === 'new' || b?.status === 'awaiting_completion' || b?.status === 'ongoing')?.length
-  const closedCases = bookings?.filter(b => b?.status === 'completed' || b?.status === 'cancelled' || b?.status === 'missed')?.length
 
   return (
     <div className="w-full py-6">

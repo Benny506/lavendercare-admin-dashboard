@@ -106,7 +106,7 @@ function CreateAccount() {
                 requestInfo: {
                   url: 'https://tzsbbbxpdlupybfrgdbs.supabase.co/functions/v1/register-admin',
                   method: 'POST',
-                  data: values
+                  data: { values, expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString() }
                 }
               }
             })

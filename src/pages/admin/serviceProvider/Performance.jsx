@@ -1,83 +1,161 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
+import PathHeader from "../components/PathHeader";
+import { useDispatch, useSelector } from "react-redux";
+import { appLoadStart, appLoadStop } from "../../../redux/slices/appLoadingSlice";
+import { toast } from "react-toastify";
+import supabase from "../../../database/dbInit";
+import { useReactToPrint } from "react-to-print";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  ResponsiveContainer,
+} from "recharts";
+import { getAdminState } from "../../../redux/slices/adminState";
+import useApiReqs from "../../../hooks/useApiReqs";
+
+function getMonthlyCounts(data) {
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  const counts = {};
+
+  data.forEach(item => {
+    const date = new Date(item.day);
+    const month = monthNames[date.getMonth()];
+
+    counts[month] = (counts[month] || 0) + 1;
+  });
+
+  return Object.entries(counts).map(([month, count]) => ({
+    month,
+    count
+  }));
+}
+
 
 function Performance() {
-  return (
-    <div className=" pt-6 min-h-screen">
-      {/* Breadcrumbs */}
-      <div className="flex pb-6 items-center gap-1">
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 20 20"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M6.66667 14.1663H13.3333M9.18141 2.30297L3.52949 6.6989C3.15168 6.99276 2.96278 7.13968 2.82669 7.32368C2.70614 7.48667 2.61633 7.67029 2.56169 7.86551C2.5 8.0859 2.5 8.32521 2.5 8.80384V14.833C2.5 15.7664 2.5 16.2331 2.68166 16.5896C2.84144 16.9032 3.09641 17.1582 3.41002 17.318C3.76654 17.4996 4.23325 17.4996 5.16667 17.4996H14.8333C15.7668 17.4996 16.2335 17.4996 16.59 17.318C16.9036 17.1582 17.1586 16.9032 17.3183 16.5896C17.5 16.2331 17.5 15.7664 17.5 14.833V8.80384C17.5 8.32521 17.5 8.0859 17.4383 7.86551C17.3837 7.67029 17.2939 7.48667 17.1733 7.32368C17.0372 7.13968 16.8483 6.99276 16.4705 6.69891L10.8186 2.30297C10.5258 2.07526 10.3794 1.9614 10.2178 1.91763C10.0752 1.87902 9.92484 1.87902 9.78221 1.91763C9.62057 1.9614 9.47418 2.07526 9.18141 2.30297Z"
-            stroke="#8B8B8A"
-            stroke-width="1.66667"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
+  const dispatch = useDispatch()
 
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 16 16"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <g clip-path="url(#clip0_1918_35894)">
-            <path
-              d="M6.66656 4L5.72656 4.94L8.7799 8L5.72656 11.06L6.66656 12L10.6666 8L6.66656 4Z"
-              fill="#8B8B8A"
-            />
-          </g>
-          <defs>
-            <clipPath id="clip0_1918_35894">
-              <rect width="16" height="16" fill="white" />
-            </clipPath>
-          </defs>
-        </svg>
-        <p className="text-[12px]">Service providers</p>
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 16 16"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <g clip-path="url(#clip0_1918_35894)">
-            <path
-              d="M6.66656 4L5.72656 4.94L8.7799 8L5.72656 11.06L6.66656 12L10.6666 8L6.66656 4Z"
-              fill="#8B8B8A"
-            />
-          </g>
-          <defs>
-            <clipPath id="clip0_1918_35894">
-              <rect width="16" height="16" fill="white" />
-            </clipPath>
-          </defs>
-        </svg>
-        <p className="text-(--primary-500) font-[600] text-[12px]">Performance</p>
-      </div>
+  const { fetchBookings } = useApiReqs()
+
+  const containerRef = useRef(null)
+
+  const downloadEntireDoc = useReactToPrint({
+    contentRef: containerRef
+  });
+
+  const bookings = useSelector(state => getAdminState(state).bookings)
+
+  const [apiReqs, setApiReqs] = useState({ isLoading: false, errorMsg: null, data: null })
+  const [stats, setStats] = useState({ avgRating: null, allBookings: null, completedBookings: null })
+
+  useEffect(() => {
+    setApiReqs({
+      isLoading: true,
+      errorMsg: null,
+      data: {
+        type: 'initialFetch'
+      }
+    })
+  }, [])
+
+  useEffect(() => {
+    if(bookings?.length === 0){
+      fetchBookings({})
+    }
+  }, [bookings])
+
+  useEffect(() => {
+    const { isLoading, data } = apiReqs
+
+    if (isLoading) dispatch(appLoadStart());
+    else dispatch(appLoadStop());
+
+    if (isLoading && data) {
+      const { type } = data
+
+      if (type === 'initialFetch') {
+        initialFetch()
+      }
+    }
+  }, [apiReqs])
+
+  const initialFetch = async () => {
+    try {
+      const { data: avgRating, error: avgRatingError } = await supabase.rpc("get_avg_service_rating")
+
+      const { count: completedBookings, error: completedBookingsError } = await supabase
+        .from('all_bookings')
+        .select('*', { count: 'exact', head: true })
+        .is("provider_id", null)
+        .eq("status", "completed")
+
+      const { count: allBookings, error: allBookingsError } = await supabase
+        .from('all_bookings')
+        .select('*', { count: 'exact', head: true })
+        .is("provider_id", null)
+
+
+      if (avgRatingError || completedBookingsError || allBookingsError) {
+        console.log("avgRatingError", avgRatingError)
+        console.log("completedBookingsError", completedBookingsError)
+        console.log("allBookingsError", allBookingsError)
+        throw new Error()
+      }
+
+      setStats({
+        avgRating,
+        allBookings,
+        completedBookings
+      })
+
+      setApiReqs({ isLoading: false, data: null, errorMsg: null })
+
+    } catch (error) {
+      console.log(error)
+      return initialFetchFailure({ errorMsg: 'Something went wrong! Try again.' })
+    }
+  }
+  const initialFetchFailure = ({ errorMsg }) => {
+    setApiReqs({ isLoading: false, errorMsg, data: null })
+    toast.error(errorMsg)
+
+    return
+  }
+
+  const avgResponseRate =
+    stats.allBookings && stats.completedBookings
+      ?
+      (stats.completedBookings * 100) / stats.allBookings
+      :
+      0
+
+  const completedVendorBookings = (bookings || [])?.filter(b => {
+    b?.vendor_id && b?.status === 'completed'
+  })
+
+  return (
+    <div ref={containerRef} className=" pt-6 min-h-screen">
+      {/* Breadcrumbs */}
+      <PathHeader
+        paths={[
+          { text: 'Services' },
+          { text: 'Performance' },
+        ]}
+      />
 
       {/* service provider header */}
       <div className="flex flex-col gap-4 md:flex-row items-center justify-between mb-4">
         <h2 className="text-xl sm:text-2xl font-bold">
-          Service Providers Performance
+          Service Performance
         </h2>
 
         {/* Filters */}
-        <div className="flex w-max flex-wrap gap-2 justify-end">
-          <select className="border-gray-300 border bg-white px-2 sm:px-3 py-2 rounded text-xs">
-            <option>Provider</option>
-          </select>
-          <select className="border-gray-300 border bg-white px-2 sm:px-3 py-2 rounded text-xs">
-            <option>Last 7 days</option>
-            <option>Last 30 days</option>
-          </select>
+        <div onClick={downloadEntireDoc} className="cursor-pointer flex w-max flex-wrap gap-2 justify-end">
           <button className="border-gray-300 border bg-white flex items-center gap-2 px-2 sm:px-3 py-2 rounded text-xs">
             <svg
               width="18"
@@ -103,17 +181,23 @@ function Performance() {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-xl p-4 flex flex-col items-start min-w-[150px]">
           <span className="text-xs text-gray-500 mb-1">Avg Rating</span>
-          <span className="text-3xl font-bold">4.8</span>
+          <span className="text-3xl font-bold">
+            {stats.avgRating ?? "-"}
+          </span>
         </div>
         <div className="bg-white rounded-xl p-4 flex flex-col items-start min-w-[150px]">
           <span className="text-xs text-gray-500 mb-1">Response Rate</span>
-          <span className="text-3xl font-bold">95%</span>
+          <span className="text-3xl font-bold">
+            {`${avgResponseRate ?? 0}%`}
+          </span>
         </div>
         <div className="bg-white rounded-xl p-4 flex flex-col items-start min-w-[150px]">
           <span className="text-xs text-gray-500 mb-1">
             Appointments Delivered
           </span>
-          <span className="text-3xl font-bold">1250</span>
+          <span className="text-3xl font-bold">
+            {stats.completedBookings ?? '-'}
+          </span>
         </div>
       </div>
 
@@ -123,69 +207,29 @@ function Performance() {
           Appointments Trend
         </h2>
 
-        <div className="grid grid-cols-1 p-4 md:grid-cols-2 gap-4">
+        <div className="w-full p-4 gap-4">
           {/* Appointments Over Time */}
           <div className="bg-white border border-gray-300 rounded-xl p-4 flex flex-col min-h-[300px] h-[300px] md:h-[350px]">
-            <div className="font-semibold">Appointments Over Time</div>
-            <div className="text-[32px] font-bold">1,250</div>
-            <div className="text-xs text-gray-400 flex items-center gap-2">
-              Last 30 Days{" "}
-              <span className="bg-(--success) text-(--success_text) py-[2px] px-[8px] rounded-full flex items-center font-semibold">
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 12 12"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M6 9.5V2.5M6 2.5L2.5 6M6 2.5L9.5 6"
-                    stroke="#669F2A"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-                20%
-              </span>
-            </div>
+            <div className="font-semibold">Growth Chart for completed appointments</div>
             <div className="flex-1 flex items-center justify-center">
               {/* Chart Placeholder */}
               <div className="w-full h-32 sm:h-40 md:h-48 bg-purple-50 rounded-lg flex items-center justify-center text-purple-200 text-lg font-bold">
-                Chart
-              </div>
-            </div>
-          </div>
-
-          {/* Rating Distribution */}
-          <div className="bg-white border border-gray-300 rounded-xl p-4 flex flex-col min-h-[300px] h-[300px] md:h-[350px]">
-            <div className="font-semibold mb-1">Rating Distribution</div>
-            <div className="text-[32px] font-bold">4.8</div>
-            <div className="text-xs text-gray-400 mb-2 flex gap-2 items-center">
-              Last 30 Days{" "}
-              <span className="bg-(--error) flex w-max items-center  py-[2px] px-[8px] rounded-full text-(--error-700) font-semibold">
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 12 12"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M6 2.5V9.5M6 9.5L9.5 6M6 9.5L2.5 6"
-                    stroke="#F04438"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-                20%
-              </span>
-            </div>
-            <div className="flex-1 flex items-center justify-center">
-              {/* Chart Placeholder */}
-              <div className="w-full h-32 sm:h-40 md:h-48 bg-purple-50 rounded-lg flex items-center justify-center text-purple-200 text-lg font-bold">
-                Chart
+                <ResponsiveContainer width="100%" height={220}>
+                  <LineChart
+                    data={getMonthlyCounts(completedVendorBookings)}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Line
+                      type="monotone"
+                      dataKey="count"
+                      stroke="#6b46c1"
+                      strokeWidth={2}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
             </div>
           </div>

@@ -46,10 +46,10 @@ const sidebarMenu = [
     submenu: [
       { title: "View All", path: "/admin/service-providers" },
       { title: "Performance", path: "/admin/service-provider/performance" },
-      {
-        title: "Disputes and Issues",
-        path: "/admin/service-provider/disputes",
-      },
+      // {
+      //   title: "Disputes and Issues",
+      //   path: "/admin/service-provider/disputes",
+      // },
     ],
   },
   {
@@ -78,36 +78,36 @@ const sidebarMenu = [
     path: "/admin/content",
     submenu: [
       { title: "Blog Articles", path: "/admin/content/blog" },
-      { title: "Educational Resources", path: "/admin/content/resource" },
-      { title: "Promotional Banners", path: "/admin/content/promotions" },
+      // { title: "Educational Resources", path: "/admin/content/resource" },
+      // { title: "Promotional Banners", path: "/admin/content/promotions" },
     ],
   },
-  {
-    title: "Marketplace",
-    Icon: ({ size, color }) => <Icons name={'marketPlace'} size={size} color={color} />,
-    path: "/admin/marketplace",
-    submenu: [
-      { title: "Manage Products", path: "/admin/marketplace/manage-product" },
-      {
-        title: "Promotions and Discounts",
-        path: "/admin/marketplace/promotions",
-      },
-    ],
-  },
-  {
-    title: "Order and Transactions",
-    Icon: ({ size, color }) => <Icons name={'orderAndTransaction'} size={size} color={color} />,
-    path: "/admin/order",
-    submenu: [
-      { title: "Orders", path: "/admin/orders" },
-      { title: "Refunds", path: "/admin/order/refunds" },
-      { title: "Vendor Payout Requests", path: "/admin/order/payout-requests" },
-      {
-        title: "Transaction History",
-        path: "/admin/order/transaction-history",
-      },
-    ],
-  },
+  // {
+  //   title: "Marketplace",
+  //   Icon: ({ size, color }) => <Icons name={'marketPlace'} size={size} color={color} />,
+  //   path: "/admin/marketplace",
+  //   submenu: [
+  //     { title: "Manage Products", path: "/admin/marketplace/manage-product" },
+  //     {
+  //       title: "Promotions and Discounts",
+  //       path: "/admin/marketplace/promotions",
+  //     },
+  //   ],
+  // },
+  // {
+  //   title: "Order and Transactions",
+  //   Icon: ({ size, color }) => <Icons name={'orderAndTransaction'} size={size} color={color} />,
+  //   path: "/admin/order",
+  //   submenu: [
+  //     { title: "Orders", path: "/admin/orders" },
+  //     { title: "Refunds", path: "/admin/order/refunds" },
+  //     { title: "Vendor Payout Requests", path: "/admin/order/payout-requests" },
+  //     {
+  //       title: "Transaction History",
+  //       path: "/admin/order/transaction-history",
+  //     },
+  //   ],
+  // },
   {
     title: "Support Tickets",
     Icon: ({ size, color }) => (
@@ -116,30 +116,30 @@ const sidebarMenu = [
     path: "/admin/support",
     submenu: [
       { title: "All Tickets", path: "/admin/support/all-tickets" },
-      { title: "Escalated", path: "/admin/support/escalated-tickets" },
+      // { title: "Escalated", path: "/admin/support/escalated-tickets" },
     ],
   },
-  {
-    title: "Analytics",
-    Icon: ({ size, color }) => (
-      <Icons name={"analytics"} size={size} color={color} />
-    ),
-    path: "/admin/analytics",
-    submenu: [
-      { title: "Sales and Revenue Reports", path: "/admin/analytics/sales" },
-      {
-        title: "Booking and Consultation Volumes",
-        path: "/admin/analytics/bookings",
-      },
-      { title: "Screening Outcomes", path: "/admin/analytics/screening" },
-      { title: "User Management", path: "/admin/analytics/user-engagement" },
-      { title: "Provider and Vendor", path: "/admin/analytics/provider-and-vendors" },
-      {
-        title: "Custom Report Builder",
-        path: "/admin/analytics/report-builder",
-      },
-    ],
-  },
+  // {
+  //   title: "Analytics",
+  //   Icon: ({ size, color }) => (
+  //     <Icons name={"analytics"} size={size} color={color} />
+  //   ),
+  //   path: "/admin/analytics",
+  //   submenu: [
+  //     { title: "Sales and Revenue Reports", path: "/admin/analytics/sales" },
+  //     {
+  //       title: "Booking and Consultation Volumes",
+  //       path: "/admin/analytics/bookings",
+  //     },
+  //     { title: "Screening Outcomes", path: "/admin/analytics/screening" },
+  //     { title: "User Management", path: "/admin/analytics/user-engagement" },
+  //     { title: "Provider and Vendor", path: "/admin/analytics/provider-and-vendors" },
+  //     {
+  //       title: "Custom Report Builder",
+  //       path: "/admin/analytics/report-builder",
+  //     },
+  //   ],
+  // },
   {
     title: "Communities",
     Icon: ({ size, color }) => (
@@ -149,23 +149,23 @@ const sidebarMenu = [
     submenu: [
       { title: "All Communities", path: "/admin/communities/all-communities" },
       { title: "Create Community", path: "/admin/communities/create" },
-      { title: "Moderators", path: "/admin/communities/moderators" },
-      { title: "Activity Feed", path: "/admin/communities/activity" },
-      { title: "Flagged Content", path: "/admin/communities/flagged" },
+      // { title: "Moderators", path: "/admin/communities/moderators" },
+      // { title: "Activity Feed", path: "/admin/communities/activity" },
+      // { title: "Flagged Content", path: "/admin/communities/flagged" },
     ],
   },
-  {
-    title: "Settings",
-    Icon: ({ size, color }) => (
-      <Icons name={"settings"} size={size} color={color} />
-    ),
-    path: "/admin/settings",
-    submenu: [
-      { title: "General Settings", path: "/admin/settings/general" },
-      { title: "Roles", path: "/admin/settings/roles" },
-      { title: "Permissions", path: "/admin/settings/permissions" },
-    ],
-  },
+  // {
+  //   title: "Settings",
+  //   Icon: ({ size, color }) => (
+  //     <Icons name={"settings"} size={size} color={color} />
+  //   ),
+  //   path: "/admin/settings",
+  //   submenu: [
+  //     { title: "General Settings", path: "/admin/settings/general" },
+  //     { title: "Roles", path: "/admin/settings/roles" },
+  //     { title: "Permissions", path: "/admin/settings/permissions" },
+  //   ],
+  // },
 ];
 
 function Sidebar() {

@@ -1,65 +1,137 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import Table from "../components/Table";
+import { appLoadStart, appLoadStop } from "../../../redux/slices/appLoadingSlice";
+import supabase from "../../../database/dbInit";
+import { usePagination } from "../../../hooks/usePagination";
+import { isoToDateTime } from "../../../lib/utils";
+import { getTicketPriorityBadge, getTicketStatusBadge } from "../../../lib/utils_Jsx";
+import PathHeader from "../components/PathHeader";
+import { toast } from "react-toastify";
+import { Formik } from "formik";
+import * as yup from 'yup'
 
-const ticketsData = [
-  {
-    id: "#626",
-    subject: "Cannot schedule consult",
-    raisedBy: "Grace Okoro",
-    priority: "High",
-    status: "Open",
-    assignee: "-",
-  },
-  {
-    id: "#532",
-    subject: "Payment not processing",
-    raisedBy: "John Smith",
-    priority: "High",
-    status: "Resolved",
-    assignee: "Admin a",
-  },
-  {
-    id: "#535",
-    subject: "Vendor payout delay",
-    raisedBy: "MamaCare Vendor",
-    priority: "Critical",
-    status: "Escalated",
-    assignee: "Admin B",
-  },
-  {
-    id: "#536",
-    subject: "Article formatting issue",
-    raisedBy: "Sarah",
-    priority: "Medium",
-    status: "Resolved",
-    assignee: "Admin C",
-  },
-  {
-    id: "#649P",
-    subject: "App login error",
-    raisedBy: "David Nguyen",
-    priority: "Low",
-    status: "Resolved",
-    assignee: "-",
-  },
-];
 
-const priorityClass = {
-  High: "bg-orange-100 text-orange-600",
-  Critical: "bg-red-100 text-red-600",
-  Medium: "bg-green-100 text-green-600 bg-opacity-30 text-green-700",
-  Low: "bg-green-100 text-green-600 bg-opacity-30 text-green-700",
-};
+// COME BACK TO TICKET ASSIGNMENT LOGIC
 
-const statusClass = {
-  Open: "bg-[#F1ECFA] text-primary",
-  Resolved: "bg-green-100 text-green-600",
-  Escalated: "bg-red-100 text-red-600",
-};
 
 function AllTickets() {
-  const [showAssign, setShowAssign] = useState(false);
+  const dispatch = useDispatch()
+
   const navigate = useNavigate();
+
+  const [showAssign, setShowAssign] = useState(false);
+  const [tickets, setTickets] = useState([])
+  const [tab, setTab] = useState('All')
+  const [apiReqs, setApiReqs] = useState({ isLoading: false, errorMsg: null, data: null })
+  const [currentPage, setCurrentPage] = useState(0);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [pageListIndex, setPageListIndex] = useState(0)
+  const [admins, setAdmins] = useState([])
+
+
+  useEffect(() => {
+    setApiReqs({
+      isLoading: true,
+      errorMsg: null,
+      data: {
+        type: 'fetchTickets'
+      }
+    })
+  }, [])
+
+  useEffect(() => {
+    if(showAssign){
+      setApiReqs({
+        isLoading: true,
+        errorMsg: null,
+        data: {
+          type: 'fetchAdmins'
+        }
+      })
+    }
+  }, [showAssign])
+
+  useEffect(() => {
+    const { isLoading, data } = apiReqs
+
+    if (isLoading) dispatch(appLoadStart());
+    else dispatch(appLoadStop());
+
+    if (isLoading && data) {
+      const { type } = data
+
+      if (type == 'fetchTickets') {
+        fetchTickets()
+      }
+
+      if(type === 'fetchAdmins'){
+        fetchAdmins()
+      }
+    }
+  }, [apiReqs])
+
+  const fetchAdmins = async () => {
+    try {
+
+      const { data, error } = await supabase
+        .from("admins")
+        .select("*")
+
+      if(error) {
+        console.warn(error)
+        throw new Error()
+      }
+
+      setAdmins(data)
+
+      setApiReqs({ isLoading: false, errorMsg: null, data: null })
+
+      toast.info("Admins retrieved")
+      
+      return;
+      
+    } catch (error) {
+      console.log(error)
+      return fetchAdminsFailure({ errorMsg: 'Something went wrong! Try again.' })
+    }
+  }
+  const fetchAdminsFailure = ({ errorMsg }) => {s
+    setApiReqs({ isLoading: false, errorMsg, data: null })
+    toast.error(errorMsg)
+
+    return
+  }
+
+  const fetchTickets = async () => {
+    try {
+
+      const { data, error } = await supabase
+        .from('support_tickets')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error(error)
+        throw new Error()
+      }
+
+      setTickets(data)
+
+      setApiReqs({ isLoading: false, errorMsg: null, data: null })
+
+    } catch (error) {
+      console.error(error)
+      return fetchTicketsFailure({ errorMsg: 'Something went wrong! Try again.' })
+    }
+  }
+  const fetchTicketsFailure = ({ errorMsg }) => {
+    setApiReqs({ isLoading: false, errorMsg, data: null })
+    toast.error(errorMsg)
+
+    return;
+  }
 
   const handleAssign = (ticket, e) => {
     e.stopPropagation();
@@ -71,150 +143,249 @@ function AllTickets() {
     navigate(`/admin/support/ticket-details/${ticket.id.replace("#", "")}`);
   };
 
+  // ✅ Filter & Search
+  const filteredData = tickets.filter(
+    (item) => {
+
+      const { id, subject } = item
+
+      const matchSearch =
+        (searchTerm.toLowerCase().includes(subject?.toLowerCase())
+          ||
+          subject.toLowerCase().includes(searchTerm?.toLowerCase()))
+
+        ||
+
+        (searchTerm.toLowerCase().includes(id?.toLowerCase())
+          ||
+          id.toLowerCase().includes(searchTerm?.toLowerCase()))
+
+      const matchesFilter = (tab?.toLowerCase() === "all" || item.status === tab?.toLowerCase())
+
+      return matchesFilter && matchSearch
+    }
+  );
+
+  const { pageItems, pageList, totalPageListIndex } = usePagination({
+    arr: filteredData,
+    maxShow: 4,
+    index: currentPage,
+    maxPage: 5,
+    pageListIndex
+  });
+
+  const incrementPageListIndex = () => {
+    if (pageListIndex === totalPageListIndex) {
+      setPageListIndex(0)
+
+    } else {
+      setPageListIndex(prev => prev + 1)
+    }
+
+    return
+  }
+
+  const decrementPageListIndex = () => {
+    if (pageListIndex == 0) {
+      setPageListIndex(totalPageListIndex)
+
+    } else {
+      setPageListIndex(prev => prev - 1)
+    }
+
+    return
+  }
+
+  const columns = [
+    { key: "id", label: "Ticket ID" },
+    { key: "subject", label: "Subject" },
+    {
+      key: "created_at",
+      label: "Created On",
+      render: (row) => (
+        <span>
+          {isoToDateTime({ isoString: row?.created_at })}
+        </span>
+      ),
+    },
+    {
+      key: "priority",
+      label: "Priority",
+      render: (row) => (
+        getTicketPriorityBadge({ status: row?.priority })
+      ),
+    },
+    {
+      key: "field",
+      label: "Field",
+      // render: (row) => (
+      //     getTicketPriorityBadge({ status: row?.priority })
+      // ),
+    },
+    {
+      key: "status",
+      label: "Status",
+      render: (row) => (
+        getTicketStatusBadge({ status: row?.status })
+      ),
+    },
+    {
+      key: "action",
+      label: "Action",
+      render: (row) => (
+        <div className="flex items-center gap-2">
+          <button
+            // onClick={() => setActiveTicket(row)}
+            className="cursor-pointer px-4 py-1 text-white text-sm bg-purple-500 text-grey-50 rounded-4xl"
+          >
+            View
+          </button>
+
+          <button
+            onClick={() => setShowAssign(row?.id)}
+            className="cursor-pointer px-4 py-1 text-white text-sm bg-gray-500 text-grey-50 rounded-4xl"
+          >
+            Assign
+          </button>          
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="p-2 sm:p-4 md:p-6 w-full min-h-screen bg-[#F8F9FB]">
       {/* Breadcrumb */}
-      <div className="mb-2 sm:mb-4 flex flex-wrap items-center gap-1 text-xs sm:text-sm">
-        <span className="text-gray-400">Support Tickets</span>
-        <span className="text-gray-400">/</span>
-        <span className="text-primary font-medium">All Tickets</span>
-      </div>
-
+      <PathHeader 
+        paths={[
+          { text: 'Support Tickets' },
+          { text: 'All Tickets' },
+        ]}
+      />
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg sm:text-xl font-bold">All Tickets</h2>
-        <button className="border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 text-xs sm:text-sm hover:bg-gray-50 whitespace-nowrap">
-          All
-        </button>
+
+        <div className="flex items-center gap-7">
+            {
+                ['All', 'Open', 'Closed']
+                .map((t, i) => {
+
+                    const isActive = tab === t ? true : false
+
+                    return (
+                        <p
+                            key={i}
+                            onClick={() => setTab(t)}
+                            className={`m-0 p-0 pb-1 font-bold cursor-pointer ${isActive ? 'border-b-4 px-4 border-purple-600 text-purple-600' : 'text-gray-600'}`}
+                        >
+                            { t }
+                        </p>
+                    )
+                })
+            }
+        </div>
       </div>
 
       <div className="bg-white rounded-xl p-3">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3 sm:mb-4">
           <input
+            value={searchTerm}
+            onChange={e => setSearchTerm(e?.target?.value)}
             type="text"
             placeholder="Search by ticket ID, subject, or user"
-            className="border border-gray-200 rounded-lg px-3 py-2 w-full md:w-64 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            className="border border-gray-200 rounded-lg px-3 py-2 w-full md:w-64 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple"
           />
-          <button className="border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 text-xs sm:text-sm hover:bg-gray-50 whitespace-nowrap">
-            Filter
-          </button>
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 text-xs sm:text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-3 sm:px-6 py-3 text-left font-medium text-gray-500">
-                  Ticket ID
-                </th>
-                <th className="px-3 sm:px-6 py-3 text-left font-medium text-gray-500">
-                  Subject
-                </th>
-                <th className="px-3 sm:px-6 py-3 text-left font-medium text-gray-500">
-                  Raised By
-                </th>
-                <th className="px-3 sm:px-6 py-3 text-left font-medium text-gray-500">
-                  Priority
-                </th>
-                <th className="px-3 sm:px-6 py-3 text-left font-medium text-gray-500">
-                  Status
-                </th>
-                <th className="px-3 sm:px-6 py-3 text-left font-medium text-gray-500">
-                  Assignee
-                </th>
-                <th className="px-3 sm:px-6 py-3 text-left font-medium text-gray-500">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {ticketsData.map((ticket, idx) => (
-                <tr
-                  key={idx}
-                  className="cursor-pointer hover:bg-gray-50"
-                  onClick={() => handleDetails(ticket)}
-                >
-                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                    {ticket.id}
-                  </td>
-                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                    {ticket.subject}
-                  </td>
-                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                    {ticket.raisedBy}
-                  </td>
-                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        priorityClass[ticket.priority]
-                      }`}
-                    >
-                      {ticket.priority}
-                    </span>
-                  </td>
-                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        statusClass[ticket.status]
-                      }`}
-                    >
-                      {ticket.status}
-                    </span>
-                  </td>
-                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                    {ticket.assignee}
-                  </td>
-                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap flex gap-2 items-center">
-                    <button
-                      className="text-primary font-medium text-xs sm:text-sm border border-primary rounded px-3 py-1"
-                      onClick={(e) => handleAssign(ticket, e)}
-                    >
-                      Assign
-                    </button>
-                    <button
-                      className="text-gray-500 cursor-pointer hover:text-primary"
-                      onClick={() => handleDetails(ticket)}
-                    >
-                      <svg
-                        width="18"
-                        height="12"
-                        viewBox="0 0 18 12"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M17.9483 5.757C17.922 5.69775 17.2868 4.2885 15.8745 2.87625C13.9928 0.9945 11.616 0 9 0C6.384 0 4.00725 0.9945 2.12549 2.87625C0.713243 4.2885 0.0749929 5.7 0.0517429 5.757C0.0176277 5.83373 0 5.91677 0 6.00075C0 6.08473 0.0176277 6.16777 0.0517429 6.2445C0.0779929 6.30375 0.713243 7.71225 2.12549 9.1245C4.00725 11.0055 6.384 12 9 12C11.616 12 13.9928 11.0055 15.8745 9.1245C17.2868 7.71225 17.922 6.30375 17.9483 6.2445C17.9824 6.16777 18 6.08473 18 6.00075C18 5.91677 17.9824 5.83373 17.9483 5.757ZM9 10.8C6.6915 10.8 4.67475 9.96075 3.00524 8.30625C2.32023 7.62502 1.73743 6.84822 1.27499 6C1.73731 5.1517 2.32012 4.37488 3.00524 3.69375C4.67475 2.03925 6.6915 1.2 9 1.2C11.3085 1.2 13.3253 2.03925 14.9948 3.69375C15.6811 4.37472 16.2652 5.15154 16.7288 6C16.188 7.0095 13.8323 10.8 9 10.8ZM9 2.4C8.28799 2.4 7.59196 2.61114 6.99995 3.00671C6.40793 3.40228 5.94651 3.96453 5.67403 4.62234C5.40156 5.28015 5.33026 6.00399 5.46917 6.70233C5.60808 7.40066 5.95094 8.04212 6.45441 8.54559C6.95788 9.04906 7.59934 9.39192 8.29767 9.53083C8.99601 9.66973 9.71985 9.59844 10.3777 9.32597C11.0355 9.05349 11.5977 8.59207 11.9933 8.00005C12.3889 7.40804 12.6 6.71201 12.6 6C12.599 5.04553 12.2194 4.13043 11.5445 3.45551C10.8696 2.7806 9.95448 2.40099 9 2.4ZM9 8.4C8.52532 8.4 8.06131 8.25924 7.66663 7.99553C7.27195 7.73181 6.96434 7.35698 6.78269 6.91844C6.60104 6.4799 6.55351 5.99734 6.64611 5.53178C6.73872 5.06623 6.9673 4.63859 7.30294 4.30294C7.63859 3.9673 8.06623 3.73872 8.53178 3.64612C8.99734 3.55351 9.4799 3.60104 9.91844 3.78269C10.357 3.96434 10.7318 4.27195 10.9955 4.66663C11.2592 5.06131 11.4 5.52532 11.4 6C11.4 6.63652 11.1471 7.24697 10.6971 7.69706C10.247 8.14714 9.63652 8.4 9 8.4Z"
-                          fill="#6F3DCB"
-                        />
-                      </svg>
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {/* Pagination */}
-        <div className="flex flex-col sm:flex-row items-center justify-between px-3 sm:px-6 py-3 sm:py-4 bg-gray-50 border-t border-gray-200 gap-2 mt-2">
-          <div className="text-xs sm:text-sm text-gray-500 mb-1 sm:mb-0 cursor-pointer">
-            Previous
-          </div>
-          <div className="flex items-center gap-1 sm:gap-2">
-            <button className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full bg-primary text-white text-xs sm:text-sm">
-              1
-            </button>
-            <button className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full text-gray-500 text-xs sm:text-sm">
-              2
-            </button>
-            <button className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full text-gray-500 text-xs sm:text-sm">
-              3
-            </button>
-            <span className="text-gray-400">...</span>
-            <button className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full text-gray-500 text-xs sm:text-sm">
-              10
-            </button>
-          </div>
-          <div className="text-xs sm:text-sm text-gray-500 cursor-pointer">
-            Next
-          </div>
+          {/* Table */}
+          <Table
+            columns={columns}
+            data={filteredData}
+            styles={{
+              wrapper: "md:p-3 overflow-x-auto max-w-xs md:max-w-full",
+              table: "w-full border-collapse -mt-3",
+              headerRow: "bg-grey-50 text-left text-gray-700 text-sm border-b border-grey-100",
+              headerCell: "p-4 font-semibold",
+              row: "border-b hover:bg-gray-50",
+              cell: "p-4 text-sm",
+              emptyWrapper: "flex flex-col items-center justify-center py-20 text-center",
+              icon: "w-20 h-20 mb-6 text-purple-500",
+              emptyTitleText: "No tickets created",
+              emptySubText: "Support tickets will appear here",
+              emptyIcon: "uil:schedule"
+            }}
+            pagination={
+              <>
+                {
+                  pageItems.length > 0
+                  &&
+                  <div className="mt-6 w-full flex-1 flex items-center justify-center">
+                    {/* <button 
+                                      disabled={pageListIndex > 0 ? false : true}
+                                      onClick={decrementPageListIndex} 
+                                      style={{
+                                          opacity: pageListIndex > 0 ? 1 : 0.5
+                                      }}
+                                      className="cursor-not-allowed flex items-center text-gray-600 hover:text-gray-800 font-bold"
+                                  >
+                                      <Icon icon="mdi:arrow-left" className="mr-2" /> 
+                                      <span className="hidden md:inline">Previous</span>
+                                  </button>                         */}
+
+                    <div className="flex flex-wrap justify-center gap-2">
+                      {pageList?.map((p, i) => {
+
+                        const isActivePAge = p - 1 === currentPage
+
+                        const handlePClick = () => {
+                          if (p === '...') {
+
+                            if (i == 0) {
+                              decrementPageListIndex()
+
+                            } else {
+                              incrementPageListIndex()
+                            }
+
+                            return;
+                          }
+
+                          setCurrentPage(p - 1)
+
+                          return;
+                        }
+
+                        return (
+                          <button
+                            key={i}
+                            onClick={handlePClick}
+                            className={`w-8 h-8 cursor-pointer rounded-full ${isActivePAge ? "bg-purple-100 text-purple-600" : "text-gray-600"} flex items-center justify-center`}
+                          >
+                            {p}
+                          </button>
+                        )
+                      }
+                      )}
+                    </div>
+                    {/* <button 
+                                      disabled={pageListIndex < totalPageListIndex ? false : true}
+                                      onClick={incrementPageListIndex} 
+                                      style={{
+                                          opacity: pageListIndex < totalPageListIndex ? 1 : 0.5
+                                      }}
+                                      className="cursor-pointer flex items-center text-gray-600 hover:text-gray-800 font-bold"
+                                  >
+                                      <span className="hidden md:inline">Next</span> <Icon icon="mdi:arrow-right" className="ml-2" />
+                                  </button>                         */}
+                  </div>
+                }
+              </>
+              // <Pagination
+              //     currentPage={currentPage}
+              //     totalPages={totalPages}
+              //     onPageChange={handlePageChange}
+              // />
+            }
+          />
         </div>
       </div>
 
@@ -223,7 +394,7 @@ function AllTickets() {
         <div className="fixed inset-0 z-[5000] flex items-center justify-center bg-black/80 bg-opacity-30">
           <div className="bg-white w-[90%] rounded-xl shadow-lg p-6 max-w-md relative animate-fadeIn">
             <button
-              className="absolute cursor-pointer flex items-center gap-1 text-(--primary-500) left-4 top-4 text-primary font-semibold"
+              className="absolute cursor-pointer flex items-center gap-1 text-(--purple-500) left-4 top-4 text-purple font-semibold"
               onClick={() => setShowAssign(false)}
             >
               <svg
@@ -248,33 +419,61 @@ function AllTickets() {
               Back
             </button>
             <h3 className="text-[24px] font-bold pt-8 mb-4">Assign Admin</h3>
-            <div className="mb-4">
-              <label className="block mb-2 text-sm font-medium">
-                Choose Admin
-              </label>
-              <select className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:outline-none">
-                <option>Admin a</option>
-                <option>Admin b</option>
-                <option>Admin c</option>
-              </select>
-              <button className="mt-2 text-primary text-right text-xs font-medium">
-                + Create Admin role
-              </button>
-            </div>
-            <div className="flex gap-2 mt-6">
-              <button
-                className="flex-1 py-2 rounded-lg bg-gray-100 text-gray-700 font-medium"
-                onClick={() => setShowAssign(false)}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => setShowAssign(false)}
-                className="flex-1 cursor-pointer py-2 rounded-lg bg-(--primary-500) text-white font-medium"
-              >
-                Assign
-              </button>
-            </div>
+            {/* <Formik
+              validationSchema={yup.object().shape({
+                assigned_to: yup.string().required("No admin selected")
+              })}
+
+              initialValues={{
+                assigned_to: ''
+              }}
+            > */}
+              <div className="mb-4">
+                <label className="block mb-2 text-sm font-medium">
+                  Choose Admin
+                </label>
+                <select className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:outline-none">
+                  <option value={''} selected>
+                    Select Admin
+                  </option>
+
+                  {
+                    admins?.length > 0
+                    ?
+                      admins.map((a, i) => {
+                        const { role, username, id } = a
+
+                        return(
+                          <option
+                            key={i}
+                            value={id}
+                          >
+                            { username } ~ { role }
+                          </option>
+                        )
+                      })
+                    : 
+                      <div>
+                        Loading admins...
+                      </div>
+                  }
+                </select>
+              </div>
+              <div className="flex gap-2 mt-6">
+                <button
+                  className="flex-1 py-2 rounded-lg bg-gray-100 text-gray-700 font-medium"
+                  onClick={() => setShowAssign(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => setShowAssign(false)}
+                  className="flex-1 cursor-pointer py-2 rounded-lg bg-purple-500 text-white font-medium"
+                >
+                  Assign
+                </button>
+              </div>
+            {/* </Formik> */}
           </div>
         </div>
       )}

@@ -27,7 +27,9 @@ function AllCaseload() {
     }
   }, [bookings])
 
-  const filteredData = (bookings || [])?.filter(b => {
+  const providerBookings = (bookings || [])?.filter(b => b?.provider_profile ? true : false)
+
+  const filteredData = (providerBookings || [])?.filter(b => {
 
     const motherName = b?.user_profile?.name || ''
     const providerName = b?.provider_profile?.provider_name || ''
