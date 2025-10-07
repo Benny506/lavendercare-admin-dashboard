@@ -55,7 +55,7 @@ function CreateAccount() {
     }
   }
   const createAdminFailure = ({ }) => {
-    const errorMsg = 'Either email is not invited or an unexpected error occured'
+    const errorMsg = 'Either email is already an admin, or is not invited or an unexpected error occured'
 
     setApiReqs({ isLoading: false, errorMsg, data: null })
     toast.error(errorMsg)
@@ -84,6 +84,7 @@ function CreateAccount() {
         <Formik
           validationSchema={yup.object().shape({
             email: yup.string().email("Must be a valid email address").required("Email is required"),
+            username: yup.string().required("Username is required"),
             password: yup
               .string()
               .required('Password is required')
@@ -94,7 +95,7 @@ function CreateAccount() {
               .matches(/[^A-Za-z0-9]/, 'Password must contain at least one symbol'),
           })}
           initialValues={{
-            email: '', password: ''
+            email: '', password: '', username: ''
           }}
           onSubmit={values => {
             setApiReqs({
@@ -131,6 +132,22 @@ function CreateAccount() {
                     { errorMsg => <ErrorMsg1 errorMsg={errorMsg} /> }
                   </ErrorMessage>
                 </div>
+
+                <div htmlFor="email_address" className="flex flex-col gap-1">
+                  <p>Email Address</p>
+                  <input
+                    className="py-[10px] w-full px-[14px] border border-(--grey-200) rounded-md"
+                    required
+                    placeholder="Your desired username (Cannot be changed)"
+                    name="username"
+                    value={values.username}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                  />
+                  <ErrorMessage name="username">
+                    { errorMsg => <ErrorMsg1 errorMsg={errorMsg} /> }
+                  </ErrorMessage>
+                </div>                
 
                 <div htmlFor="password" className="flex flex-col gap-1">
                   <p>Password</p>

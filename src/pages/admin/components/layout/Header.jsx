@@ -1,7 +1,12 @@
 import React, { useState } from "react";
 import banner from "../../../../assets/banner.png";
+import { useSelector } from "react-redux";
+import { getUserDetailsState } from "../../../../redux/slices/userDetailsSlice";
 
 function Header() {
+
+  const profile = useSelector(state => getUserDetailsState(state).profile)
+
   return (
     <div className="flex sticky items-center py-3 px-[12px] lg:px-[32px] top-0 bg-white z-[500] justify-end">
       <div className="flex gap-1 md:gap-4">
@@ -35,14 +40,14 @@ function Header() {
 
         {/*  */}
         <div className="flex gap-2">
-          <div className="w-10 h-10 rounded-full">
+          {/* <div className="w-10 h-10 rounded-full">
             <img src={banner} alt="user profile" />
-          </div>
+          </div> */}
           <div className="hidden lg:block">
             <p className="text-[18px] font-[500] leading-tight">
-              Anna Ogunyemi
+              { profile?.username }
             </p>
-            <p className="text-[14px] text-gray-400 font-[400]">Super admin</p>
+            <p className="text-[14px] text-gray-400 font-[400]">{profile?.role}</p>
           </div>
         </div>
       </div>

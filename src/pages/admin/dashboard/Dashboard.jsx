@@ -6,11 +6,14 @@ import { GoDotFill } from "react-icons/go";
 import useApiReqs from "../../../hooks/useApiReqs";
 import { appLoadStart, appLoadStop } from "../../../redux/slices/appLoadingSlice";
 import { toast } from "react-toastify";
-import supabase from "../../../database/dbInit";
+import supabase, { getAdminDetails } from "../../../database/dbInit";
 import PathHeader from "../components/PathHeader";
+import { getUserDetailsState } from "../../../redux/slices/userDetailsSlice";
 
 function Dashboard() {
   const dispatch = useDispatch()
+
+  const profile = useSelector(state => getUserDetailsState(state).profile)
 
   const [info, setInfo] = useState({
     totalProviders: 0,
@@ -105,7 +108,7 @@ function Dashboard() {
 
   return (
     <div className="w-full">
-      <h3 className="text-[24px] font-[800] pt-[24px]">Welcome back, Anna</h3>
+      <h3 className="text-[24px] font-[800] pt-[24px]">Welcome back, {profile?.username}</h3>
 
       <PathHeader 
         paths={[
