@@ -12,8 +12,8 @@ import { MdMessage } from "react-icons/md";
 import { BsClockHistory } from "react-icons/bs";
 import { LuMessageCircleWarning, LuRotateCw } from "react-icons/lu";
 import { sendNotifications } from "../../../lib/notifications";
-import { appLoadStart, appLoadStop } from "../../../../../lavendercare/redux/slices/appLoadingSlice";
 import { toast } from "react-toastify";
+import { appLoadStart, appLoadStop } from "../../../redux/slices/appLoadingSlice";
 
 function MotherMessages() {
     const dispatch = useDispatch()
