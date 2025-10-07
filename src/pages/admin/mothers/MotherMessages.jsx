@@ -3,16 +3,20 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import ProfileImg from "../components/ProfileImg";
 import Modal from "../components/ui/Modal";
 import { getUserDetailsState } from "../../../redux/slices/userDetailsSlice";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useDirectChat } from "../../../hooks/chatHooks/useDirectChat";
 import { dmTopic } from "../../../hooks/chatHooks/dm";
 import { isoToAMPM } from "../../../lib/utils";
 import { IoCheckmark, IoCheckmarkDoneSharp } from "react-icons/io5";
 import { MdMessage } from "react-icons/md";
 import { BsClockHistory } from "react-icons/bs";
-import { LuMessageCircleWarning } from "react-icons/lu";
+import { LuMessageCircleWarning, LuRotateCw } from "react-icons/lu";
+import { sendNotifications } from "../../../lib/notifications";
+import { appLoadStart, appLoadStop } from "../../../../../lavendercare/redux/slices/appLoadingSlice";
+import { toast } from "react-toastify";
 
 function MotherMessages() {
+    const dispatch = useDispatch()
 
     const navigate = useNavigate()
 
@@ -23,6 +27,7 @@ function MotherMessages() {
     const profile = useSelector(state => getUserDetailsState(state).profile)
 
     const bottomRef = useRef(null)
+    const topRef = useRef(null)
 
     const [showPopup, setShowPopup] = useState(false);
     const [input, setInput] = useState("");
@@ -32,7 +37,8 @@ function MotherMessages() {
     const topic = peerId //Mother_id is the topic!
 
     const {
-        sendMessage, messages, status, insertSubStatus, updateSubStatus, onlineUsers
+        sendMessage, messages, status, insertSubStatus, updateSubStatus, onlineUsers, loadMessages,
+        canLoadMoreMsgs, bulkMsgsRead, refreshConnection
     } = useDirectChat({
         topic,
         meId,
@@ -44,21 +50,54 @@ function MotherMessages() {
     useEffect(() => {
         if (!mother) {
             navigate('/admin/mothers')
-        
+
         }
     }, [])
 
     useEffect(() => {
-        bottomRef.current?.scrollIntoView({
-            behavior: "smooth", // smooth scrolling
-            block: "end",     // align at the top (can be 'center' or 'end')
-        });        
-    }, [messages])
+        if (messages?.length > 0) {
+            bottomRef?.current?.scrollIntoView({ behaviour: 'smooth' })
+
+            handleReadUnreadMsgs()
+        }
+    }, [messages]);
+
+    const handleReadUnreadMsgs = () => {
+        const unReadMsgsIds = (messages || [])?.filter(msg => (!msg?.read_at && msg?.to_user === meId)).map(msg => msg?.id)
+
+        if (unReadMsgsIds?.length > 0) {
+            bulkMsgsRead(unReadMsgsIds)
+        }
+    }
+
+    const loadMoreMessages = async () => {
+        try {
+            dispatch(appLoadStart())
+
+            const lastMsg = messages[0]
+            const last_loaded_at = lastMsg?.created_at
+
+            await loadMessages({ msgLoadedTimeStamp: new Date().toISOString(), last_loaded_at, isOlder: true })
+
+            const scrollToTopDelay = setTimeout(() => {
+                // console.log("RUNNING")
+                topRef?.current?.scrollIntoView({ behaviour: 'smooth' })
+                clearTimeout(scrollToTopDelay)
+            }, 0)
+
+        } catch (error) {
+            console.warn(error)
+            toast.error('Error retrieving messages')
+
+        } finally {
+            dispatch(appLoadStop())
+        }
+    }
 
     const sendNow = () => {
         if (!input.trim()) return;
-        sendMessage({ 
-            text: input.trim(), 
+        sendMessage({
+            text: input.trim(),
             toUser: peerId,
             user_notification_token: mother?.notification_token
         });
@@ -67,42 +106,74 @@ function MotherMessages() {
 
     if (!mother) return <></>
 
+    const notifyMother = async () => {
+        try {
+            dispatch(appLoadStart())
+
+            await sendNotifications({
+                tokens: [mother?.notification_token],
+                // sound: null,
+                title: `Incoming message from lavendercare healthcare admin`,
+                body: `New message detected`,
+                data: {}
+            });
+
+            toast.success("Mother notified!")
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error notifying mother. Messages have been sent though, she can view them on her lavendercare app")
+
+        } finally {
+            dispatch(appLoadStop())
+        }
+    }
+
     return (
         <div className=" bg-[#F8F9FB] mt-6 flex flex-col">
             {/*  */}
             <div className="flex flex-col p-3 gap-4 flex-1">
                 {/* Chat Section */}
-                <div className="flex gap-2 items-center pb-3 border-b border-b-gray-300">
-                    <Link to="/admin/mothers/single-mother" state={{ user: mother }}>
-                        <svg
-                            width="24"
-                            height="24"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                        >
-                            <rect width="24" height="24" rx="5" fill="#F5F5F5" />
-                            <g opacity="0.8">
-                                <path
-                                    d="M15.41 16.4066L10.83 12.0002L15.41 7.59383L14 6.24023L8 12.0002L14 17.7602L15.41 16.4066Z"
-                                    fill="#202224"
-                                />
-                            </g>
-                        </svg>
-                    </Link>
-                    <ProfileImg
-                        profile_img={mother?.profile_img}
-                        name={mother?.name}
-                        size="10"
-                    />
-                    <div>
-                        <p className="m-0 p-0 text-sm text-purple-600 font-semibold">
-                            {mother?.name}
-                        </p>
-                        <p className={`m-0 p-0 font-semibold text-xs ${peerOnline ? 'text-[#6F3DCB]' : 'text-gray-900'}`}>
-                            {peerOnline ? 'online' : onlineUsers.length > 0 ? 'offline' : ''}
-                        </p>
+                <div className="flex items-center justify-between gap-1">
+                    <div className="flex gap-2 items-center pb-3 border-b border-b-gray-300">
+                        <Link to="/admin/mothers/single-mother" state={{ user: mother }}>
+                            <svg
+                                width="24"
+                                height="24"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <rect width="24" height="24" rx="5" fill="#F5F5F5" />
+                                <g opacity="0.8">
+                                    <path
+                                        d="M15.41 16.4066L10.83 12.0002L15.41 7.59383L14 6.24023L8 12.0002L14 17.7602L15.41 16.4066Z"
+                                        fill="#202224"
+                                    />
+                                </g>
+                            </svg>
+                        </Link>
+                        <ProfileImg
+                            profile_img={mother?.profile_img}
+                            name={mother?.name}
+                            size="10"
+                        />
+                        <div>
+                            <p className="m-0 p-0 text-sm text-purple-600 font-semibold">
+                                {mother?.name}
+                            </p>
+                            <p className={`m-0 p-0 font-semibold text-xs ${peerOnline ? 'text-[#6F3DCB]' : 'text-gray-900'}`}>
+                                {peerOnline ? 'online' : onlineUsers.length > 0 ? 'offline' : ''}
+                            </p>
+                        </div>
                     </div>
+
+                    <button
+                        onClick={notifyMother}
+                        className="text-sm bg-purple-600 hover:bg-purple-700 text-white cursor-pointer rounded-lg px-3 py-1"
+                    >
+                        Notify mother
+                    </button>
                 </div>
 
                 <div className="max-h-[60vh] h-[60vh] min-h-[60vh] flex-1 p-6 flex flex-col gap-4 overflow-y-auto">
@@ -120,7 +191,24 @@ function MotherMessages() {
                             </p>
                         </div>
                     ) : (
-                        messages.map((msg) => {
+                        ['initial', ...messages].map((msg) => {
+
+                            if (msg === 'initial') {
+                                if (!canLoadMoreMsgs) {
+                                    return <></>
+                                }
+                                return (
+                                    <div
+                                        key={msg}
+                                        ref={topRef}
+                                        className="flex items-center justify-center my-2"
+                                    >
+                                        <div onClick={loadMoreMessages} className="cursor-pointer px-2 py-2 rounded-full bg-purple-600">
+                                            <LuRotateCw size={20} color="#FFF" />
+                                        </div>
+                                    </div>
+                                )
+                            }
 
                             const { message, from_user, pending, failed, created_at, read_at, delivered_at } = msg
 
@@ -214,7 +302,7 @@ function MotherMessages() {
 
                 {
                     (status == 'subscribed' && insertSubStatus == 'subscribed' && updateSubStatus == 'subscribed')
-                    &&
+                    ?
                         <div className="flex items-center gap-2 mt-auto border-t pt-2">
                             <button className="text-gray-400">
                                 <svg width="20" height="20" fill="none" viewBox="0 0 20 20">
@@ -239,13 +327,22 @@ function MotherMessages() {
                                 className="flex-1 border rounded px-3 py-2 text-sm"
                                 placeholder="Type a message..."
                             />
-                            <button 
+                            <button
                                 onClick={sendNow}
                                 className="cursor-pointer bg-purple-600 text-white px-4 py-2 rounded"
                             >
                                 Send
                             </button>
                         </div>
+                    :
+                        <div className="flex items-center justify-center">
+                            <div
+                                onClick={refreshConnection}
+                                className="text-center font-medium bg-purple-600 text-white m-3 py-3 px-7 cursor-pointer rounded-lg"
+                            >
+                                Want to send a msg?
+                            </div>
+                        </div>                    
                 }
 
                 {/* Right-side Popup Trigger */}

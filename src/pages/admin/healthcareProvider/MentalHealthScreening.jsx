@@ -28,6 +28,7 @@ function MentalHealthScreening() {
   const [riskFilter, setRiskFilter] = useState('all')
   const [searchFilter, setSearchFilter] = useState('')
   const [testInfoModal, setTestInfoModal] = useState({ visible: false, hide: null, data: null })
+  const [canLoadMore, setCanLoadMore] = useState(true)
 
   useEffect(() => {
     const loadedScreenings = (mentalHealthScreenings || [])
@@ -37,23 +38,12 @@ function MentalHealthScreening() {
     
     } else{
       fetchTestResults({ 
-        callBack: ({ results }) => {
-          setScreenings(results)
+        callBack: ({ canLoadMore }) => {
+          setCanLoadMore(canLoadMore)
         }
       })
     }
   }, [mentalHealthScreenings])
-
-  useEffect(() => {
-    const { isLoading, data } = apiReqs
-
-    if(isLoading) dispatch(appLoadStart());
-    else dispatch(appLoadStop());
-
-    if(isLoading && data){
-      const { type, requestInfo } = data
-    }
-  }, [apiReqs])
 
   const openTestInfoModal = (args) => setTestInfoModal({ visible: true, hide: hideTestInfoModal, data: args })
   const hideTestInfoModal = () => setTestInfoModal({ visible: true, hide: null, data: null })

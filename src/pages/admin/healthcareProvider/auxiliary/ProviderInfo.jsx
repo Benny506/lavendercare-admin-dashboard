@@ -8,80 +8,22 @@ import { useDispatch } from "react-redux"
 import { appLoadStart, appLoadStop } from "../../../../redux/slices/appLoadingSlice"
 import { toast } from "react-toastify"
 import ZeroItems from "../../components/ZeroItems"
-import { formatTimeToDuration, formatTimeToHHMMSS, timeToAMPM_FromHour } from "../../../../lib/utils"
+import { formatTimeToDuration, formatTimeToHHMMSS, secondsToLabel, timeToAMPM_FromHour } from "../../../../lib/utils"
 import { getStatusBadge, providerStatus, providerStatusColors } from "../../../../lib/utils_Jsx"
 
 export default function ProviderInfo({ provider }) {
     const dispatch = useDispatch()
 
-    const { fetchProviderAvailability, fetchProviderBookingCostOptions } = useApiReqs()
-
     const [apiReqs, setApiReqs] = useState({ isLoading: false, errorMsg: null, data: null })
     const [availability, setAvailability] = useState()
     const [bookingCostOptions, setBookingCostOptions] = useState()
-
-    useEffect(() => {
-        if (!availability) {
-            setApiReqs({
-                isLoading: true,
-                errorMsg: null,
-                data: {
-                    type: 'fetchAvailability',
-                    requestInfo: { provider_id: provider?.provider_id }
-                }
-            })
-        }
-    }, [])
-
-    useEffect(() => {
-        const { isLoading, data } = apiReqs
-
-        if (isLoading) dispatch(appLoadStart());
-        else dispatch(appLoadStop());
-
-        if (isLoading && data) {
-            const { type, requestInfo } = data
-
-            if (type == 'fetchAvailability') {
-                fetchAvailability({ requestInfo })
-            }
-        }
-    }, [apiReqs])
-
-    const fetchAvailability = async ({ requestInfo }) => {
-        try {
-
-            const { provider_id } = requestInfo
-
-            await fetchProviderAvailability({
-                callBack: ({ providerAvailability }) => {
-                    setAvailability(providerAvailability)
-                },
-                provider_id
-            })
-
-            await fetchProviderBookingCostOptions({
-                callBack: ({ bookingCostOptions }) => {
-                    setBookingCostOptions(bookingCostOptions)
-                },
-                provider_id
-            })
-
-        } catch (error) {
-            console.log(error)
-            toast.error("Something went wrong! Try again later")
-
-        } finally {
-            setApiReqs({ isLoading: false, data: null, errorMsg: null })
-        }
-    }
 
     if (!provider) return <></>
 
     return (
         <div className="bg-white rounded-xl w-full max-w-xs flex-shrink-0 flex flex-col gap-6 items-center lg:items-start">
-            <div className={`${providerStatusColors[provider?.status] }`}>
-                { provider?.status }
+            <div className={`${providerStatusColors[provider?.status]}`}>
+                {provider?.status}
             </div>
 
             <div className="flex flex-wrap gap-2 items-center justify-start lg:items-start w-full">
@@ -169,10 +111,12 @@ export default function ProviderInfo({ provider }) {
                 <div className="text-lg font-medium text-black mb-4">Availability</div>
 
                 {
-                    availability && availability?.length > 0
+                    provider?.availability
                         ?
-                        availability?.map((a, i) => {
-                            const { weekday, hours } = a
+                        Object.keys(provider?.availability)?.map((d, i) => {
+                            const weekday = d
+
+                            const { closing, opening } = provider?.availability[weekday]
 
                             return (
                                 <div
@@ -183,16 +127,28 @@ export default function ProviderInfo({ provider }) {
                                         {weekday}
                                     </div>
 
-                                    <div className="flex gap-2 flex-wrap">
-                                        {hours?.map((h, hIndex) => (
+                                    {
+                                        (opening && closing)
+                                        ?
+                                        <div className="flex gap-2 flex-wrap">
                                             <div
-                                                key={hIndex}
                                                 className="text-gray-600 text-xs"
                                             >
-                                                { timeToAMPM_FromHour({ hour: h }) }
+                                                Opening {timeToAMPM_FromHour({ hour: opening })}
                                             </div>
-                                        ))}
-                                    </div>
+                                            <div
+                                                className="text-gray-600 text-xs"
+                                            >
+                                                Closing {timeToAMPM_FromHour({ hour: closing })}
+                                            </div>
+                                        </div>
+                                        :
+                                        <div
+                                            className="text-black text-xs"
+                                        >
+                                            Not set
+                                        </div>
+                                    }
                                 </div>
                             )
                         })
@@ -211,38 +167,27 @@ export default function ProviderInfo({ provider }) {
             >
                 <div className="text-lg font-medium text-black mb-4">Booking Fees & duration</div>
 
-                {
-                    bookingCostOptions && bookingCostOptions?.length > 0
-                        ?
-                        bookingCostOptions?.map((a, i) => {
-                            const { duration_secs, price, currency } = a
+                <div
+                    className="flex items-center justify-between flex-wrap gap-3 mb-4"
+                >
+                    <div className="flex gap-2 flex-wrap">
+                        <span className="font-semibold text-sm">
+                            {provider?.currency}
+                        </span>
+                        <span className="font-bold text-sm">
+                            {provider?.base_price}
+                        </span>
+                    </div>
 
-                            return (
-                                <div
-                                    key={i}
-                                    className="flex items-center justify-between flex-wrap gap-3 mb-4"
-                                >
-                                    <div className="rounded-lg capitalize font-medium text-white text-sm bg-[#6F3DCB] px-3 py-1 mb-2">
-                                        { formatTimeToDuration({ secs: duration_secs }) }
-                                    </div>
+                    <div>
+                        for every
+                    </div>
 
-                                    <div className="flex gap-2 flex-wrap">
-                                        <span className="font-semibold text-sm">
-                                            { currency }
-                                        </span>
-                                        <span className="font-bold text-sm">
-                                            { price }
-                                        </span>
-                                    </div>
-                                </div>
-                            )
-                        })
-                        :
-                        <ZeroItems
-                            zeroText={"Not set"}
-                        />
-                }
-            </div>            
+                    <div className="rounded-lg capitalize font-medium text-white text-sm bg-[#6F3DCB] px-3 py-1 mb-2">
+                        {secondsToLabel({ seconds: provider?.base_duration })}
+                    </div>
+                </div>
+            </div>
         </div>
     )
 }

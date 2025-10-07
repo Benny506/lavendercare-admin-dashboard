@@ -2,15 +2,16 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PathHeader from "../components/PathHeader";
 import { toast } from "react-toastify";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { appLoadStart, appLoadStop } from "../../../redux/slices/appLoadingSlice";
 import useApiReqs from "../../../hooks/useApiReqs";
 import { getStatusBadge } from "../../../lib/utils_Jsx";
-import { formatDate1, timeToAMPM_FromHour } from "../../../lib/utils";
+import { formatDate1, formatTo12Hour, timeToAMPM_FromHour } from "../../../lib/utils";
 import { usePagination } from "../../../hooks/usePagination";
 import Pagination from "../components/Pagination";
 import ProviderInfo from "./auxiliary/ProviderInfo";
 import BookingInformation from "../userManagement/BookingInformation";
+import { getAdminState } from "../../../redux/slices/adminState";
 
 function SingleHealthCareProvider() {
     const dispatch = useDispatch()
@@ -21,33 +22,43 @@ function SingleHealthCareProvider() {
 
     const user = state?.user
 
-    const { fetchProviderBookings } = useApiReqs()
+    const { fetchBookings } = useApiReqs()
+
+    const allBookings = useSelector(state => getAdminState(state).bookings)
 
     const [apiReqs, setApiReqs] = useState({ isLoading: false, errorMsg: null, data: null })
     const [bookings, setBookings] = useState(null)
     const [currentPage, setCurrentPage] = useState(0)
     const [pageListIndex, setPageListIndex] = useState(0)
+    const [canLoadMore, setCanLoadMore] = useState(true)
 
     useEffect(() => {
         if (!user) {
             navigate('/admin/user-management')
             toast.info("Could load provider profile")
 
-        } else {
-            if (!bookings) {
-                setApiReqs({
-                    isLoading: true,
-                    errorMsg: null,
-                    data: {
-                        type: 'fetchBookings',
-                        requestInfo: {
-                            provider_id: user?.provider_id
-                        }
-                    }
-                })
-            }
         }
     }, [])
+
+    useEffect(() => {
+        if (allBookings?.length > 0) {
+
+            const filtered = allBookings?.filter(b => b?.provider_id === user?.provider_id)
+            setBookings(filtered)
+
+        } else {
+            setApiReqs({
+                isLoading: true,
+                errorMsg: null,
+                data: {
+                    type: 'fetchBookings',
+                    requestInfo: {
+                        provider_id: user?.provider_id
+                    }
+                }
+            })
+        }
+    }, [allBookings])
 
     useEffect(() => {
         const { isLoading, data } = apiReqs
@@ -58,32 +69,13 @@ function SingleHealthCareProvider() {
         if (isLoading && data) {
             const { type, requestInfo } = data
 
-            if (type === 'fetchBookings') {
-                fetchBookings({ requestInfo })
+            if (type === 'fetchBookings' || type === 'loadMoreBookings') {
+                fetchBookings({
+                    callBack: ({ canLoadMore }) => setCanLoadMore(canLoadMore)
+                })
             }
         }
     }, [apiReqs])
-
-    const fetchBookings = async ({ requestInfo }) => {
-        try {
-
-            const { provider_id } = requestInfo
-
-            await fetchProviderBookings({
-                callBack: ({ bookings }) => {
-                    setBookings(bookings)
-                },
-                provider_id
-            })
-
-        } catch (error) {
-            console.log(error)
-            toast.error("Something went wrong! Try again")
-
-        } finally {
-            setApiReqs({ isLoading: false, errorMsg: null, data: null })
-        }
-    }
 
     const { pageItems, totalPages, pageList, totalPageListIndex } = usePagination({
         arr: (bookings || []),
@@ -137,7 +129,7 @@ function SingleHealthCareProvider() {
                         <ProviderInfo
                             provider={user}
                         />
-
+{/* 
                         <div className="flex gap-2 mt-6">
                             <button className="bg-red-100 text-red-700 px-4 py-2 rounded">
                                 Suspend
@@ -145,7 +137,7 @@ function SingleHealthCareProvider() {
                             <button className="bg-red-600 text-white px-4 py-2 rounded">
                                 Delete
                             </button>
-                        </div>
+                        </div> */}
                     </div>
 
                     {/* Right: Provider, Timeline, Bookings */}
@@ -197,7 +189,7 @@ function SingleHealthCareProvider() {
                                             {pageItems.map((b, idx) => {
 
                                                 const date =
-                                                    `${formatDate1({ dateISO: new Date(b?.day).toISOString() })}, ${timeToAMPM_FromHour({ hour: b?.hour })}`
+                                                    `${formatDate1({ dateISO: new Date(b?.day).toISOString() })}, ${formatTo12Hour({ time: b?.start_time })}`
 
                                                 return (
                                                     <tr key={idx} className="border-t border-gray-100">
@@ -208,7 +200,7 @@ function SingleHealthCareProvider() {
                                                             {getStatusBadge(b?.status)}
                                                         </td>
                                                         <td className="py-2 pr-4">
-                                                            <button 
+                                                            <button
                                                                 onClick={() => navigate('/admin/user-management/booking-information', { state: { bookingInfo: { ...b, provider_profile: user }, mother: b?.user_profile } })}
                                                                 className="bg-purple-100 rounded-lg cursor-pointer text-purple-700 px-3 py-1 rounded"
                                                             >
@@ -231,6 +223,27 @@ function SingleHealthCareProvider() {
                                         incrementPageListIndex={incrementPageListIndex}
                                         setCurrentPage={setCurrentPage}
                                     />
+
+                                    {
+                                        canLoadMore
+                                        &&
+                                        <div className="w-full flex items-center justify-center my-5">
+                                            <button
+                                                onClick={() => {
+                                                    setApiReqs({
+                                                        isLoading: true,
+                                                        errorMsg: null,
+                                                        data: {
+                                                            type: 'loadMoreBookings'
+                                                        }
+                                                    })
+                                                }}
+                                                className={'bg-purple-600 text-white px-4 py-2 rounded-lg cursor-pointer'}
+                                            >
+                                                Load more
+                                            </button>
+                                        </div>
+                                    }                                    
                                 </div>
                             )}
                         </div>

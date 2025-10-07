@@ -8,7 +8,7 @@ import { BsBookmark, BsCalendar, BsCheckCircle } from "react-icons/bs";
 import { FaEllipsisH } from "react-icons/fa";
 import { FiFileText } from "react-icons/fi";
 import { LuFileWarning, LuMessageCircleWarning } from "react-icons/lu";
-import { formatDate1, isoToDateTime, timeToAMPM_FromHour } from "../../../lib/utils";
+import { formatDate1, formatTo12Hour, isoToDateTime, secondsToLabel, timeToAMPM_FromHour } from "../../../lib/utils";
 import { useReactToPrint } from "react-to-print";
 import PatientInfo from "../mothers/PatientInfo";
 
@@ -51,8 +51,8 @@ function BookingInformation() {
                 },
                 {
                     icon: <BsBookmark className="w-5 h-5 text-green-500" />,
-                    title: `Booking made - ${formatDate1({ dateISO: new Date(bookingInfo?.day).toISOString() })}, ${timeToAMPM_FromHour({ hour: bookingInfo?.hour })}`,
-                    description: "",
+                    title: `Booking made - ${formatDate1({ dateISO: new Date(bookingInfo?.day).toISOString() })}, ${formatTo12Hour({ time: bookingInfo?.start_time })}`,
+                    description: `Set for ${secondsToLabel({ seconds: bookingInfo?.duration })}`,
                     type: "booking"
                 },
                 ...(
@@ -87,8 +87,8 @@ function BookingInformation() {
             [
                 {
                     icon: <BsBookmark className="w-5 h-5 text-green-500" />,
-                    title: `Booking made - ${formatDate1({ dateISO: new Date(bookingInfo?.day).toISOString() })}, ${timeToAMPM_FromHour({ hour: bookingInfo?.start_hour })}`,
-                    description: "",
+                    title: `Booking made - ${formatDate1({ dateISO: new Date(bookingInfo?.day).toISOString() })}, ${formatTo12Hour({ time: bookingInfo?.start_time })}`,
+                    description: `Set for ${secondsToLabel({ seconds: bookingInfo?.duration })}`,
                     type: "booking"
                 },                
             ]
@@ -184,13 +184,26 @@ function BookingInformation() {
                                         <div>
                                             <div className="font-medium">{assignedProvider?.provider_name || assignedProvider?.business_name}</div>
                                             <div className="text-xs text-gray-500">
-                                                {assignedProvider?.professional_title || assignedProvider?.service_name}
+                                                {assignedProvider?.professional_title || bookingInfo?.service_info?.service_name}
                                             </div>
                                         </div>
                                     </div>
                                 </div> 
                             </div>
-                            <button className="bg-purple-600 text-white px-3 py-1 rounded-lg cursor-pointer text-purple-600 text-xs font-medium">
+                            <button 
+                                onClick={() => {
+                                    navigate(
+                                        role === 'Provider'
+                                        ?
+                                            '/admin/healthcare-provider/single-provider'
+                                        :
+                                            '/admin/service-provider/single-vendor'
+                                        ,
+                                        ({ state: { user: role === 'Provider' ? bookingInfo?.provider_profile : bookingInfo?.vendor_profile } })
+                                    )
+                                }}
+                                className="bg-purple-600 text-white px-3 py-1 rounded-lg cursor-pointer text-purple-600 text-xs font-medium"
+                            >
                                 View
                             </button>                            
                         </div>

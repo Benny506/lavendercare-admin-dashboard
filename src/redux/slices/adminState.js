@@ -3,19 +3,17 @@ import { getAppointmentStatus, sortByStatusPriority } from "../../lib/utils";
 
 export const formatBookings = ({ bookings = [] }) => {
     const bookingsWithCorrectStatus = (bookings || []).map(b => {
-        const { status, day } = b
+        const { status, start_time, duration } = b
 
-        const date_ISO = new Date(day).toISOString()
-        const startHour = b?.hour || b?.start_hour
-        const duration_secs = b?.duration || (Math.abs(b?.end_hour - b?.start_hour) * 3600)
-
-        const computedStatus = getAppointmentStatus({ status, date_ISO, startHour, duration_secs })
+        const computedStatus = getAppointmentStatus({ status, start_time, duration_secs: duration })
 
         return {
             ...b,
             status: computedStatus
         }
     })
+
+    return bookingsWithCorrectStatus
 
     const sortedWithPriority = sortByStatusPriority(bookingsWithCorrectStatus)
 

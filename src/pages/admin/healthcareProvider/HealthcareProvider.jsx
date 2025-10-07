@@ -11,6 +11,8 @@ import PathHeader from "../components/PathHeader";
 import Pagination from "../components/Pagination";
 import { usePagination } from "../../../hooks/usePagination";
 import { useNavigate } from "react-router-dom";
+import { getStatusBadge, providerStatusColors } from "../../../lib/utils_Jsx";
+import useApiReqs from "../../../hooks/useApiReqs";
 
 
 function HealthcareProvider() {
@@ -18,12 +20,94 @@ function HealthcareProvider() {
 
   const navigate = useNavigate()
 
+  const { loadMoreUsers } = useApiReqs()
+
   const providers = useSelector(state => getAdminState(state).providers)
 
   const [searchFilter, setSearchFilter] = useState('')
   const [apiReqs, setApiReqs] = useState({ isLoading: false, data: null, errorMsg: null })
   const [currentPage, setCurrentPage] = useState(0)
-  const [pageListIndex, setPageListIndex] = useState(0)  
+  const [pageListIndex, setPageListIndex] = useState(0)
+  const [statsData, setStatsData] = useState({
+    totalProviders: 0, activeProviders: 0, inActiveProviders: 0
+  })
+  const [canLoadMore, setCanLoadMore] = useState(true)
+
+  useEffect(() => {
+    setApiReqs({
+      isLoading: true,
+      errorMsg: null,
+      data: {
+        type: 'initialFetch'
+      }
+    })
+  }, [])
+
+  useEffect(() => {
+    const { isLoading, data } = apiReqs
+
+    if (isLoading) dispatch(appLoadStart());
+    else dispatch(appLoadStop());
+
+    if (isLoading && data) {
+      const { type } = data
+
+      if (type === 'initialFetch') {
+        initialFetch()
+      }
+
+      if (type === 'loadMoreUsers') {
+        loadMoreUsers({
+          callBack: ({ canLoadMore }) => setCanLoadMore(canLoadMore)
+        })
+      }
+    }
+  }, [apiReqs])
+
+  const initialFetch = async () => {
+    try {
+
+      const { count: totalProviders, error: totalProvidersError } = await supabase
+        .from('provider_profiles')
+        .select('*', { count: 'exact', head: true });
+
+      const { count: activeProviders, error: activeProvidersError } = await supabase
+        .from('provider_profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq("credentials_approved", true);
+
+      const { count: inActiveProviders, error: inActiveProvidersError } = await supabase
+        .from('provider_profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq("credentials_approved", false)
+
+      if (totalProvidersError || activeProvidersError || inActiveProvidersError) {
+        console.log("totalProvidersError", totalProvidersError)
+        console.log("activeProvidersError", activeProvidersError)
+        console.log("inActiveProvidersError", inActiveProvidersError)
+
+        throw new Error()
+      }
+
+      setStatsData({
+        totalProviders, activeProviders, inActiveProviders
+      })
+
+      setApiReqs({ isLoading: false, errorMsg: null, data: null })
+
+      return;
+
+    } catch (error) {
+      console.log(error)
+      return initialFetchFailure({ errorMsg: 'Something went wrong! Try again.' })
+    }
+  }
+  const initialFetchFailure = ({ errorMsg }) => {
+    setApiReqs({ isLoading: false, errorMsg, data: null })
+    toast.error(errorMsg)
+
+    return
+  }
 
   const filteredData = (providers || []).filter(p => {
     const { provider_name, professional_title } = p
@@ -37,50 +121,50 @@ function HealthcareProvider() {
         ||
         searchFilter?.toLowerCase().includes(professional_title?.toLowerCase())
         ||
-        professional_title?.toLowerCase().includes(searchFilter?.toLowerCase())      
+        professional_title?.toLowerCase().includes(searchFilter?.toLowerCase())
       );
 
     return matchesSearch;
   })
 
-  const totalProvidersCount = (providers || [])?.length
-  const activeProvidersCount = (providers || [])?.filter(p => p?.credentials_approved)?.length
-  const inActiveProvidersCount = (providers || [])?.filter(p => !p?.credentials_approved)?.length
+  const totalProvidersCount = statsData.totalProviders
+  const activeProvidersCount = statsData.activeProviders
+  const inActiveProvidersCount = statsData.inActiveProviders
 
   const { pageItems, totalPages, pageList, totalPageListIndex } = usePagination({
-      arr: filteredData,
-      maxShow: 4,
-      index: currentPage,
-      maxPage: 5,
-      pageListIndex
+    arr: filteredData,
+    maxShow: 4,
+    index: currentPage,
+    maxPage: 5,
+    pageListIndex
   });
 
   const incrementPageListIndex = () => {
-      if (pageListIndex === totalPageListIndex) {
-          setPageListIndex(0)
+    if (pageListIndex === totalPageListIndex) {
+      setPageListIndex(0)
 
-      } else {
-          setPageListIndex(prev => prev + 1)
-      }
+    } else {
+      setPageListIndex(prev => prev + 1)
+    }
 
-      return
+    return
   }
 
   const decrementPageListIndex = () => {
-      if (pageListIndex == 0) {
-          setPageListIndex(totalPageListIndex)
+    if (pageListIndex == 0) {
+      setPageListIndex(totalPageListIndex)
 
-      } else {
-          setPageListIndex(prev => prev - 1)
-      }
+    } else {
+      setPageListIndex(prev => prev - 1)
+    }
 
-      return
-  }  
+    return
+  }
 
   return (
     <div className=" pt-6 min-h-screen">
       {/* Breadcrumbs and title */}
-      <PathHeader 
+      <PathHeader
         paths={[
           { text: 'Health Providers' }
         ]}
@@ -117,7 +201,7 @@ function HealthcareProvider() {
         <div className="bg-white rounded-xl p-4 flex flex-col items-start min-w-[120px]">
           <span className="text-xs text-gray-500 mb-1">Total Providers</span>
           <span className="text-3xl font-bold">
-            { totalProvidersCount }
+            {totalProvidersCount}
           </span>
         </div>
         <div className="bg-white rounded-xl p-4 flex flex-col items-start min-w-[120px]">
@@ -149,7 +233,7 @@ function HealthcareProvider() {
             Active
           </span>
           <span className="text-3xl font-bold">
-            { activeProvidersCount }
+            {activeProvidersCount}
           </span>
         </div>
         <div className="bg-white rounded-xl p-4 flex flex-col items-start min-w-[120px]">
@@ -181,7 +265,7 @@ function HealthcareProvider() {
             Inactive
           </span>
           <span className="text-3xl font-bold">
-            { inActiveProvidersCount }
+            {inActiveProvidersCount}
           </span>
         </div>
       </div>
@@ -244,12 +328,12 @@ function HealthcareProvider() {
             <tbody>
               {
                 pageItems?.length > 0
-                ?
+                  ?
                   pageItems.map((p, idx) => {
 
                     return (
-                      <tr 
-                        key={idx} 
+                      <tr
+                        key={idx}
                         onClick={() => navigate('/admin/healthcare-provider/single-provider', { state: { user: p } })}
                         className="hover:bg-gray-100 cursor-pointer border-t border-gray-100"
                       >
@@ -272,44 +356,46 @@ function HealthcareProvider() {
                           {p.avg_rating}
                         </td>
                         <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
-                          <label className="inline-flex items-center">
+                          <label className={`inline-flex items-center ${providerStatusColors[p?.status]}`}>
                             {
-                              p?.credentials_approved
-                              ?
-                                <MdToggleOn 
-                                  size={50}
-                                  className={"text-purple-600"}                          
-                                />
-                              :
-                                <MdToggleOff
-                                  size={50}
-                                  className={'text-gray-200'}  
-                                />
+                              // p?.credentials_approved
+                              //   ?
+                              //   <MdToggleOn
+                              //     size={50}
+                              //     className={"text-purple-600"}
+                              //   />
+                              //   :
+                              //   <MdToggleOff
+                              //     size={50}
+                              //     className={'text-gray-200'}
+                              //   />
+                              p?.status
                             }
                           </label>
                         </td>
                         <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap flex gap-2">
                           {/* <button className="text-purple-600 hover:underline"> */}
-                            <svg
-                              width="20"
-                              height="20"
-                              viewBox="0 0 20 20"
-                              fill="none"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                d="M14.0514 3.73889L15.4576 2.33265C16.0678 1.72245 17.0572 1.72245 17.6674 2.33265C18.2775 2.94284 18.2775 3.93216 17.6674 4.54235L8.81849 13.3912C8.37792 13.8318 7.83453 14.1556 7.23741 14.3335L5 15L5.66648 12.7626C5.84435 12.1655 6.1682 11.6221 6.60877 11.1815L14.0514 3.73889ZM14.0514 3.73889L16.25 5.93749M15 11.6667V15.625C15 16.6605 14.1605 17.5 13.125 17.5H4.375C3.33947 17.5 2.5 16.6605 2.5 15.625V6.87499C2.5 5.83946 3.33947 4.99999 4.375 4.99999H8.33333"
-                                stroke="#6F3DCB"
-                                stroke-width="1.5"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                              />
-                            </svg>
+                          <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 20 20"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M14.0514 3.73889L15.4576 2.33265C16.0678 1.72245 17.0572 1.72245 17.6674 2.33265C18.2775 2.94284 18.2775 3.93216 17.6674 4.54235L8.81849 13.3912C8.37792 13.8318 7.83453 14.1556 7.23741 14.3335L5 15L5.66648 12.7626C5.84435 12.1655 6.1682 11.6221 6.60877 11.1815L14.0514 3.73889ZM14.0514 3.73889L16.25 5.93749M15 11.6667V15.625C15 16.6605 14.1605 17.5 13.125 17.5H4.375C3.33947 17.5 2.5 16.6605 2.5 15.625V6.87499C2.5 5.83946 3.33947 4.99999 4.375 4.99999H8.33333"
+                              stroke="#6F3DCB"
+                              stroke-width="1.5"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
                           {/* </button> */}
                         </td>
                       </tr>
-                  )})
-                :
+                    )
+                  })
+                  :
                   <tr className="border-t border-gray-100">
                     <td colSpan={'6'} className="pt-5">
                       <ZeroItems zeroText={'No provider found'} />
@@ -320,18 +406,39 @@ function HealthcareProvider() {
           </table>
 
           <Pagination
-              currentPage={currentPage}
-              pageItems={pageItems}
-              pageListIndex={pageListIndex}
-              pageList={pageList}
-              totalPageListIndex={totalPageListIndex}
-              decrementPageListIndex={decrementPageListIndex}
-              incrementPageListIndex={incrementPageListIndex}
-              setCurrentPage={setCurrentPage}
-          /> 
+            currentPage={currentPage}
+            pageItems={pageItems}
+            pageListIndex={pageListIndex}
+            pageList={pageList}
+            totalPageListIndex={totalPageListIndex}
+            decrementPageListIndex={decrementPageListIndex}
+            incrementPageListIndex={incrementPageListIndex}
+            setCurrentPage={setCurrentPage}
+          />
 
           <div className="pb-2" />
-        </div>        
+        </div>
+
+        {
+          canLoadMore
+          &&
+            <div className="w-full flex items-center justify-center my-5">
+                <button
+                    onClick={() => {
+                        setApiReqs({
+                            isLoading: true,
+                            errorMsg: null,
+                            data: {
+                                type: 'loadMoreUsers'
+                            }
+                        })
+                    }}
+                    className={'bg-purple-600 text-white px-4 py-2 rounded-lg cursor-pointer'}
+                >
+                    Load more
+                </button>
+            </div>            
+        }         
       </div>
     </div>
   );

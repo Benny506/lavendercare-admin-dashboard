@@ -1,293 +1,482 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useRef, useState } from "react";
+import { data, Link, useLocation, useNavigate } from "react-router-dom";
+import PathHeader from "../components/PathHeader";
+import { ErrorMessage, Formik } from "formik";
+import * as yup from 'yup'
+import ErrorMsg1 from "../components/ErrorMsg1";
+import { toast } from "react-toastify";
+import { FaMinus } from "react-icons/fa";
+import { MdCancel } from "react-icons/md";
+import { cloudinaryUpload } from "../../../lib/requestApi";
+import { useDispatch } from "react-redux";
+import { appLoadStart, appLoadStop } from "../../../redux/slices/appLoadingSlice";
+import supabase from "../../../database/dbInit";
+import ProfileImg from "../components/ProfileImg";
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024
+const ALLOWED_TYPES = [
+  /^image\//,
+  // 'application/pdf',
+  // 'application/msword',
+  // 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+]
+
+function validateImageFile(file) {
+  if (!(file instanceof File)) {
+    return { valid: false, error: "You must select a file" };
+  }
+
+  if (!file.type.startsWith("image/")) {
+    return { valid: false, error: "Only image files are allowed" };
+  }
+
+  if (file.size > MAX_FILE_SIZE) {
+    return { valid: false, error: "File must be smaller than 5 MB" };
+  }
+
+  return { valid: true, error: null };
+}
 
 function CreateCommunity() {
+  const dispatch = useDispatch()
+
+  const { state } = useLocation()
+  const initialState = state?.community || {
+    name: '', slug: '', about: '', visibility: 'public', group_type: '',
+    rules: [], profile_img: ''
+  }
+
+  const coverImgFileInput = useRef(null)
+
+  const [rules, setRules] = useState(initialState?.rules)
+  const [ruleInput, setRuleInput] = useState('')
+  const [apiReqs, setApiReqs] = useState({ isLoading: false, errorMsg: null, data: null })
+  const [profileImgPreview, setProfileImgPreview] = useState({
+    file: null, preview: initialState?.profile_img
+  })
+
+  useEffect(() => {
+    const { isLoading, data } = apiReqs
+
+    if (isLoading) dispatch(appLoadStart());
+    else dispatch(appLoadStop());
+
+    if (isLoading && data) {
+      const { type, requestInfo } = data
+
+      if (type === 'createCommunity') {
+        createCommunity({ requestInfo })
+      }
+    }
+  }, [apiReqs])
+
+  const createCommunity = async ({ requestInfo }) => {
+    try {
+
+      let error = null
+
+      if(state?.community){
+        const { error: updateError } = await supabase
+          .from('community')
+          .update(requestInfo)
+          .eq('id', state?.community?.id)
+
+        error = updateError
+      
+      } else{
+        const { error: createError } = await supabase
+          .from("community")
+          .insert(requestInfo)
+
+        error = createError
+      }
+
+      if (error) {
+        console.warn(error)
+        throw new Error()
+      }
+
+      setApiReqs({ isLoading: false, errorMsg: null, data: null })
+
+      toast.success("Community created!")
+
+      setRules([])
+      setRuleInput('')
+
+    } catch (error) {
+      console.warn(error)
+      return createCommunityFailure({ errorMsg: 'Something went wrong! Try again.' })
+    }
+  }
+  const createCommunityFailure = ({ errorMsg }) => {
+    setApiReqs({ isLoading: false, errorMsg, data: null })
+    toast.error(errorMsg)
+
+    return
+  }
+
+  const handleAddRule = () => {
+    if (!ruleInput) {
+      toast.info("Type in a rule")
+      return
+    }
+
+    setRuleInput('')
+    setRules(prev => ([...prev, ruleInput]))
+  }
+
+  const uploadFiles = async ({ files, requestBody }) => {
+    try {
+
+      const { result } = await cloudinaryUpload({ files })
+
+      if (!result) throw new Error();
+
+      const profile_img = result[0]?.secure_url
+
+      if (!profile_img) throw new Error();
+
+      toast.success("Cover image uploaded")
+
+      initiateCreate({ requestBody, profile_img })
+
+      return;
+
+    } catch (error) {
+      console.log(error)
+      return createCommunityFailure({ errorMsg: 'Error uploading community cover image' })
+    }
+  }
+
+  const initiateCreate = ({ requestBody, profile_img }) => {
+    setApiReqs({
+      isLoading: true,
+      errorMsg: null,
+      data: {
+        type: 'createCommunity',
+        requestInfo: {
+          ...requestBody,
+          profile_img
+        }
+      }
+    })    
+  }
+
   return (
     <div className="pt-6 w-full min-h-screen ">
-      <div className="flex items-center gap-1 mb-4">
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 20 20"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M6.66667 14.1663H13.3333M9.18141 2.30297L3.52949 6.6989C3.15168 6.99276 2.96278 7.13968 2.82669 7.32368C2.70614 7.48667 2.61633 7.67029 2.56169 7.86551C2.5 8.0859 2.5 8.32521 2.5 8.80384V14.833C2.5 15.7664 2.5 16.2331 2.68166 16.5896C2.84144 16.9032 3.09641 17.1582 3.41002 17.318C3.76654 17.4996 4.23325 17.4996 5.16667 17.4996H14.8333C15.7668 17.4996 16.2335 17.4996 16.59 17.318C16.9036 17.1582 17.1586 16.9032 17.3183 16.5896C17.5 16.2331 17.5 15.7664 17.5 14.833V8.80384C17.5 8.32521 17.5 8.0859 17.4383 7.86551C17.3837 7.67029 17.2939 7.48667 17.1733 7.32368C17.0372 7.13968 16.8483 6.99276 16.4705 6.69891L10.8186 2.30297C10.5258 2.07526 10.3794 1.9614 10.2178 1.91763C10.0752 1.87902 9.92484 1.87902 9.78221 1.91763C9.62057 1.9614 9.47418 2.07526 9.18141 2.30297Z"
-            stroke="#8B8B8A"
-            strokeWidth="1.66667"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 16 16"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <g clipPath="url(#clip0_1918_35894)">
-            <path
-              d="M6.66656 4L5.72656 4.94L8.7799 8L5.72656 11.06L6.66656 12L10.6666 8L6.66656 4Z"
-              fill="#8B8B8A"
-            />
-          </g>
-          <defs>
-            <clipPath id="clip0_1918_35894">
-              <rect width="16" height="16" fill="white" />
-            </clipPath>
-          </defs>
-        </svg>
-        <span className="text-xs text-gray-400">Communities</span>
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 16 16"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <g clipPath="url(#clip0_1918_35894)">
-            <path
-              d="M6.66656 4L5.72656 4.94L8.7799 8L5.72656 11.06L6.66656 12L10.6666 8L6.66656 4Z"
-              fill="#8B8B8A"
-            />
-          </g>
-          <defs>
-            <clipPath id="clip0_1918_35894">
-              <rect width="16" height="16" fill="white" />
-            </clipPath>
-          </defs>
-        </svg>
-        <span className="text-xs text-(--primary-500) font-semibold">
-          Create community
-        </span>
-      </div>
+      <PathHeader
+        paths={[
+          { text: 'Communities' },
+          state?.community
+          ?
+            { text: `Edit community: ${state?.community?.name}` }
+          :
+            { text: 'Create community' },
+        ]}
+      />
 
       {/* create community title */}
       <div className="mb-4 flex items-center gap-1">
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 20 20"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M9.99996 15.8337L4.16663 10.0003L9.99996 4.16699"
-            stroke="#4D4D4D"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-          <path
-            d="M15.8333 10H4.16663"
-            stroke="#4D4D4D"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-
-        <Link
-          to="/admin/communities/all-communities"
+        <div
           className="text-lg sm:text-xl font-bold"
         >
           Create Community
-        </Link>
+        </div>
       </div>
 
       {/* community body wrapper */}
       <div className="bg-white rounded-xl mb-8 p-4 2xl:w-6xl 2xl:mx-auto">
-        <form className="flex flex-col gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Community Name
-            </label>
-            <input
-              type="text"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
-              placeholder="Enter community name"
-              required
-            />
-            <span className="text-xs text-red-500">
-              Community name is required
-            </span>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Short Handle / Slug
-            </label>
-            <input
-              type="text"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
-              placeholder="e.g. newmothers, lactation"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Description
-            </label>
-            <textarea
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
-              placeholder="Describe what this community is about..."
-              rows={3}
-            ></textarea>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Visibility</label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="visibility"
-                  value="Public"
-                  className="accent-primary"
-                  defaultChecked
-                />{" "}
-                Public
-              </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="visibility"
-                  value="Private"
-                  className="accent-primary"
-                />{" "}
-                Private
-              </label>
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Group Type</label>
-            <select
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
-              required
-            >
-              <option value="">Select group type</option>
-              <option value="support">Support</option>
-              <option value="education">Education</option>
-              <option value="local">Local</option>
-            </select>
-            <span className="text-xs text-red-500">
-              Please select a community type
-            </span>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Initial Moderators
-            </label>
-            <input
-              type="text"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
-              placeholder="Add moderators"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Cover Image
-            </label>
-            <div className="flex flex-col items-center gap-2 border border-dotted border-gray-200 rounded-lg p-4">
-              <span className="text-xs text-gray-400">
-                <svg
-                  width="48"
-                  height="48"
-                  viewBox="0 0 48 48"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M24 6V30"
-                    stroke="#4D4D4D"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                  <path
-                    d="M34 16L24 6L14 16"
-                    stroke="#4D4D4D"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                  <path
-                    d="M42 30V38C42 39.0609 41.5786 40.0783 40.8284 40.8284C40.0783 41.5786 39.0609 42 38 42H10C8.93913 42 7.92172 41.5786 7.17157 40.8284C6.42143 40.0783 6 39.0609 6 38V30"
-                    stroke="#4D4D4D"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </span>
-              <input type="file" className="hidden" />
-              <p className=" text-(--primary-500) rounded text-xs">
-                Upload file
-              </p>
-              <span className="text-xs pt-2 text-gray-400">
-                Recommended: 1200x400px, JPG or PNG
-              </span>
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Community Rules
-            </label>
-            <textarea
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
-              placeholder="Enter community rules..."
-              rows={7}
-            ></textarea>
-            <span className="text-sm text-[#4D4D4D]">
-              Common rules: No spam, respect privacy, be kind, etc.
-            </span>
-          </div>
-          <div>
-            <label className="block text-sm pb-4 font-medium mb-1">
-              Launch Options
-            </label>
+        <Formik
+          validationSchema={yup.object().shape({
+            name: yup.string().required("Name is required"),
+            slug: yup.string().required("Slug is required"),
+            about: yup.string().required("About is required"),
+            group_type: yup.string().required("Group type is required"),
+          })}
+          initialValues={{
+            name: initialState?.name, 
+            slug: initialState?.slug, 
+            about: initialState?.about, 
+            visibility: 'public', 
+            group_type: initialState?.group_type,
+          }}
+          onSubmit={(values, { resetForm }) => {
+            setApiReqs({ isLoading: true, errorMsg: null })
 
+            resetForm()
+
+            const requestBody = {
+              ...values,
+              rules
+            }
+
+            if(profileImgPreview?.file){
+                return uploadFiles({ files: [profileImgPreview?.file], requestBody })
+            }
+
+            initiateCreate({ requestBody })
+            r
+          }}
+        >
+          {({ values, isValid, dirty, handleBlur, handleChange, handleSubmit, setFieldValue }) => (
             <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    name="launch"
-                    value="immediate"
-                    className="accent-primary"
-                    defaultChecked
-                  />{" "}
-                  Launch Immediately
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Community Name
                 </label>
-                <span className="text-[12px] text-gray-300">
-                  Community will be visible as soon as it's created.
-                </span>
+                <input
+                  type="text"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
+                  placeholder="Enter community name"
+                  required
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  value={values.name}
+                  name="name"
+                />
+                <ErrorMessage name="name">
+                  {errorMsg => <ErrorMsg1 errorMsg={errorMsg} />}
+                </ErrorMessage>
               </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Short Handle / Slug
+                </label>
+                <input
+                  type="text"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
+                  placeholder="e.g. newmothers, lactation"
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  value={values.slug}
+                  name="slug"
+                />
+                <ErrorMessage name="slug">
+                  {errorMsg => <ErrorMsg1 errorMsg={errorMsg} />}
+                </ErrorMessage>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  About
+                </label>
+                <textarea
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
+                  placeholder="Describe what this community is about..."
+                  rows={3}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  value={values.about}
+                  name="about"
+                />
+                <ErrorMessage name="about">
+                  {errorMsg => <ErrorMsg1 errorMsg={errorMsg} />}
+                </ErrorMessage>
+              </div>
+              {/* <div>
+                <label className="block text-sm font-medium mb-1">Visibility</label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="visibility"
+                      value="Public"
+                      className="accent-primary"
+                      defaultChecked
+                    />{" "}
+                    Public
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="visibility"
+                      value="Private"
+                      className="accent-primary"
+                    />{" "}
+                    Private
+                  </label>
+                </div>
+              </div> */}
+              <div>
+                <label className="block text-sm font-medium mb-1">Group Type</label>
+                <select
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
+                  required
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  value={values.group_type}
+                  name="group_type"
+                >
+                  <option value="" selected disabled>Select group type</option>
+                  <option value="support">Support</option>
+                  <option value="education">Education</option>
+                  <option value="local">Local</option>
+                </select>
 
-              <label className="flex items-center gap-2">
-                Schedule Launch Date
-              </label>
+                <ErrorMessage name="group_type">
+                  {errorMsg => <ErrorMsg1 errorMsg={errorMsg} />}
+                </ErrorMessage>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Cover Image
+                </label>
+                {
+                  (profileImgPreview?.preview)
+                  &&
+                    <div style={{
+                      position: 'relative'
+                    }}>
+                      <img 
+                          src={profileImgPreview?.preview}
+                          width={'175px'} height={'135px'}
+                      /> 
+
+                      <div onClick={() => setProfileImgPreview({ file: null, preview: null })} className="cursor-pointer absolute -bottom-1 -left-1 w-6 h-6 bg-red-600 rounded-full flex items-center justify-center">                                            
+                          <MdCancel className="w-4 h-4 text-white" />
+                      </div>                                             
+                    </div>
+                }              
+                <div onClick={() => coverImgFileInput?.current?.click()} className="flex flex-col items-center gap-2 border border-dotted border-gray-200 cursor-pointer rounded-lg p-4">
+                  <span className="text-xs text-gray-400">
+                    <svg
+                      width="48"
+                      height="48"
+                      viewBox="0 0 48 48"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M24 6V30"
+                        stroke="#4D4D4D"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                      <path
+                        d="M34 16L24 6L14 16"
+                        stroke="#4D4D4D"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                      <path
+                        d="M42 30V38C42 39.0609 41.5786 40.0783 40.8284 40.8284C40.0783 41.5786 39.0609 42 38 42H10C8.93913 42 7.92172 41.5786 7.17157 40.8284C6.42143 40.0783 6 39.0609 6 38V30"
+                        stroke="#4D4D4D"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </span>
+                  <input
+                    ref={coverImgFileInput}
+                    type="file"
+                    className="hidden"
+                    onChange={e => {
+                      const file = e.currentTarget.files?.[0] ?? null
+
+                      if (!file) return;
+
+                      const { valid, error } = validateImageFile(file)
+
+                      if (!valid) {
+                        const errorMsg = error || 'Invalid file'
+                        toast.error(errorMsg)
+
+                        return;
+                      }
+
+                      if (file) {
+                        const reader = new FileReader()
+                        reader.onloadend = () => {
+                          // reader.result is a base64 data-URL
+                          setProfileImgPreview({ file, preview: reader.result })
+                        }
+                        reader.readAsDataURL(file)
+
+                      }
+                    }}
+                  />
+                  <p className=" text-(--primary-500) rounded text-xs">
+                    Upload file
+                  </p>
+                  <span className="text-xs pt-2 text-gray-400">
+                    Recommended: 1200x400px, JPG or PNG
+                  </span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Community Rules
+                </label>
+                {
+                  rules?.length === 0 &&
+                  <ErrorMsg1 errorMsg={"Add at least one"} />
+                }
+                <textarea
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
+                  placeholder="Type a single rule..."
+                  rows={2}
+                  value={ruleInput}
+                  onChange={e => setRuleInput(e.target.value)}
+                />
+                <div>
+                  <span className="text-sm text-[#4D4D4D]">
+                    Common rules: No spam, respect privacy, be kind, etc.
+                  </span>
+                </div>
+                <button
+                  onClick={handleAddRule}
+                  className="cursor-pointer py-2 px-4 rounded-lg bg-gray-700 text-white font-medium text-xs sm:text-sm"
+                >
+                  Add
+                </button>
+                {
+                  rules?.length > 0
+                  &&
+                  <div className="lg:max-w-[40vw] max-w-[100vw] mt-5">
+                    <p className="text-lg text-[#4D4D4D] mb-4">
+                      Added rules:
+                    </p>
+
+                    {
+                      rules?.map((r, i) => {
+
+                        const handleRemoveRule = () => setRules(rules?.filter(rule => r !== rule))
+
+                        return (
+                          <div
+                            key={i}
+                            className="flex items-start justify-between gap-7 mb-3"
+                          >
+                            <p className="text-sm font-medium text-gray-800">
+                              {r}
+                            </p>
+
+                            <MdCancel onClick={handleRemoveRule} size={17.5} color="#000" className="cursor-pointer" />
+                          </div>
+                        )
+                      })
+                    }
+                  </div>
+                }
+              </div>
+              <div className="flex gap-2 mt-6 justify-end">
+                <button
+                  onClick={handleSubmit}
+                  disabled={(rules?.length === 0) || !(isValid && dirty) ? true : false}
+                  type="submit"
+                  className="py-2 px-4 rounded-lg bg-(--primary-500) text-white font-medium text-xs sm:text-sm"
+                  style={{
+                    opacity: (rules?.length === 0) || !(isValid && dirty) ? 0.5 : 1
+                  }}
+                >
+                  Create Community
+                </button>
+              </div>
             </div>
-
-            <input
-              type="date"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none mt-2"
-            />
-          </div>
-          <div className="flex gap-2 mt-6 justify-end">
-            <button
-              type="button"
-              className="py-2 px-4 rounded-lg bg-white border border-gray-200 text-gray-700 font-medium text-xs sm:text-sm"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="py-2 px-4 rounded-lg bg-(--primary-500) text-white font-medium text-xs sm:text-sm"
-            >
-              Create Community
-            </button>
-          </div>
-        </form>
+          )}
+        </Formik>
       </div>
     </div>
   );

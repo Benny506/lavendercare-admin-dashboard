@@ -64,6 +64,8 @@ import NewRole from "../pages/admin/settings/NewRole";
 import OrderDetail from "../pages/admin/order/OrderDetail";
 import Order from "../pages/admin/order/Order";
 import BlogDetail from "../pages/admin/content/BlogDetail";
+import NewBlog from "../pages/admin/content/NewBlog";
+import CreateAccount from "../pages/admin/createAccount/CreateAccount";
 
 function Routing() {
   return (
@@ -71,23 +73,22 @@ function Routing() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/admin/login" element={<Login />} />
-        {/* <Route path="/admin/create-account" element={<CreateAccount />} /> */}
+        <Route path="/admin/create-account" element={<CreateAccount />} />
         <Route path="/admin/verify-account" element={<VerifyEmail />} />
         <Route path="/admin/recover-account" element={<RecoverAccount />} />
 
         <Route path="/admin" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route path="/admin/dashboard" element={<Dashboard />} />
 
-
           {/* user management */}
           <Route path="/admin/user-management" element={<UserManagement />} />
           <Route path="/admin/user-management/profile" element={<UserManagementProfile />} />
           <Route path="/admin/user-management/booking-information" element={<BookingInformation />} />
-          <Route path="/admin/user-management/activity-logs" element={<ActivityLogs />} />
+          {/* <Route path="/admin/user-management/activity-logs" element={<ActivityLogs />} /> */}
           <Route
             path="/admin/user-management/invite-user"
             element={<InviteUsers />}
-          />
+          />       
 
 
 
@@ -173,6 +174,7 @@ function Routing() {
 
           {/* blog */}
           <Route path="/admin/content/blog" element={<Blog />} />
+          <Route path="/admin/content/new-blog" element={<NewBlog />} />
           <Route path="/admin/content/blog-detail" element={<BlogDetail />} />
           <Route path="/admin/content/resource" element={<Resource />} />
           <Route path="/admin/content/promotions" element={<Promotions />} />

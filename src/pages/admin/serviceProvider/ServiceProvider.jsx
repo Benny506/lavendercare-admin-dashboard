@@ -25,15 +25,16 @@ function ServiceProvider() {
   const [services, setServices] = useState([])
   const [apiReqs, setApiReqs] = useState({ isLoading: false, data: null, errorMsg: null })
   const [searchFilter, setSearchFilter] = useState('')
+  const [canLoadMore, setCanLoadMore] = useState(true)
 
   useEffect(() => {
     const loadedServices = (vendorServices || [])
 
-    if(loadedServices?.length > 0){
+    if (loadedServices?.length > 0) {
       setServices(loadedServices)
-    
-    } else{
-      setApiReqs({ 
+
+    } else {
+      setApiReqs({
         isLoading: true,
         errorMsg: null,
         data: {
@@ -47,17 +48,17 @@ function ServiceProvider() {
   useEffect(() => {
     const { isLoading, data } = apiReqs
 
-    if(isLoading) dispatch(appLoadStart());
+    if (isLoading) dispatch(appLoadStart());
     else dispatch(appLoadStop())
 
-    if(isLoading && data){
+    if (isLoading && data) {
       const { type, requestInfo } = data
 
-      if(type === 'fetchServices'){
+      if (type === 'fetchServices') {
         fetchServices({ requestInfo })
       }
 
-      if(type === 'updateServiceStatus'){
+      if (type === 'updateServiceStatus') {
         updateServiceStatus({ requestInfo })
       }
     }
@@ -66,20 +67,33 @@ function ServiceProvider() {
   const fetchServices = async ({ requestInfo }) => {
     try {
 
+      const limit = 1000;
+      const from = (vendorServices?.length || 0);
+      const to = from + limit - 1;
+
       const { data, error } = await supabase
-        .from('vendor_services')
+        .from('services')
         .select('*')
         .order('created_at', { ascending: true, nullsFirst: false })
+        .limit(limit)
+        .range(from, to);
 
-      if(error){
+      if (error) {
         console.log(error)
         throw new Error()
+      }
+
+      if (data?.length === 0) {
+        toast.info("All services loaded")
+        setCanLoadMore(false)
+        setApiReqs({ isLoading: false, data: null, errorMsg: null })
+        return;
       }
 
       const _services = data?.map(s => {
         const vendorProfile = vendors?.filter(v => v?.id === s?.vendor_id)[0]
         return {
-          ...s, 
+          ...s,
           vendorProfile: vendorProfile || {}
         }
       })
@@ -88,7 +102,7 @@ function ServiceProvider() {
       dispatch(setAdminState({ vendorServices: _services }))
 
       setApiReqs({ isLoading: false, data: null, errorMsg: null })
-      
+
     } catch (error) {
       console.log(error)
       return fetchServicesFailure({ errorMsg: 'Something went wrong! Try again.' })
@@ -107,19 +121,19 @@ function ServiceProvider() {
       const { newStatus, service_id } = requestInfo
 
       const { data, error } = await supabase
-        .from('vendor_services')
+        .from('services')
         .update({ status: newStatus })
         .eq("id", service_id)
         .select()
         .single()
 
-      if(error){
+      if (error) {
         console.log(error)
         throw new Error()
       }
 
       const updatedServices = services.map(s => {
-        if(s?.id === service_id){
+        if (s?.id === service_id) {
           return {
             ...s,
             status: newStatus
@@ -140,7 +154,7 @@ function ServiceProvider() {
       toast.success("Service status updated")
 
       return
-      
+
     } catch (error) {
       console.log(error)
       return updateServiceStatusFailure({ errorMsg: 'Something went wrong! Try again.' })
@@ -160,7 +174,7 @@ function ServiceProvider() {
     alterServiceStatus({ newStatus: 'rejected', service_id: s?.id })
   }
   const approveService = (s) => {
-    alterServiceStatus({ newStatus: 'approved', service_id: s?.id })    
+    alterServiceStatus({ newStatus: 'approved', service_id: s?.id })
   }
   const alterServiceStatus = ({ newStatus, service_id }) => {
     setApiReqs({
@@ -169,7 +183,7 @@ function ServiceProvider() {
       data: {
         type: 'updateServiceStatus',
         requestInfo: {
-          newStatus, 
+          newStatus,
           service_id
         }
       }
@@ -185,7 +199,7 @@ function ServiceProvider() {
 
     const matchesTab = activeTab === 'all' ? true : activeTab === s?.status
 
-    const matchesSearch = 
+    const matchesSearch =
       (
         serviceName?.toLowerCase().includes(searchFilter?.toLowerCase())
         ||
@@ -204,7 +218,7 @@ function ServiceProvider() {
   return (
     <div className=" pt-6 min-h-screen">
       {/* Breadcrumbs and title */}
-      <PathHeader 
+      <PathHeader
         paths={[
           { text: 'Vendors' }
         ]}
@@ -213,9 +227,9 @@ function ServiceProvider() {
       {/* service providers */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
         <h2 className="text-xl sm:text-2xl font-bold">Service Providers</h2>
-        <button className="bg-purple-600 text-white px-4 py-2 rounded font-semibold text-xs">
+        {/* <button className="bg-purple-600 text-white px-4 py-2 rounded font-semibold text-xs">
           Add Provider
-        </button>
+        </button> */}
       </div>
 
       {/* Tabs */}
@@ -224,11 +238,10 @@ function ServiceProvider() {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`pb-2 px-2 text-xs font-semibold border-b-2 capitalize cursor-pointer ${
-              tab === activeTab
-                ? "border-purple-600 text-purple-600"
-                : "border-transparent text-gray-400"
-            }`}
+            className={`pb-2 px-2 text-xs font-semibold border-b-2 capitalize cursor-pointer ${tab === activeTab
+              ? "border-purple-600 text-purple-600"
+              : "border-transparent text-gray-400"
+              }`}
           >
             {tab}
           </button>
@@ -269,7 +282,7 @@ function ServiceProvider() {
                 </th>
                 <th className="py-2 sm:py-3 px-2 sm:px-4 text-left font-semibold text-gray-500 whitespace-nowrap">
                   Service Name
-                </th>                
+                </th>
                 <th className="py-2 sm:py-3 px-2 sm:px-4 text-left font-semibold text-gray-500 whitespace-nowrap">
                   Status
                 </th>
@@ -285,7 +298,7 @@ function ServiceProvider() {
             <tbody className=" divide-y">
               {
                 filteredData?.length > 0
-                ? 
+                  ?
                   filteredData.map((v, idx) => {
                     return (
                       <tr key={v.name + idx} className="border-t border-gray-100">
@@ -298,9 +311,8 @@ function ServiceProvider() {
 
                         <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
                           <span
-                            className={`px-2 py-1 rounded text-xs font-semibold ${
-                              vendorStatusColors[v.status]
-                            }`}
+                            className={`px-2 py-1 rounded text-xs font-semibold ${vendorStatusColors[v.status]
+                              }`}
                           >
                             {v.status}
                           </span>
@@ -335,31 +347,32 @@ function ServiceProvider() {
                               <></>
                             )}
 
-                            <button 
-                              onClick={() => navigate('/admin/service-provider/single-vendor/service-details', { state: { vendor: v?.vendorProfile, service: v } })} 
+                            <button
+                              onClick={() => navigate('/admin/service-provider/single-vendor/service-details', { state: { vendor: v?.vendorProfile, service: v } })}
                               className="bg-purple-600 cursor-pointer text-white px-3 py-1 rounded text-xs w-full sm:w-auto transition hover:bg-purple-700"
                             >
                               Service Info
-                            </button>                            
-                            <button 
-                              onClick={() => navigate('/admin/service-provider/single-vendor', { state: { user: v?.vendorProfile } })} 
+                            </button>
+                            <button
+                              onClick={() => navigate('/admin/service-provider/single-vendor', { state: { user: v?.vendorProfile } })}
                               className="bg-purple-100 cursor-pointer text-purple-600 hover:bg-purple-200 px-3 py-1 rounded text-xs w-full sm:w-auto transition"
                             >
                               Business Info
-                            </button>                            
+                            </button>
                           </div>
                         </td>
                       </tr>
-                  )})
-                :
-                  <tr 
+                    )
+                  })
+                  :
+                  <tr
                     className="border-t border-gray-100"
                   >
                     <td
                       colSpan={'6'}
                       className="py-5"
                     >
-                      <ZeroItems 
+                      <ZeroItems
                         zeroText={'No services found'}
                       />
                     </td>
@@ -367,6 +380,27 @@ function ServiceProvider() {
               }
             </tbody>
           </table>
+
+          {
+            canLoadMore
+            &&
+            <div className="w-full flex items-center justify-center my-5">
+              <button
+                onClick={() => {
+                  setApiReqs({
+                    isLoading: true,
+                    errorMsg: null,
+                    data: {
+                      type: 'fetchServices'
+                    }
+                  })
+                }}
+                className={'bg-purple-600 text-white px-4 py-2 rounded-lg cursor-pointer'}
+              >
+                Load more
+              </button>
+            </div>
+          }
         </div>
 
         {/* Pagination UI (not functional) */}
@@ -400,7 +434,7 @@ function ServiceProvider() {
             title: 'Reject business',
             msg: 'Are you sure you want to reject this business',
             yesFunc: rejectService,
-            noFunc: () => {},
+            noFunc: () => { },
           }
         }}
       />

@@ -23,7 +23,7 @@ const sidebarMenu = [
     path: "/admin/user-management",
     submenu: [
       { title: "All Users", path: "/admin/user-management" },
-      { title: "Activity Logs", path: "/admin/user-management/activity-logs" },
+      // { title: "Activity Logs", path: "/admin/user-management/activity-logs" },
     ],
   },
   {
@@ -295,26 +295,26 @@ function Sidebar() {
     </nav>
   )
   useEffect(() => {
-    openSidebar
+    openMenu
       ? (document.body.style.overflow = "hidden")
       : (document.body.style.overflow = "auto");
-  }, [openSidebar]);
+  }, [openMenu]);
 
   return (
     <>
       <div
         onClick={() => {
-          setOpenSidebar(false);
+          setOpenMenu(false);
         }}
         className={`${
-          openSidebar
+          openMenu
             ? "bg-black/80 w-full z-[1000] h-screen cursor-pointer fixed top-0 left-0 lg:hidden"
             : ""
         }`}
       />
       <div
         className={`${
-          openSidebar ? "fixed top-0 left-0 z-[4000]" : "hidden"
+          openMenu ? "fixed top-0 left-0 z-[4000]" : "hidden"
         } w-[260px] py-[24px] px-[8px] h-screen bg-(--primary-500) shadow-lg lg:block top-0 lg:sticky overflow-y-auto`}
       >
         <div className="p-4">
@@ -436,7 +436,7 @@ function Sidebar() {
       {/* menu bar icon */}
       <div
         onClick={() => {
-          setOpenSidebar((prev) => !prev);
+          setOpenMenu((prev) => !prev);
         }}
         className="absolute left-[20px] lg:hidden z-[700] text-black top-[28px] w-[20px] h-[20px]"
       >

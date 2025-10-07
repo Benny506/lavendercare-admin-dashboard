@@ -1,110 +1,192 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { data, useLocation, useNavigate } from "react-router-dom";
+import PathHeader from "../components/PathHeader";
+import { formatDate1 } from "../../../lib/utils";
+import { useDispatch } from "react-redux";
+import { appLoadStart, appLoadStop } from "../../../redux/slices/appLoadingSlice";
+import { toast } from "react-toastify";
+import supabase from "../../../database/dbInit";
+import { getPublicUrl } from "../../../lib/requestApi";
 
 function BlogDetail() {
+  const dispatch = useDispatch()
+
+  const navigate = useNavigate()
+
+  const { state } = useLocation()
+
+  const article = state?.article
+
+  const [apiReqs, setApiReqs] = useState({ isLoading: false, errorMsg: null, data: null })
+  const [files, setFiles] = useState({ cover_img: null, url: null })
+
+  useEffect(() => {
+    if (!article) {
+      navigate('/admin/content/blog')
+
+    } else {
+      setApiReqs({
+        isLoading: true,
+        errorMsg: null,
+        data: {
+          type: 'getUrl'
+        }
+      })
+    }
+  }, [])
+
+  useEffect(() => {
+    const { isLoading, data } = apiReqs
+
+    if (isLoading) dispatch(appLoadStart());
+    else dispatch(appLoadStop());
+
+    if (isLoading && data) {
+      const { type } = data
+
+      if (type === 'deleteArticle') {
+        deleteArticle()
+      }
+
+      if (type === 'getUrl') {
+        getUrl()
+      }
+    }
+  }, [apiReqs])
+
+  const getUrl = async () => {
+    try {
+
+      const { publicUrl: url } = await getPublicUrl({ filePath: article?.url, bucket_name: 'articles' })
+      const { publicUrl: cover_img } = await getPublicUrl({ filePath: article?.cover_img, bucket_name: 'articles' })
+
+      if (!url || !cover_img) throw new Error();
+
+      setFiles({ url, cover_img })
+
+      setApiReqs({ isLoading: false, errorMsg: null, data: null })
+
+      return;
+
+    } catch (error) {
+      console.log(error)
+      return getUrlFailure({ errorMsg: 'Error getting file-url. Download is unavailable' })
+    }
+  }
+  const getUrlFailure = ({ errorMsg }) => {
+    setApiReqs({ isLoading: false, errorMsg, data: null })
+    toast.error(errorMsg)
+
+    return;
+  }
+
+  const deleteArticle = async () => {
+    try {
+
+      const { error } = await supabase
+        .from('articles')
+        .delete()
+        .eq("id", article?.id)
+
+      if (error) {
+        console.warn(error)
+        throw new Error()
+      }
+
+      setApiReqs({ isLoading: false, errorMsg: null, data: null })
+      toast.success("Article deleted")
+      dispatch(appLoadStop())
+
+      navigate('/admin/content/blog')
+
+    } catch (error) {
+      console.warn(error)
+      return deleteArticleFailure({ errorMsg: 'Something went wrong! Try again.' })
+    }
+  }
+  const deleteArticleFailure = ({ errorMsg }) => {
+    setApiReqs({ isLoading: false, errorMsg, data: null })
+    toast.error(errorMsg)
+
+    return
+  }
+
+  if (!article) return <></>
+
+  const initiateArticleDeletion = () => {
+    setApiReqs({
+      isLoading: true,
+      errorMsg: null,
+      data: {
+        type: 'deleteArticle'
+      }
+    })
+  }
+
   return (
     <div className="pt-6 w-full min-h-screen">
       {/* breadcrumb */}
-      <div className="flex items-center gap-1 mb-4">
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 20 20"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M6.66667 14.1663H13.3333M9.18141 2.30297L3.52949 6.6989C3.15168 6.99276 2.96278 7.13968 2.82669 7.32368C2.70614 7.48667 2.61633 7.67029 2.56169 7.86551C2.5 8.0859 2.5 8.32521 2.5 8.80384V14.833C2.5 15.7664 2.5 16.2331 2.68166 16.5896C2.84144 16.9032 3.09641 17.1582 3.41002 17.318C3.76654 17.4996 4.23325 17.4996 5.16667 17.4996H14.8333C15.7668 17.4996 16.2335 17.4996 16.59 17.318C16.9036 17.1582 17.1586 16.9032 17.3183 16.5896C17.5 16.2331 17.5 15.7664 17.5 14.833V8.80384C17.5 8.32521 17.5 8.0859 17.4383 7.86551C17.3837 7.67029 17.2939 7.48667 17.1733 7.32368C17.0372 7.13968 16.8483 6.99276 16.4705 6.69891L10.8186 2.30297C10.5258 2.07526 10.3794 1.9614 10.2178 1.91763C10.0752 1.87902 9.92484 1.87902 9.78221 1.91763C9.62057 1.9614 9.47418 2.07526 9.18141 2.30297Z"
-            stroke="#8B8B8A"
-            strokeWidth="1.66667"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 16 16"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <g clipPath="url(#clip0_1918_35894)">
-            <path
-              d="M6.66656 4L5.72656 4.94L8.7799 8L5.72656 11.06L6.66656 12L10.6666 8L6.66656 4Z"
-              fill="#8B8B8A"
-            />
-          </g>
-          <defs>
-            <clipPath id="clip0_1918_35894">
-              <rect width="16" height="16" fill="white" />
-            </clipPath>
-          </defs>
-        </svg>
-
-        <span className="text-xs text-gray-400">Content</span>
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 16 16"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <g clipPath="url(#clip0_1918_35894)">
-            <path
-              d="M6.66656 4L5.72656 4.94L8.7799 8L5.72656 11.06L6.66656 12L10.6666 8L6.66656 4Z"
-              fill="#8B8B8A"
-            />
-          </g>
-          <defs>
-            <clipPath id="clip0_1918_35894">
-              <rect width="16" height="16" fill="white" />
-            </clipPath>
-          </defs>
-        </svg>
-        <span className="text-xs text-(--primary-500) font-semibold">
-          Blog Management
-        </span>
-      </div>
+      <PathHeader
+        paths={[
+          { text: 'Content' },
+          { text: 'Blog Management' },
+          { text: article?.title },
+        ]}
+      />
 
       {/* blog title */}
-      <div className="flex item-center justify-between py-2">
+      <div className="flex item-center justify-between py-2 flex-wrap gap-2">
         <h2 className="text-lg h-max sm:text-xl font-bold">Blog Management</h2>
-        <button className="bg-red-500 text-white px-4 py-2 rounded-full self-end">
-          Delete
-        </button>
+
+        <div className="flex gap-2">
+          {
+            files.url
+            &&
+            <a
+              className="bg-purple-600 text-white px-4 py-2 rounded-full self-end"
+              href={files.url}
+              download={article?.title}
+              target="_blank"
+            >
+              Download
+            </a>
+          }
+          <button onClick={() => navigate('/admin/content/new-blog', { state: { article } })} className="bg-gray-500 text-white px-4 py-2 rounded-full self-end">
+            Edit
+          </button>
+          <button onClick={initiateArticleDeletion} className="bg-red-500 text-white px-4 py-2 rounded-full self-end">
+            Delete
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl p-4">
         <div className="flex flex-col md:flex-row gap-4 mb-4">
-          <img
-            src="/src/assets/banner.png"
-            alt="Blog"
-            className="w-full md:w-1/2 h-48 object-cover rounded-lg"
-          />
           <div className="flex-1 flex flex-col justify-between">
             <div>
               <div className="text-xs text-gray-500 mb-1">
-                11 Nov 2024 | 20 minutes read
+                {formatDate1({ dateISO: article?.created_at })}
               </div>
               <h3 className="font-bold text-lg mb-2">
-                Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
-                eiusmod tempor incididunt ut
+                {article?.brief}
               </h3>
-              <div className="text-xs text-gray-500 mb-2">
+              {files?.cover_img && (
+                <>
+                  <img
+                    src={files?.cover_img}
+                    className="rounded-lg mb-2 max-w-4/5"
+                    style={{
+                      maxHeight: '800px'
+                    }}
+                    alt="article-cover-img"
+                  />
+                </>
+              )}
+              {/* <div className="text-xs text-gray-500 mb-2">
                 By Emma Cox, Will Jackson-Moore and James King
-              </div>
+              </div> */}
             </div>
           </div>
-        </div>
-      </div>
-      <div className="bg-white rounded-xl p-4 mt-4">
-        <div className="text-sm text-gray-700">
-          Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
-          eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
-          minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-          aliquip ex ea commodo consequat. Duis aute irure dolor in
-          reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-          pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-          culpa qui officia deserunt mollit anim id est laborum.
         </div>
       </div>
     </div>

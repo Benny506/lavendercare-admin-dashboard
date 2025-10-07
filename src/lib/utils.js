@@ -34,55 +34,80 @@ export function getMaxByKey({ arr, key }) {
   });
 }
 
-export function getAppointmentStatus({ status, date_ISO, startHour, duration_secs }) {
+export function formatTo12Hour({ time }) {
+  const date = typeof time === "string" ? new Date(time) : time;
+
+  let hours = date.getHours();
+  const minutes = date.getMinutes();
+  const ampm = hours >= 12 ? "PM" : "AM";
+
+  hours = hours % 12;
+  hours = hours ? hours : 12; // hour '0' should be '12'
+
+  const minutesStr = minutes < 10 ? "0" + minutes : minutes;
+
+  return `${hours}:${minutesStr} ${ampm}`;
+}
+
+export function formatSlot(slot, userZone = "local") {
+  // slot is in UTC from Supabase
+  const dt = DateTime.fromISO(slot, { zone: "utc" });
+
+  // convert to user zone
+  const local = userZone === "local" ? dt.toLocal() : dt.setZone(userZone);
+
+  // format in 12hr style e.g. 8:15 AM
+  return local.toFormat("h:mm a");
+}
+
+export function secondsToLabel({ seconds }) {
+  const mins = Math.floor(seconds / 60);
+  const hours = Math.floor(mins / 60);
+  const remainingMins = mins % 60;
+
+  if (hours > 0 && remainingMins > 0) {
+    return `${hours} hour${hours > 1 ? 's' : ''} ${remainingMins} min${remainingMins > 1 ? 's' : ''}`;
+  } else if (hours > 0) {
+    return `${hours} hour${hours > 1 ? 's' : ''}`;
+  } else {
+    return `${remainingMins} min${remainingMins > 1 ? 's' : ''}`;
+  }
+}
+
+export function getAppointmentStatus({ status, start_time, duration_secs }) {
   const now = DateTime.now();
-
-  // Build the start time at the given hour on the given date
-  const bookingStartTime = DateTime.fromISO(date_ISO).set({
-    hour: startHour,
-    minute: 0,
-    second: 0,
-    millisecond: 0,
-  });
-
-  // Calculate end time by adding duration
+  const bookingStartTime = DateTime.fromISO(start_time);
   const bookingEndTime = bookingStartTime.plus({ seconds: duration_secs });
 
-  // Helper flags
   const hasStarted = now >= bookingStartTime;
-  const hasEnded   = now > bookingEndTime;
+  const hasEnded = now > bookingEndTime;
 
-  // 1) If the appointment is new and is currently in progress
-  if ((status === 'new' || status == 'awaiting_completion') && hasStarted && !hasEnded) {
-    return 'ongoing';
+  // 1) If the appointment is new/awaiting_completion and ongoing
+  if ((status === "new" || status === "awaiting_completion") && hasStarted && !hasEnded) {
+    return "ongoing";
   }
 
   // 2) new → either still new or missed
-  if (status === 'new') {
-    return hasStarted ? 'missed' : 'new';
+  if (status === "new") {
+    return hasStarted ? "missed" : "new";
   }
 
-  // 3) New but not ongoing → still new
-  if (status === 'new') {
-    return 'new';
+  // 3) cancelled → as is
+  if (status === "cancelled") {
+    return "cancelled";
   }
 
-  // 4) Cancelled → as is
-  if (status === 'cancelled') {
-    return 'cancelled';
+  // 4) completed → as is
+  if (status === "completed") {
+    return "completed";
   }
 
-  // 5) Completed → as is
-  if (status === 'completed') {
-    return 'completed';
+  // 5) awaiting_completion → as is
+  if (status === "awaiting_completion") {
+    return "awaiting_completion";
   }
 
-  // 6) Awating completion → as is
-  if (status === 'awaiting_completion') {
-    return 'awaiting_completion';
-  }  
-
-  // Fallback to the raw status
+  // fallback
   return status;
 }
 

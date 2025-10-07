@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { appLoadStart, appLoadStop } from "../../../redux/slices/appLoadingSlice";
 import useApiReqs from "../../../hooks/useApiReqs";
 import { getUserDetailsState } from "../../../redux/slices/userDetailsSlice";
-import { formatDate1, isoToDateTime, removeDuplicatesByKey, sortByDate, timeToAMPM_FromHour } from "../../../lib/utils";
+import { formatDate1, formatTo12Hour, isoToDateTime, removeDuplicatesByKey, sortByDate, timeToAMPM_FromHour } from "../../../lib/utils";
 import ProfileImg from "../components/ProfileImg";
 import { getStatusBadge } from "../../../lib/utils_Jsx";
 import PathHeader from "../components/PathHeader";
@@ -12,6 +12,7 @@ import { usePagination } from "../../../hooks/usePagination";
 import Pagination from "../components/Pagination";
 import { toast } from "react-toastify";
 import PatientInfo from "../mothers/PatientInfo";
+import { getAdminState } from "../../../redux/slices/adminState";
 
 
 
@@ -22,11 +23,11 @@ function MotherProfile() {
 
     const { state } = useLocation()
 
-    const user = state?.user  
+    const user = state?.user
 
-    const { fetchMotherBookings } = useApiReqs()
+    const { fetchBookings } = useApiReqs()
 
-    const profile = useSelector(state => getUserDetailsState(state).profile)
+    const bookings = useSelector(state => getAdminState(state).bookings)
 
     const [p_bookings, set_p_bookings] = useState([])
     const [v_bookings, set_v_bookings] = useState([])
@@ -35,24 +36,36 @@ function MotherProfile() {
     const [timelines, setTimelines] = useState([])
     const [apiReqs, setApiReqs] = useState({ isLoading: false, errorMsg: null, data: null })
     const [currentPage, setCurrentPage] = useState(0)
-    const [pageListIndex, setPageListIndex] = useState(0)      
+    const [pageListIndex, setPageListIndex] = useState(0)
+    const [canLoadMore, setCanLoadMore] = useState(true)
 
     useEffect(() => {
-        setApiReqs({
-            isLoading: true,
-            errorMsg: null,
-            data: {
-                type: 'initialFetch',
-            }
-        })
-    }, [])
+        if (bookings?.length > 0) {
+
+            const filtered = bookings?.filter(b => b?.user_id === user?.id)
+            const filtered_p = filtered?.filter(b => b?.provider_profile ? true : false)
+            const filtered_v = filtered?.filter(b => b?.vendor_profile ? true : false)
+
+            set_p_bookings(filtered_p)
+            set_v_bookings(filtered_v)
+
+        } else {
+            setApiReqs({
+                isLoading: true,
+                errorMsg: null,
+                data: {
+                    type: 'initialFetch',
+                }
+            })
+        }
+    }, [bookings])
 
     useEffect(() => {
         if (!user) {
             navigate('/admin/user-management')
-            toast.info("Could load mother profile")
+            toast.info("Could not load mother profile")
         }
-    }, [])     
+    }, [])
 
     useEffect(() => {
         const { isLoading, data } = apiReqs
@@ -64,7 +77,15 @@ function MotherProfile() {
             const { type, requestInfo } = data
 
             if (type === 'initialFetch') {
-                initialFetch()
+                fetchBookings({
+                    callBack: ({ canLoadMore }) => setCanLoadMore(canLoadMore)
+                })
+            }
+
+            if (type === 'loadMoreBookings'){
+                fetchBookings({
+                    callBack: ({ canLoadMore }) => setCanLoadMore(canLoadMore)
+                })
             }
         }
     }, [apiReqs])
@@ -89,54 +110,35 @@ function MotherProfile() {
         setTimelines([...p_bookings, ...v_bookings])
     }, [p_bookings, v_bookings])
 
-    const initialFetch = async () => {
-        try {
-
-            await fetchMotherBookings({
-                callBack: ({ bookings, v_bookings }) => {
-                    set_p_bookings(bookings)
-                    set_v_bookings(v_bookings)
-                },
-                mother_id: user?.id
-            })
-
-            setApiReqs({ isLoadin: false, data: null, errorMsg: null })
-
-        } catch (error) {
-            console.log(error)
-        }
-    }
-
-
     const { pageItems, totalPages, pageList, totalPageListIndex } = usePagination({
         arr: timelines,
         maxShow: 4,
         index: currentPage,
         maxPage: 5,
         pageListIndex
-    });  
+    });
 
     const incrementPageListIndex = () => {
-        if(pageListIndex === totalPageListIndex){
+        if (pageListIndex === totalPageListIndex) {
             setPageListIndex(0)
-        
-        } else{
-            setPageListIndex(prev => prev+1)
+
+        } else {
+            setPageListIndex(prev => prev + 1)
         }
 
         return
     }
 
     const decrementPageListIndex = () => {
-        if(pageListIndex == 0){
+        if (pageListIndex == 0) {
             setPageListIndex(totalPageListIndex)
-        
-        } else{
-            setPageListIndex(prev => prev-1)
+
+        } else {
+            setPageListIndex(prev => prev - 1)
         }
 
         return
-    }      
+    }
 
     if (!user) return <></>
 
@@ -145,7 +147,7 @@ function MotherProfile() {
             {/* Main Content */}
             <div className="flex-1 w-full flex flex-col">
 
-                <PathHeader 
+                <PathHeader
                     paths={[
                         { type: 'text', text: 'Mothers' },
                         { type: 'text', text: user?.name },
@@ -156,7 +158,7 @@ function MotherProfile() {
                 <div className="flex flex-col md:flex-row gap-6">
                     {/* Left: Patient Info */}
                     <div className="w-full md:w-1/3 bg-white rounded-xl p-4 md:p-6">
-                        <button 
+                        <button
                             onClick={() => navigate('/admin/mothers/mother-messages', { state: { mother: user } })}
                             className="px-3 py-2 rounded-lg bg-purple-100 text-purple-600 font-medium text-sm cursor-pointer"
                         >
@@ -169,14 +171,14 @@ function MotherProfile() {
                             noMentalHealth={true}
                         />
                         <hr />
-                        <div className="flex gap-2 mt-6">
+                        {/* <div className="flex gap-2 mt-6">
                             <button className="bg-red-100 text-red-700 px-4 py-2 rounded">
                                 Suspend
                             </button>
                             <button className="bg-red-600 text-white px-4 py-2 rounded">
                                 Delete
                             </button>
-                        </div>
+                        </div> */}
                     </div>
 
                     {/* Right: Provider, Timeline, Bookings */}
@@ -208,7 +210,7 @@ function MotherProfile() {
                                                 </div>
                                             </div>
 
-                                            <button 
+                                            <button
                                                 onClick={() => navigate('/admin/healthcare-provider/single-provider', { state: { user: p } })}
                                                 className="bg-purple-600 text-white px-3 py-1 rounded-lg cursor-pointer text-purple-600 text-xs font-medium"
                                             >
@@ -248,7 +250,7 @@ function MotherProfile() {
                                                 </div>
                                             </div>
 
-                                            <button 
+                                            <button
                                                 onClick={() => navigate('/admin/service-provider/single-vendor', { state: { user: v } })}
                                                 className="bg-purple-600 text-white px-3 py-1 rounded-lg cursor-pointer text-purple-600 text-xs font-medium"
                                             >
@@ -300,7 +302,7 @@ function MotherProfile() {
                                                 <th className="py-2 pr-4">Type</th>
                                                 <th className="py-2 pr-4">Who</th>
                                                 <th className="py-2 pr-4">Date & Time</th>
-                                                <th className="py-2 pr-4">Service / Profession</th>
+                                                {/* <th className="py-2 pr-4">Service / Profession</th> */}
                                                 <th className="py-2 pr-4">Status</th>
                                                 <th className="py-2 pr-4">Actions</th>
                                             </tr>
@@ -308,12 +310,12 @@ function MotherProfile() {
                                         <tbody>
                                             {timelines.map((b, idx) => {
 
-                                                const date = 
-                                                    `${formatDate1({ dateISO: new Date(b?.day).toISOString() })}, ${timeToAMPM_FromHour({ hour: b?.hour || b?.start_hour })}`
+                                                const date =
+                                                    `${formatDate1({ dateISO: new Date(b?.day).toISOString() })}. ${formatTo12Hour({ time: b?.start_time })}`
 
-                                                const type = b?.provider_profile ? 'Provider consultation' : 'Vendor service booked'
+                                                const type = b?.provider_profile ? 'Provider' : 'Vendor'
 
-                                                const service_profession = b?.provider_profile?.professional_title || b?.vendor_profile?.service_name
+                                                const service_profession = b?.provider_profile?.professional_title || b?.service_info?.service_name
 
                                                 const name = b?.provider_profile?.provider_name || b?.vendor_profile?.business_name
 
@@ -324,7 +326,7 @@ function MotherProfile() {
                                                         <td className="py-2 pr-4">{date}</td>
                                                         <td className="py-2 pr-4">{service_profession}</td>
                                                         <td className="py-2 pr-4">
-                                                            { getStatusBadge(b?.status) }
+                                                            {getStatusBadge(b?.status)}
                                                             {/* <span
                                                                 className={`px-2 py-1 rounded text-xs font-semibold ${b.status === "Accepted"
                                                                     ? "bg-green-100 text-green-700"
@@ -338,7 +340,7 @@ function MotherProfile() {
                                                         </td>
                                                         <td className="py-2 pr-4">
                                                             <button
-                                                                onClick={() => navigate('/admin/user-management/booking-information', { state: { bookingInfo: b, mother: user } })} 
+                                                                onClick={() => navigate('/admin/user-management/booking-information', { state: { bookingInfo: b, mother: user } })}
                                                                 className="bg-purple-100 text-purple-700 px-3 py-1 rounded-lg cursor-pointer"
                                                             >
                                                                 View Details
@@ -359,7 +361,28 @@ function MotherProfile() {
                                         decrementPageListIndex={decrementPageListIndex}
                                         incrementPageListIndex={incrementPageListIndex}
                                         setCurrentPage={setCurrentPage}
-                                    />                                    
+                                    />
+
+                                    {
+                                        canLoadMore
+                                        &&
+                                        <div className="w-full flex items-center justify-center my-5">
+                                            <button
+                                                onClick={() => {
+                                                    setApiReqs({
+                                                        isLoading: true,
+                                                        errorMsg: null,
+                                                        data: {
+                                                            type: 'loadMoreBookings'
+                                                        }
+                                                    })
+                                                }}
+                                                className={'bg-purple-600 text-white px-4 py-2 rounded-lg cursor-pointer'}
+                                            >
+                                                Load more
+                                            </button>
+                                        </div>
+                                    }
                                 </div>
                             )}
                         </div>

@@ -1,5 +1,5 @@
 import axios from "axios"
-import { SUPABASE_ANON_KEY } from "../database/dbInit"
+import supabase, { SUPABASE_ANON_KEY } from "../database/dbInit"
 
 export const requestApi = async ({ url, method, data, token }) => {
     const headers = 
@@ -127,5 +127,90 @@ export const cloudinaryUpload = async ({ files }) => {
         actualError: error
       }
     }
+  }
+}
+
+export async function getSignedUploadUrl({ id, bucket_name, ext }) {
+    try {
+        const { result, errorMsg } = await requestApi({
+            url: "https://tzsbbbxpdlupybfrgdbs.supabase.co/functions/v1/create-upload-url",
+            method: "POST",
+            data: {
+                id,
+                bucket_name,
+                ext
+            },
+        });
+
+        if (errorMsg) {
+            console.log(errorMsg);
+            throw new Error(errorMsg);
+        }
+
+        return result;
+
+    } catch (error) {
+        console.log(error);
+        return { signedUrl: null };
+    }
+}
+
+export const getPublicUrl = async ({ filePath, bucket_name }) => {
+
+    try {
+        const { data, error } = await supabase
+            .storage
+            .from(bucket_name)
+            .getPublicUrl(filePath)
+
+        if (error) {
+            console.log(data, error)
+            throw new Error()
+        }
+
+        // return data.signedUrl
+        return {
+            publicUrl: data.publicUrl,
+            error: null
+        }
+
+    } catch (error) {
+        console.log("GET URL ERROR!", error)
+        return {
+            publicUrl: null,
+            error: 'Cant seem to load this at the time. Try again later'
+        }
+    }
+}
+
+export async function uploadAsset({ file, id, bucket_name, ext }) {
+  try {
+    // Step 1: Get a signed upload URL from your server or Supabase Edge Function
+    const { signedUrl, filePath } = await getSignedUploadUrl({ id, bucket_name, ext });
+
+    if (!signedUrl || !filePath) throw new Error("Error getting signed upload url");
+
+    // Step 2: Upload the file directly to the signed URL
+    const uploadRes = await fetch(signedUrl, {
+      method: "PUT",
+      headers: {
+        "Content-Type": file.type || "application/octet-stream",
+      },
+      body: file,
+    });
+
+    if (!uploadRes.ok) throw new Error("Upload failed");
+
+    // Step 3: Return result
+    return {
+      filePath,
+      error: null,
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      filePath: null,
+      error: "Error uploading asset",
+    };
   }
 }

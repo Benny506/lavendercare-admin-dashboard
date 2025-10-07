@@ -3,15 +3,16 @@ import { useLocation, useNavigate } from "react-router-dom";
 import PathHeader from "../components/PathHeader";
 import { toast } from "react-toastify";
 import ProviderInfo from "../healthcareProvider/auxiliary/ProviderInfo";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { appLoadStart, appLoadStop } from "../../../redux/slices/appLoadingSlice";
 import useApiReqs from "../../../hooks/useApiReqs";
 import { getStatusBadge } from "../../../lib/utils_Jsx";
-import { formatDate1, timeToAMPM_FromHour } from "../../../lib/utils";
+import { formatDate1, formatTo12Hour, timeToAMPM_FromHour } from "../../../lib/utils";
 import { usePagination } from "../../../hooks/usePagination";
 import Pagination from "../components/Pagination";
 import VendorInfo from "./auxiliary/VendorInfo";
 import VendorServices from "./auxiliary/VendorServices";
+import { getAdminState } from "../../../redux/slices/adminState";
 
 function SingleVendor() {
     const dispatch = useDispatch()
@@ -22,33 +23,45 @@ function SingleVendor() {
 
     const user = state?.user
 
-    const { fetchVendorBookings } = useApiReqs()
+    const { fetchBookings } = useApiReqs()
+
+    const allBookings = useSelector(state => getAdminState(state).bookings)
 
     const [apiReqs, setApiReqs] = useState({ isLoading: false, errorMsg: null, data: null })
     const [bookings, setBookings] = useState(null)
     const [currentPage, setCurrentPage] = useState(0)
     const [pageListIndex, setPageListIndex] = useState(0)
+    const [canLoadMore, setCanLoadMore] = useState(true)
 
     useEffect(() => {
         if (!user) {
             navigate('/admin/user-management')
             toast.info("Could load provider profile")
 
-        } else {
-            if (!bookings) {
-                setApiReqs({
-                    isLoading: true,
-                    errorMsg: null,
-                    data: {
-                        type: 'fetchBookings',
-                        requestInfo: {
-                            vendor_id: user?.id
-                        }
-                    }
-                })
-            }
         }
     }, [])
+
+    useEffect(() => {
+        if (!user) return;
+
+        if (allBookings?.length > 0) {
+
+            const filtered = allBookings?.filter(b => b?.vendor_id === user?.id)
+            setBookings(filtered)
+
+        } else {
+            setApiReqs({
+                isLoading: true,
+                errorMsg: null,
+                data: {
+                    type: 'fetchBookings',
+                    requestInfo: {
+                        vendor_id: user?.id
+                    }
+                }
+            })
+        }
+    }, [allBookings])
 
     useEffect(() => {
         const { isLoading, data } = apiReqs
@@ -60,31 +73,18 @@ function SingleVendor() {
             const { type, requestInfo } = data
 
             if (type === 'fetchBookings') {
-                fetchBookings({ requestInfo })
+                fetchBookings({
+                    callBack: ({ canLoadMore }) => setCanLoadMore(canLoadMore)
+                })
+            }
+
+            if (type === 'loadMoreBookings') {
+                fetchBookings({
+                    callBack: ({ canLoadMore }) => setCanLoadMore(canLoadMore)
+                })
             }
         }
     }, [apiReqs])
-
-    const fetchBookings = async ({ requestInfo }) => {
-        try {
-
-            const { vendor_id } = requestInfo
-
-            await fetchVendorBookings({
-                callBack: ({ bookings }) => {
-                    setBookings(bookings)
-                },
-                vendor_id
-            })
-
-        } catch (error) {
-            console.log(error)
-            toast.error("Something went wrong! Try again")
-
-        } finally {
-            setApiReqs({ isLoading: false, errorMsg: null, data: null })
-        }
-    }
 
     const { pageItems, totalPages, pageList, totalPageListIndex } = usePagination({
         arr: (bookings || []),
@@ -134,31 +134,31 @@ function SingleVendor() {
                 {/* Main grid */}
                 <div className="flex flex-col md:flex-row gap-6">
                     {/* Left: Patient Info */}
-                    <div className="w-full md:w-1/3 bg-white rounded-xl p-4 md:p-6">
+                    <div className="w-full md:w-1/5 bg-white rounded-xl p-4 md:p-6">
                         <VendorInfo
                             vendor={user}
                         />
 
-                        <div className="flex gap-2 mt-6">
+                        {/* <div className="flex gap-2 mt-6">
                             <button className="bg-red-100 text-red-700 px-4 py-2 rounded">
                                 Suspend
                             </button>
                             <button className="bg-red-600 text-white px-4 py-2 rounded">
                                 Delete
                             </button>
-                        </div>
+                        </div> */}
                     </div>
 
                     {/* Right: Provider, Timeline, Bookings */}
-                    <div className="w-full md:w-2/3 flex flex-col gap-6">
+                    <div className="w-full md:w-4/5 flex flex-col gap-6">
                         {/* Vendor services  */}
                         <div className="bg-white rounded-xl p-4 md:p-6">
                             <div className="text-sm text-gray-500 mb-3">All services</div>
 
-                            <VendorServices 
+                            <VendorServices
                                 vendor={user}
                             />
-                        </div>                        
+                        </div>
                         {/* Past Bookings */}
                         <div className="bg-white rounded-xl p-4 md:p-6">
                             <div className="text-sm text-gray-500 mb-3">Past Bookings</div>
@@ -205,17 +205,20 @@ function SingleVendor() {
                                             {pageItems.map((b, idx) => {
 
                                                 const date =
-                                                    `${formatDate1({ dateISO: new Date(b?.day).toISOString() })}, ${timeToAMPM_FromHour({ hour: b?.hour })}`
+                                                    `${formatDate1({ dateISO: new Date(b?.day).toISOString() })}. ${formatTo12Hour({ time: b?.start_time })}`
 
                                                 return (
                                                     <tr key={idx} className="border-t border-gray-100">
-                                                        <td className="py-2 pr-4 font-medium">{b?.service_type?.replaceAll("_", " ")}</td>
+                                                        <td className="py-2 pr-4 font-medium">{b?.service_info?.service_name}</td>
                                                         <td className="py-2 pr-4">{date}</td>
                                                         <td className="py-2 pr-4">
                                                             {getStatusBadge(b?.status)}
                                                         </td>
                                                         <td className="py-2 pr-4">
-                                                            <button className="bg-purple-100 rounded-lg cursor-pointer text-purple-700 px-3 py-1 rounded">
+                                                            <button
+                                                                onClick={() => navigate('/admin/user-management/booking-information', { state: { bookingInfo: b, mother: b?.user_profile } })}
+                                                                className="bg-purple-100 rounded-lg cursor-pointer text-purple-700 px-3 py-1 rounded"
+                                                            >
                                                                 View Details
                                                             </button>
                                                         </td>
@@ -235,6 +238,27 @@ function SingleVendor() {
                                         incrementPageListIndex={incrementPageListIndex}
                                         setCurrentPage={setCurrentPage}
                                     />
+
+                                    {
+                                        canLoadMore
+                                        &&
+                                        <div className="w-full flex items-center justify-center my-5">
+                                            <button
+                                                onClick={() => {
+                                                    setApiReqs({
+                                                        isLoading: true,
+                                                        errorMsg: null,
+                                                        data: {
+                                                            type: 'loadMoreBookings'
+                                                        }
+                                                    })
+                                                }}
+                                                className={'bg-purple-600 text-white px-4 py-2 rounded-lg cursor-pointer'}
+                                            >
+                                                Load more
+                                            </button>
+                                        </div>
+                                    }
                                 </div>
                             )}
                         </div>

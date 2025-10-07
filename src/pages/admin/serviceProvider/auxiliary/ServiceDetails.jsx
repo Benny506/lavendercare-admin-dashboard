@@ -2,7 +2,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
-import { formatNumberWithCommas, getHourFromHHMM, timeToAMPM_FromHour } from "../../../../lib/utils";
+import { formatNumberWithCommas, getHourFromHHMM, secondsToLabel, timeToAMPM_FromHour } from "../../../../lib/utils";
 import { getServiceStatusColor, getServiceStatusFeedBack } from "../../../../lib/utils_Jsx";
 import PathHeader from "../../components/PathHeader";
 import Badge from "../../components/ui/Badge";
@@ -39,8 +39,8 @@ export default function ServiceDetails() {
 
     if (!service || !vendor) return <></>
 
-    const { id, service_name, availability, pricing_type, currency, amount,
-        status, service_category, service_details, location
+    const { id, service_name, availability, currency, base_price, base_duration,
+        status, service_category, service_details, location, country, city
     } = service
 
     return (
@@ -84,11 +84,11 @@ export default function ServiceDetails() {
                     <div className='space-y-4 flex flex-col items-start justify-start w-full font-semibold text-sm'>
                         {Object.keys(days).map((day, index) => {
 
-                            if (!availability[day] || availability[day]?.length === 0) {
+                            if (!availability[day]) {
                                 return;
                             }
 
-                            const slots = availability[day]
+                            const { closing, opening } = availability[day]
 
                             return (
                                 <div
@@ -99,27 +99,25 @@ export default function ServiceDetails() {
                                         <p className="text-sm font-bold text-white capitalize">{day}</p>
                                     </div>
 
-                                    <div className="flex flex-wrap items-center gap-2">
+                                    <div
+                                        className="flex items-center"
+                                    >
                                         {
-                                            slots?.map((s, slotIndex) => {
-
-                                                const { start_hour, end_hour } = s
-
-                                                return(
-                                                    <div
-                                                        key={slotIndex}
-                                                        className="flex items-center"
-                                                    >
-                                                        <span className="text-gray-600 font-medium text-sm">
-                                                            { timeToAMPM_FromHour({ hour: getHourFromHHMM({ timeStr: start_hour }) })}
-                                                        </span>
-                                                        <GoDash color="gray" size={20} />
-                                                        <span className="text-gray-600 font-medium text-sm">
-                                                            { timeToAMPM_FromHour({ hour: getHourFromHHMM({ timeStr: end_hour }) })}
-                                                        </span>                                                        
-                                                    </div>
-                                                )
-                                            })
+                                            opening && closing
+                                                ?
+                                                <>
+                                                    <span className="text-gray-600 font-medium text-sm">
+                                                        {timeToAMPM_FromHour({ hour: opening })}
+                                                    </span>
+                                                    <GoDash color="gray" size={20} />
+                                                    <span className="text-gray-600 font-medium text-sm">
+                                                        {timeToAMPM_FromHour({ hour: closing })}
+                                                    </span>
+                                                </>
+                                                :
+                                                <span>
+                                                    Not set
+                                                </span>
                                         }
                                     </div>
                                 </div>
@@ -135,10 +133,10 @@ export default function ServiceDetails() {
 
                     <div className="flex item-ceter justify-between bg-grey-100 rounded-2xl p-4">
                         <div className="flex flex-wrap items-center gap-5">
-                            <span>Type : <Badge className="">{pricing_type}</Badge></span>
+                            <span>Base price: <strong> {formatNumberWithCommas(base_price)} </strong></span>
                             <div>|</div>
-                            <span>Price/Session: <strong> {formatNumberWithCommas(amount)} </strong></span>
-                            <div>|</div>
+                            <span>Base duration: <strong> {secondsToLabel({ seconds: base_duration })} </strong></span>
+                            <div>|</div>                            
                             <span>Currency: <strong> {currency} </strong></span>
                         </div>
                     </div>
@@ -154,6 +152,15 @@ export default function ServiceDetails() {
                         <li>
                             {service_details}
                         </li>
+                        <li>
+                            Country: {country}
+                        </li>   
+                        <li>
+                            State: {service?.state}
+                        </li> 
+                        <li>
+                            City: {city}
+                        </li>                                                                    
                         <li>
                             Location: {location}
                         </li>

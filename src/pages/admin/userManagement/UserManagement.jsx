@@ -14,12 +14,15 @@ import Pagination from "../components/Pagination";
 import { usePagination } from "../../../hooks/usePagination";
 import Modal from "../components/ui/Modal";
 import PathHeader from "../components/PathHeader";
+import useApiReqs from "../../../hooks/useApiReqs";
 
 
 function UserManagement() {
   const dispatch = useDispatch()
 
   const navigate = useNavigate()
+
+  const { loadMoreUsers } = useApiReqs() 
 
   const mothers = useSelector(state => getAdminState(state).mothers)
   const providers = useSelector(state => getAdminState(state).providers)
@@ -33,6 +36,7 @@ function UserManagement() {
   const [apiReqs, setApiReqs] = useState({ isLoading: false, data: null, errorMsg: { type: null, err: null } })  
   const [currentPage, setCurrentPage] = useState(0)
   const [pageListIndex, setPageListIndex] = useState(0)  
+  const [canLoadMore, setCanLoadMore] = useState(true)
 
   useEffect(() => {
     const _u = [...mothers, ...providers, ...vendors]
@@ -47,6 +51,12 @@ function UserManagement() {
 
     if(isLoading && data){
       const { type, requestInfo } = data
+
+      if(type === 'loadMoreUsers'){
+        loadMoreUsers({
+          callBack: ({ canLoadMore }) => setCanLoadMore(canLoadMore)
+        })
+      }
 
       if(type === 'deleteUser'){
         onRequestApi({
@@ -543,6 +553,27 @@ function UserManagement() {
             setCurrentPage={setCurrentPage}
           />
         </div>
+
+        {
+          canLoadMore
+          &&
+            <div className="w-full flex items-center justify-center my-5">
+                <button
+                    onClick={() => {
+                        setApiReqs({
+                            isLoading: true,
+                            errorMsg: null,
+                            data: {
+                                type: 'loadMoreUsers'
+                            }
+                        })
+                    }}
+                    className={'bg-purple-600 text-white px-4 py-2 rounded-lg cursor-pointer'}
+                >
+                    Load more
+                </button>
+            </div>            
+        }      
       </div>
 
       {/* User Details Modal */}

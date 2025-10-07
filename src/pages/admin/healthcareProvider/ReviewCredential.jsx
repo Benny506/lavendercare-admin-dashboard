@@ -24,17 +24,17 @@ function ReviewCredential() {
   useEffect(() => {
     const { isLoading, data } = apiReqs
 
-    if(isLoading) dispatch(appLoadStart());
+    if (isLoading) dispatch(appLoadStart());
     else dispatch(appLoadStop());
 
-    if(isLoading && data){
+    if (isLoading && data) {
       const { type, requestInfo } = data
 
-      if(type === 'updateStatus'){
+      if (type === 'updateStatus') {
         updateStatus({ requestInfo })
       }
     }
-  }, [apiReqs])  
+  }, [apiReqs])
 
   const updateStatus = async ({ requestInfo }) => {
     try {
@@ -48,13 +48,13 @@ function ReviewCredential() {
         .select()
         .single()
 
-      if(error){
+      if (error) {
         console.log(error)
         throw new Error()
       }
 
       const updatedProviders = (providers || []).map(p => {
-        if(p?.provider_id === provider_id){
+        if (p?.provider_id === provider_id) {
           return {
             ...p,
             credentials_approved: isApproved,
@@ -64,7 +64,7 @@ function ReviewCredential() {
 
         return p
       })
-      
+
       dispatch(setAdminState({ providers: updatedProviders }))
 
       setShowModal(false)
@@ -83,13 +83,13 @@ function ReviewCredential() {
     toast.error(errorMsg)
 
     return;
-  }  
+  }
 
   const handleReview = (provider) => {
     setSelectedProvider(provider);
     setShowModal(true);
   };
-  
+
   const filteredData = (providers || [])?.filter(p => {
     const { provider_name, professional_title } = p
 
@@ -101,16 +101,16 @@ function ReviewCredential() {
       ||
       searchFilter?.toLowerCase().includes(professional_title?.toLowerCase())
       ||
-      professional_title?.toLowerCase().includes(searchFilter?.toLowerCase())      
+      professional_title?.toLowerCase().includes(searchFilter?.toLowerCase())
     )
 
     return matchSearchFilter
   })
 
   const rejectCredentials = () => {
-    if(!selectedProvider) return;
+    if (!selectedProvider) return;
 
-    if(!selectedProvider?.credentials_approved && selectedProvider?.status === 'rejected') {
+    if (!selectedProvider?.credentials_approved && selectedProvider?.status === 'rejected') {
       toast.success("Credentials already rejected")
       return;
     }
@@ -118,15 +118,15 @@ function ReviewCredential() {
     initiateStatusUpdate({ provider_id: selectedProvider?.provider_id, isApproved: false, status: 'rejected' })
   }
   const acceptCredentials = () => {
-    if(!selectedProvider) return;
+    if (!selectedProvider) return;
 
-    if(selectedProvider?.credentials_approved && selectedProvider?.status === 'approved'){
+    if (selectedProvider?.credentials_approved && selectedProvider?.status === 'approved') {
       toast.success("Credentials already approved")
       return;
     }
 
     initiateStatusUpdate({ provider_id: selectedProvider?.provider_id, isApproved: true, status: 'approved' })
-  }  
+  }
   const initiateStatusUpdate = ({ provider_id, isApproved, status }) => {
     return setApiReqs({
       isLoading: true,
@@ -139,13 +139,13 @@ function ReviewCredential() {
           status
         }
       }
-    })       
+    })
   }
 
   return (
     <div className="pt-6 min-h-screen">
       {/* breadcrumbs*/}
-      <PathHeader 
+      <PathHeader
         paths={[
           { text: 'Health providers' },
           { text: 'Review credentials' },
@@ -155,7 +155,7 @@ function ReviewCredential() {
       {/* review credentials */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-4 gap-2 mb-4">
         <h2 className="text-xl sm:text-2xl font-bold">Review Credentials</h2>
-        <button className="bg-gray-100 px-4 py-2 rounded font-semibold text-xs flex items-center gap-2">
+        {/* <button className="bg-gray-100 px-4 py-2 rounded font-semibold text-xs flex items-center gap-2">
           Individual Providers
           <svg width="16" height="16" fill="none" viewBox="0 0 16 16">
             <path
@@ -165,7 +165,7 @@ function ReviewCredential() {
               strokeLinecap="round"
             />
           </svg>
-        </button>
+        </button> */}
       </div>
 
       {/*  */}
@@ -210,7 +210,7 @@ function ReviewCredential() {
                 </th>
                 <th className="py-2 sm:py-3 px-2 sm:px-4 text-left font-semibold text-gray-500 whitespace-nowrap">
                   Status
-                </th>                
+                </th>
                 <th className="py-2 sm:py-3 px-2 sm:px-4 text-left font-semibold text-gray-500 whitespace-nowrap">
                   Action
                 </th>
@@ -219,7 +219,7 @@ function ReviewCredential() {
             <tbody>
               {
                 filteredData?.length > 0
-                ?
+                  ?
                   filteredData.map((p, idx) => (
                     <tr key={p.name} className="border-t border-gray-100">
                       <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
@@ -229,14 +229,14 @@ function ReviewCredential() {
                         {p?.professional_title}
                       </td>
                       <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
-                        { p?.documents_submitted_on ? isoToDateTime({ isoString: p?.documents_submitted_on }) : 'Not submitted' }
+                        {p?.documents_submitted_on ? isoToDateTime({ isoString: p?.documents_submitted_on }) : 'Not submitted'}
                       </td>
                       <td className={`py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap flex
                       `}>
                         <div className={`${providerStatusColors[p?.status]} px-3 py-1 rounded-lg`}>
-                          { p?.status }
+                          {p?.status}
                         </div>
-                      </td>                      
+                      </td>
                       <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
                         <button
                           className="bg-purple-600 cursor-pointer text-white px-4 py-1 rounded-full text-xs w-full sm:w-auto transition hover:bg-purple-700"
@@ -247,11 +247,11 @@ function ReviewCredential() {
                       </td>
                     </tr>
                   ))
-                :
+                  :
                   <tr className="border-t border-gray-100">
-                    <td colSpan={'6'} className="mt-5">
-                      <ZeroItems 
-                        zeroText={'No providers fount'}
+                    <td colSpan={'6'} className="mt-5 p-5">
+                      <ZeroItems
+                        zeroText={'No providers found!'}
                       />
                     </td>
                   </tr>
@@ -295,7 +295,7 @@ function ReviewCredential() {
                   />
                 </svg>
               </div>
-              <ProfileImg 
+              <ProfileImg
                 name={selectedProvider?.provider_name}
                 profile_img={selectedProvider?.profile_img}
                 size="16"
@@ -311,11 +311,11 @@ function ReviewCredential() {
             <div className="mb-4">
               <div className="font-semibold text-sm mb-1">Info</div>
               <div className="text-xs text-gray-500">
-                Email: { selectedProvider?.email }
+                Email: {selectedProvider?.email}
               </div>
-              <div className="text-xs text-gray-500">
+              {/* <div className="text-xs text-gray-500">
                 Phone Number: { selectedProvider?.phone_number }
-              </div>
+              </div> */}
             </div>
 
             <div className="mb-4">
@@ -342,10 +342,29 @@ function ReviewCredential() {
                       </svg>
                       License document
                     </div>
-                    <div className="text-xs text-gray-400">200 KB</div>
-                    <a href="#" className="text-xs text-purple-600 underline">
+                    {/* <div className="text-xs text-gray-400">200 KB</div> */}
+                    <div
+                      className="text-sm mt-2 text-purple-600 underline cursor-pointer"
+                      onClick={() => {
+                        if(!selectedProvider?.license_document){
+                          toast.info("Invalid credentials")
+                          return;
+                        }
+
+                        const pdfUrl = selectedProvider?.license_document
+                        const fileName = 'license_document.pdf';
+
+                        const link = document.createElement('a');
+                        link.href = pdfUrl;
+                        link.download = fileName; // optional — suggests a name
+                        link.target = '_blank';   // open in new tab if not downloadable
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }}
+                    >
                       View
-                    </a>
+                    </div>
                   </div>
                   <input
                     type="checkbox"
