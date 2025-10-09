@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import ProfileImg from "../components/ProfileImg";
 import Modal from "../components/ui/Modal";
 import { getUserDetailsState } from "../../../redux/slices/userDetailsSlice";
@@ -14,6 +14,7 @@ import { LuMessageCircleWarning, LuRotateCw } from "react-icons/lu";
 import { sendNotifications } from "../../../lib/notifications";
 import { toast } from "react-toastify";
 import { appLoadStart, appLoadStop } from "../../../redux/slices/appLoadingSlice";
+import supabase from "../../../database/dbInit";
 
 function MotherMessages() {
     const dispatch = useDispatch()
@@ -21,8 +22,11 @@ function MotherMessages() {
     const navigate = useNavigate()
 
     const { state } = useLocation()
+    const [searchParams, setSearchParams] = useSearchParams();
 
-    const mother = state?.mother
+    const mother_id = searchParams.get("mother_id");
+
+    const mom = state?.mother
 
     const profile = useSelector(state => getUserDetailsState(state).profile)
 
@@ -31,6 +35,7 @@ function MotherMessages() {
 
     const [showPopup, setShowPopup] = useState(false);
     const [input, setInput] = useState("");
+    const [mother, setMother] = useState(mom)
 
     const meId = profile?.id
     const peerId = mother?.id
@@ -48,10 +53,14 @@ function MotherMessages() {
     const peerOnline = onlineUsers.includes(peerId)
 
     useEffect(() => {
-        if (!mother) {
-            navigate('/admin/mothers')
-
-        }
+        if (!mother && !mother_id) {
+            navigate('/admin/mothers')    
+        
+        } else{
+            if(mother_id && !mother){
+                fetchMom()
+            }
+        } 
     }, [])
 
     useEffect(() => {
@@ -61,6 +70,33 @@ function MotherMessages() {
             handleReadUnreadMsgs()
         }
     }, [messages]);
+
+    const fetchMom = async () => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from("user_profiles")
+                .select("*")
+                .single()
+                .eq("id", mother_id)
+
+            if(error){
+                console.log(error)
+                throw new Error()
+            }
+
+            setMother(data)
+            
+        } catch (error) {
+            console.log(error)
+            navigate('/admin/mothers') 
+        
+        } finally {
+            dispatch(appLoadStop())
+        }
+    }
 
     const handleReadUnreadMsgs = () => {
         const unReadMsgsIds = (messages || [])?.filter(msg => (!msg?.read_at && msg?.to_user === meId)).map(msg => msg?.id)
