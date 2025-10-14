@@ -12,6 +12,7 @@ export default function useApiReqs() {
     const vendors = useSelector(state => getAdminState(state).vendors)
     const providers = useSelector(state => getAdminState(state).providers)
     const bookings = useSelector(state => getAdminState(state).bookings)
+    const products = useSelector(state => getAdminState(state).products)
     const mentalHealthScreenings = useSelector(state => getAdminState(state).mentalHealthScreenings)
 
 
@@ -83,7 +84,7 @@ export default function useApiReqs() {
 
             const limit = 1000;
             const from = (mentalHealthScreenings?.length || 0);
-            const to = from + limit - 1;            
+            const to = from + limit - 1;
 
             const { data, error } = await supabase
                 .from('mental_health_test_answers')
@@ -93,21 +94,21 @@ export default function useApiReqs() {
                 `)
                 .order('created_at', { ascending: false, nullsFirst: false })
                 .limit(limit)
-                .range(from, to);                
+                .range(from, to);
 
             if (error) {
                 console.log(error)
                 throw new Error()
             }
 
-            if(data?.length === 0){
+            if (data?.length === 0) {
                 dispatch(appLoadStop())
                 toast.info("All test results loaded")
 
                 callBack && callBack({ canLoadMore: false })
 
                 return;
-            }            
+            }
 
             dispatch(setAdminState({ mentalHealthScreenings: data }))
 
@@ -153,7 +154,7 @@ export default function useApiReqs() {
                 throw new Error()
             }
 
-            if(data?.length === 0){
+            if (data?.length === 0) {
                 dispatch(appLoadStop())
                 toast.info("All bookings loaded")
 
@@ -166,11 +167,9 @@ export default function useApiReqs() {
                 bookings: data
             }))
 
-            callBack({ bookings: data })
-
             dispatch(appLoadStop())
 
-            callBack && callBack({ canLoadMore: true })
+            callBack && callBack({ canLoadMore: true, bookings: data })
 
         } catch (error) {
             console.log(error)
@@ -321,6 +320,58 @@ export default function useApiReqs() {
 
 
 
+    //products
+    const fetchProducts = async ({ callBack = () => { } }) => {
+        try {
+
+            const limit = 1000;
+            const from = (products?.length || 0);
+            const to = from + limit - 1;
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from('products')
+                .select(`
+                    *
+                `)
+                .order("created_at", { ascending: false, nullsFirst: false })
+                .limit(limit)
+                .range(from, to);
+
+            if (error) {
+                console.log(error)
+                throw new Error()
+            }
+
+            if (data?.length === 0) {
+                dispatch(appLoadStop())
+                toast.info("All products loaded")
+
+                callBack && callBack({ canLoadMore: false })
+
+                return;
+            }
+
+            dispatch(setAdminState({
+                products: data
+            }))
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ canLoadMore: true })
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error fetching bookings")
+            dispatch(appLoadStop())
+        }
+    }
+
+
+
+
+
     return {
         //users
         loadMoreUsers,
@@ -360,5 +411,12 @@ export default function useApiReqs() {
         //vendors
         fetchVendorServices,
         // fetchVendorBookings,
+
+
+
+
+
+        //products
+        fetchProducts,
     }
 }

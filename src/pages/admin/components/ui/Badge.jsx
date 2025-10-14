@@ -8,6 +8,7 @@ const variantMap = {
   warning: "bg-amber-500 text-black",
   info: "bg-sky-500 text-white",
   neutral: "bg-gray-200 text-gray-800",
+  default: "bg-[#703dcb] text-white"
 };
 
 const sizeMap = {
@@ -27,7 +28,7 @@ export default function Badge({
   count,
   maxCount = 99,
   showDot = false,
-  variant = "primary",
+  variant = "default",
   size = "md",
   pill = true,
   className = "",

@@ -183,14 +183,71 @@ export const getPublicUrl = async ({ filePath, bucket_name }) => {
     }
 }
 
+export const getMultiplePublicUrls = async ({ filePaths, bucket_name }) => {
+  try {
+    const results = await Promise.all(
+      filePaths.map(filePath => getPublicUrl({ filePath, bucket_name }))
+    );
+
+    // Optionally, separate successful and failed results
+    const urls = results
+      .filter(r => !r.error)
+      .map(r => r.publicUrl);
+
+    const errors = results.filter(r => r.error);
+
+    return { urls, errors, error: null };
+  } catch (err) {
+    console.error("Error fetching public URLs:", err);
+    return {
+      urls: [],
+      errors: [],
+      error: "An unexpected error occurred while fetching URLs"
+    };
+  }
+};
+
+
 export async function uploadAsset({ file, id, bucket_name, ext }) {
   try {
-    // Step 1: Get a signed upload URL from your server or Supabase Edge Function
+    // ✅ If multiple files are provided, upload all in parallel
+    if (Array.isArray(file)) {
+      const results = await Promise.all(
+        file.map(async (f, i) => {
+          const { signedUrl, filePath } = await getSignedUploadUrl({
+            id: `${id}`, // make path unique
+            bucket_name,
+            ext: f.name?.split('.').pop() || ext,
+          });
+
+          if (!signedUrl || !filePath)
+            throw new Error("Error getting signed upload URL");
+
+          const uploadRes = await fetch(signedUrl, {
+            method: "PUT",
+            headers: {
+              "Content-Type": f.type || "application/octet-stream",
+            },
+            body: f,
+          });
+
+          if (!uploadRes.ok) throw new Error(`Upload failed for file ${f.name || i}`);
+
+          return filePath;
+        })
+      );
+
+      return {
+        filePaths: results,
+        error: null,
+      };
+    }
+
+    // ✅ Otherwise, handle single upload as before
     const { signedUrl, filePath } = await getSignedUploadUrl({ id, bucket_name, ext });
 
     if (!signedUrl || !filePath) throw new Error("Error getting signed upload url");
 
-    // Step 2: Upload the file directly to the signed URL
     const uploadRes = await fetch(signedUrl, {
       method: "PUT",
       headers: {
@@ -201,7 +258,6 @@ export async function uploadAsset({ file, id, bucket_name, ext }) {
 
     if (!uploadRes.ok) throw new Error("Upload failed");
 
-    // Step 3: Return result
     return {
       filePath,
       error: null,
@@ -214,3 +270,4 @@ export async function uploadAsset({ file, id, bucket_name, ext }) {
     };
   }
 }
+

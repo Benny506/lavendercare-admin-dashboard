@@ -29,7 +29,6 @@ import Blog from "../pages/admin/content/Blog";
 
 import Product from "../pages/admin/marketPlace/Product";
 import AddProduct from "../pages/admin/marketPlace/AddProduct";
-import ProductPreview from "../pages/admin/marketPlace/ProductPreview";
 import MarketPromotions from "../pages/admin/marketPlace/MarketPromotions";
 import PayoutRequests from "../pages/admin/order/PayoutRequests";
 
@@ -184,10 +183,10 @@ function Routing() {
 
 
           {/* marketplace */}
-          {/* <Route path="/admin/marketplace/manage-product" element={<Product />} />
+          <Route path="/admin/marketplace/manage-product" element={<Product />} />
           <Route path="/admin/marketplace/add-product" element={<AddProduct />} />
-          <Route path="/admin/marketplace/yoga-mat" element={<ProductPreview />} />
-          <Route path="/admin/marketplace/promotions" element={<MarketPromotions />} /> */}
+          <Route path="/admin/marketplace/edit-product" element={<AddProduct />} />
+          {/* <Route path="/admin/marketplace/promotions" element={<MarketPromotions />} /> */}
 
           {/* order and transactions */}
           {/* <Route path="/admin/orders" element={<Order />} />

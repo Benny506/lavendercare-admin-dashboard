@@ -30,7 +30,8 @@ const adminState = createSlice({
         vendorServices: [],
         mentalHealthScreenings: [],
         highRiskAlerts: [],
-        bookings: []
+        bookings: [],
+        products: []
     },
     reducers: {
         setAdminState: (state, action) => {
@@ -72,7 +73,11 @@ const adminState = createSlice({
             
             if(action.payload?.bookings){
                 state.bookings = formatBookings({ bookings: action?.payload?.bookings })
-            }             
+            }       
+            
+            if(action.payload?.products){
+                state.products = action.payload?.products
+            }                   
         },                
     }
 })

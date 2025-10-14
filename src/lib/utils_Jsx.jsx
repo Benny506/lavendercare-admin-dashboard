@@ -240,3 +240,12 @@ export const getTicketStatusBadge = ({ status }) => {
         </div>
     )
 }
+
+
+
+
+
+//products
+export const productCategories = [
+    "Health", "Wellness", "Medical"
+]

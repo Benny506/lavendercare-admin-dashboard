@@ -82,18 +82,18 @@ const sidebarMenu = [
       // { title: "Promotional Banners", path: "/admin/content/promotions" },
     ],
   },
-  // {
-  //   title: "Marketplace",
-  //   Icon: ({ size, color }) => <Icons name={'marketPlace'} size={size} color={color} />,
-  //   path: "/admin/marketplace",
-  //   submenu: [
-  //     { title: "Manage Products", path: "/admin/marketplace/manage-product" },
-  //     {
-  //       title: "Promotions and Discounts",
-  //       path: "/admin/marketplace/promotions",
-  //     },
-  //   ],
-  // },
+  {
+    title: "Marketplace",
+    Icon: ({ size, color }) => <Icons name={'marketPlace'} size={size} color={color} />,
+    path: "/admin/marketplace",
+    submenu: [
+      { title: "Manage Products", path: "/admin/marketplace/manage-product" },
+      {
+        title: "Promotions and Discounts",
+        // path: "/admin/marketplace/promotions",
+      },
+    ],
+  },
   // {
   //   title: "Order and Transactions",
   //   Icon: ({ size, color }) => <Icons name={'orderAndTransaction'} size={size} color={color} />,

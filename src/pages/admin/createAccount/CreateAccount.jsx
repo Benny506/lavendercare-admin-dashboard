@@ -55,7 +55,6 @@ function CreateAccount() {
     }
   }
   const createAdminFailure = ({ realErrorMsg }) => {
-    console.log(realErrorMsg)
     const errorMsg = realErrorMsg || 'Either email is already an admin, or is not invited or an unexpected error occured'
 
     setApiReqs({ isLoading: false, errorMsg, data: null })
