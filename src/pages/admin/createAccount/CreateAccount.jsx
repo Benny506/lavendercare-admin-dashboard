@@ -54,8 +54,9 @@ function CreateAccount() {
       return createAdminFailure({ errorMsg: 'Something went wrong! Try again.' })
     }
   }
-  const createAdminFailure = ({ }) => {
-    const errorMsg = 'Either email is already an admin, or is not invited or an unexpected error occured'
+  const createAdminFailure = ({ realErrorMsg }) => {
+    console.log(realErrorMsg)
+    const errorMsg = realErrorMsg || 'Either email is already an admin, or is not invited or an unexpected error occured'
 
     setApiReqs({ isLoading: false, errorMsg, data: null })
     toast.error(errorMsg)
@@ -106,7 +107,7 @@ function CreateAccount() {
                 requestInfo: {
                   url: 'https://tzsbbbxpdlupybfrgdbs.supabase.co/functions/v1/register-admin',
                   method: 'POST',
-                  data: { values, expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString() }
+                  data: values
                 }
               }
             })
@@ -134,7 +135,7 @@ function CreateAccount() {
                 </div>
 
                 <div htmlFor="email_address" className="flex flex-col gap-1">
-                  <p>Email Address</p>
+                  <p>Username</p>
                   <input
                     className="py-[10px] w-full px-[14px] border border-(--grey-200) rounded-md"
                     required
