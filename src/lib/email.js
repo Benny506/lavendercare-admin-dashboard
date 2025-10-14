@@ -1,6 +1,6 @@
 import { requestApi } from "./requestApi"
 
-export const sendEmail = async ({ to_email, data, template_id, subject }) => {
+export const sendEmail = async ({ from_email = 'no-reply@lavendercare.co', to_email, data, template_id, subject }) => {
     try {
 
         const { responseStatus, errorMsg, result } = await requestApi({

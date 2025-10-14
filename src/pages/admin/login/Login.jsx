@@ -157,7 +157,7 @@ function Login() {
               </div>
 
               <div className="flex flex-col py-3 w-full gap-6">
-                <Link className="text-right text-(--gray-400)">Forgot passowrd?</Link>
+                {/* <Link className="text-right text-(--gray-400)">Forgot passowrd?</Link> */}
 
                 <button
                   disabled={!(isValid && dirty) ? true : false}

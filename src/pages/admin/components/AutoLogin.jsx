@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 import AppLoading from "./appLoading/AppLoading"
 import { useDispatch } from "react-redux"
 import { setUserDetails } from "../../../redux/slices/userDetailsSlice"
@@ -10,6 +10,7 @@ export default function AutoLogin({ children }){
     const dispatch = useDispatch()
 
     const navigate = useNavigate()
+    const { pathname } = useLocation()
 
     const [user, setUser] = useState(null)
     const [appLoading, setAppLoading] = useState(true)
@@ -69,7 +70,10 @@ export default function AutoLogin({ children }){
     }, [user]) 
     
     const autoLoginError = () => {
-        navigate('/', { replace: true })
+        if(!pathname.includes('admin/create-account')){
+            navigate('/', { replace: true })
+        }
+
         setAppLoading(false)
 
         console.log("Auto-login failure")
