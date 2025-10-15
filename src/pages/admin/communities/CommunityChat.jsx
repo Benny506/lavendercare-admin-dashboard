@@ -17,7 +17,7 @@ import { appLoadStart, appLoadStop } from "../../../redux/slices/appLoadingSlice
 import supabase from "../../../database/dbInit";
 import AudioPlayer from "../../../hooks/chatHooks/voiceNotes/AudioPlayer";
 
-function MotherMessages() {
+function CommunityChat() {
     const dispatch = useDispatch()
 
     const navigate = useNavigate()
@@ -25,41 +25,42 @@ function MotherMessages() {
     const { state } = useLocation()
     const [searchParams, setSearchParams] = useSearchParams();
 
-    const mother_id = searchParams.get("mother_id");
+    const community_id = searchParams.get("community_id");
 
-    const mom = state?.mother
+    const _community = state?.community
 
     const profile = useSelector(state => getUserDetailsState(state).profile)
 
     const bottomRef = useRef(null)
     const topRef = useRef(null)
 
-    const [showPopup, setShowPopup] = useState(false);
     const [input, setInput] = useState("");
-    const [mother, setMother] = useState(mom)
+    const [community, setCommunity] = useState(_community)
 
     const meId = profile?.id
-    const peerId = mother?.id
-    const topic = peerId //Mother_id is the topic!
+    const peerId = community?.id
+    const topic = community?.id //community_id is the topic!
 
     const {
         sendMessage, messages, status, insertSubStatus, updateSubStatus, onlineUsers, loadMessages,
-        canLoadMoreMsgs, bulkMsgsRead, refreshConnection
+        canLoadMoreMsgs, bulkMsgsRead, refreshConnection,
     } = useDirectChat({
         topic,
         meId,
         peerId,
+        isCommunity: true,
+        isAdmin: false
     })
 
     const peerOnline = onlineUsers.includes(peerId)
 
     useEffect(() => {
-        if (!mother && !mother_id) {
-            navigate('/admin/mothers')
+        if (!community && !community_id) {
+            navigate('/admin/communities/all-communities')
 
         } else {
-            if (mother_id && !mother) {
-                fetchMom()
+            if (community_id && !community) {
+                fetchCommunity()
             }
         }
     }, [])
@@ -72,27 +73,27 @@ function MotherMessages() {
         }
     }, [messages]);
 
-    const fetchMom = async () => {
+    const fetchCommunity = async () => {
         try {
 
             dispatch(appLoadStart())
 
             const { data, error } = await supabase
-                .from("user_profiles")
+                .from("communities")
                 .select("*")
                 .single()
-                .eq("id", mother_id)
+                .eq("id", community_id)
 
             if (error) {
                 console.log(error)
                 throw new Error()
             }
 
-            setMother(data)
+            setCommunity(data)
 
         } catch (error) {
             console.log(error)
-            navigate('/admin/mothers')
+            navigate('/admin/communities/all-communities')
 
         } finally {
             dispatch(appLoadStop())
@@ -135,35 +136,38 @@ function MotherMessages() {
         if (!input.trim()) return;
         sendMessage({
             text: input.trim(),
-            toUser: peerId,
-            user_notification_token: mother?.notification_token
+            community_id: community?.id,
+            user_profile: {
+                id: profile?.id,
+                username: `Admin ~ ${profile?.username}`
+            }
         });
         setInput('');
     };
 
-    if (!mother) return <></>
+    if (!community) return <></>
 
     const notifyMother = async () => {
-        try {
-            dispatch(appLoadStart())
+        // try {
+        //     dispatch(appLoadStart())
 
-            await sendNotifications({
-                tokens: [mother?.notification_token],
-                // sound: null,
-                title: `Incoming message from lavendercare healthcare admin`,
-                body: `New message detected`,
-                data: {}
-            });
+        //     await sendNotifications({
+        //         tokens: [community?.notification_token],
+        //         // sound: null,
+        //         title: `Incoming message from lavendercare healthcare admin`,
+        //         body: `New message detected`,
+        //         data: {}
+        //     });
 
-            toast.success("Mother notified!")
+        //     toast.success("Mother notified!")
 
-        } catch (error) {
-            console.log(error)
-            toast.error("Error notifying mother. Messages have been sent though, she can view them on her lavendercare app")
+        // } catch (error) {
+        //     console.log(error)
+        //     toast.error("Error notifying community. Messages have been sent though, she can view them on her lavendercare app")
 
-        } finally {
-            dispatch(appLoadStop())
-        }
+        // } finally {
+        //     dispatch(appLoadStop())
+        // }
     }
 
     return (
@@ -173,44 +177,33 @@ function MotherMessages() {
                 {/* Chat Section */}
                 <div className="flex items-center justify-between gap-1">
                     <div className="flex gap-2 items-center pb-3 border-b border-b-gray-300">
-                        <Link to="/admin/mothers/single-mother" state={{ user: mother }}>
-                            <svg
-                                width="24"
-                                height="24"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                            >
-                                <rect width="24" height="24" rx="5" fill="#F5F5F5" />
-                                <g opacity="0.8">
-                                    <path
-                                        d="M15.41 16.4066L10.83 12.0002L15.41 7.59383L14 6.24023L8 12.0002L14 17.7602L15.41 16.4066Z"
-                                        fill="#202224"
-                                    />
-                                </g>
-                            </svg>
-                        </Link>
                         <ProfileImg
-                            profile_img={mother?.profile_img}
-                            name={mother?.name}
+                            profile_img={community?.profile_img}
+                            name={community?.name}
                             size="10"
                         />
                         <div>
                             <p className="m-0 p-0 text-sm text-purple-600 font-semibold">
-                                {mother?.name}
+                                {community?.name}
                             </p>
-                            <p className={`m-0 p-0 font-semibold text-xs ${peerOnline ? 'text-[#6F3DCB]' : 'text-gray-900'}`}>
-                                {peerOnline ? 'online' : onlineUsers.length > 0 ? 'offline' : ''}
+                            <p className={`m-0 p-0 font-semibold text-xs ${onlineUsers.length > 1 ? 'text-[#6F3DCB]' : 'text-gray-900'}`}>
+                                {
+                                    onlineUsers.length > 1
+                                        ?
+                                        `${onlineUsers.length - 1} user${onlineUsers.length - 1 > 1 ? 's' : ''} online`
+                                        :
+                                        'No user online'
+                                }
                             </p>
                         </div>
                     </div>
 
-                    <button
+                    {/* <button
                         onClick={notifyMother}
                         className="text-sm bg-purple-600 hover:bg-purple-700 text-white cursor-pointer rounded-lg px-3 py-1"
                     >
-                        Notify mother
-                    </button>
+                        Notify community
+                    </button> */}
                 </div>
 
                 <div className="max-h-[60vh] h-[60vh] min-h-[60vh] flex-1 p-6 flex flex-col gap-4 overflow-y-auto">
@@ -224,11 +217,11 @@ function MotherMessages() {
                                 No messages to display
                             </p>
                             <p className="text-sm text-grey-500 text-center">
-                                Messages from this mother will appear here
+                                Messages from this community will appear here
                             </p>
                         </div>
                     ) : (
-                        ['initial', ...messages].map((msg) => {
+                        ['initial', ...messages].map((msg, index) => {
 
                             if (msg === 'initial') {
                                 if (!canLoadMoreMsgs) {
@@ -247,12 +240,16 @@ function MotherMessages() {
                                 )
                             }
 
-                            const { message, from_user, pending, failed, created_at, read_at, delivered_at, file_type, duration } = msg
+                            const { message, from_user, file_type, duration, pending, failed, created_at, read_at, delivered_at, user_profile } = msg
 
                             const iAmSender = from_user === meId ? true : false
 
                             const seen = read_at ? true : false
                             const delivered = delivered_at ? true : false
+
+                            const lastMsgIndex = messages?.length - 1
+
+                            const nextMsg = index !== lastMsgIndex && messages[index + 1]
 
                             return (
                                 <div key={msg.id} className={`flex ${iAmSender ? 'justify-end' : 'justify-start'}`}>
@@ -261,16 +258,32 @@ function MotherMessages() {
                                             width: file_type === 'audio' ? '80%' : 'auto'
                                         }}
                                     >
+                                        {
+                                            profile?.username
+                                            &&
+                                            (!nextMsg || (nextMsg && nextMsg?.from_user != user_profile?.id))
+                                            &&
+                                            <p className="text-[12px]" style={
+                                                {
+                                                    color: "#020201",
+                                                    marginBottom: 5,
+                                                    textAlign: iAmSender ? 'right' : 'left'
+                                                }
+                                            }>
+                                                ~{user_profile?.username === profile?.username ? 'You' : user_profile?.username}
+                                            </p>
+                                        }
+
                                         <div className={`max-w-xs ${iAmSender
                                             ? 'bg-purple-600 text-white'
                                             : 'bg-gray-100 text-gray-900'
                                             } rounded-2xl px-4 py-3`}>
-                                            {file_type ? (
+                                            {file_type === 'audio' ? (
                                                 <div>
-                                                    <AudioPlayer
-                                                        channelId={topic}
-                                                        filePath={message}
-                                                        durationMillis={duration * 1000}
+                                                    <AudioPlayer 
+                                                        channelId={community?.id} 
+                                                        filePath={message} 
+                                                        durationMillis={duration*1000} 
                                                         iAmSender={iAmSender}
                                                     />
                                                 </div>
@@ -384,55 +397,9 @@ function MotherMessages() {
                             </div>
                         </div>
                 }
-
-                {/* Right-side Popup Trigger */}
-                <div className="hidden md:block w-0"></div>
-                <div className="absolute top-4 right-4 flex gap-2 z-20">
-                    <button className="bg-purple-100 text-purple-700 px-4 py-2 rounded font-semibold text-xs">
-                        Mark as Resolved
-                    </button>
-                    <button
-                        className="bg-gray-100 px-2 py-2 rounded"
-                        onClick={() => setShowPopup(true)}
-                    >
-                        <svg width="20" height="20" fill="none" viewBox="0 0 20 20">
-                            <circle cx="10" cy="10" r="2" fill="#8B8B8A" />
-                            <circle cx="10" cy="5" r="2" fill="#8B8B8A" />
-                            <circle cx="10" cy="15" r="2" fill="#8B8B8A" />
-                        </svg>
-                    </button>
-                </div>
-                {/* Popup (Image 3) */}
-                {showPopup && (
-                    <Modal
-                        isOpen={true}
-                        onClose={() => setShowPopup(false)}
-                        className="w-full md:w-80 bg-white rounded-t-2xl md:rounded-2xl shadow-lg p-6 m-0 md:mr-8 md:mb-0"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="flex items-center gap-3 mb-4">
-                            <img
-                                src="https://randomuser.me/api/portraits/women/44.jpg"
-                                alt="avatar"
-                                className="w-12 h-12 rounded-full"
-                            />
-                            <div>
-                                <div className="font-semibold">Chinenye Okeke</div>
-                                <div className="text-xs text-gray-500">User Information</div>
-                            </div>
-                        </div>
-                        <div className="text-xs text-gray-500 mb-2">Age: -</div>
-                        <div className="text-xs text-gray-500 mb-2">
-                            Contact: email@example.com
-                        </div>
-                        <div className="text-xs text-gray-500 mb-2">
-                            Phone no: 0801 234 5678
-                        </div>
-                    </Modal>
-                )}
             </div>
         </div>
     );
 }
 
-export default MotherMessages;
+export default CommunityChat;

@@ -6,42 +6,7 @@ import { appLoadStart, appLoadStop } from '../../redux/slices/appLoadingSlice';
 import { getMessages, setChannelIds } from '../../redux/slices/messagesSlice';
 import { toast } from 'react-toastify';
 
-const isAdmin = true
-const isVendor = false
-const isCommunity = false
-
-// utility to check if messages are the same by ID + read/delivered/read_at
-function areMessagesEqual(a, b) {
-  if (a === b) return true;
-  if (!a || !b) return false;
-  if (a.length !== b.length) return false;
-
-  for (let i = 0; i < a.length; i++) {
-    const msgA = a[i];
-    const msgB = b[i];
-
-    if (
-      msgA.read_at !== msgB.read_at ||
-      msgA.delivered_at !== msgB.delivered_at ||
-      msgA.pending !== msgB.pending ||
-      msgA.failed !== msgB.failed
-    ) {
-      return false;
-    }
-  }
-  return true;
-}
-
-// wrapper around setMessages
-function safeSetMessages(setter, updater) {
-  setter(prev => {
-    const next = typeof updater === "function" ? updater(prev) : updater;
-    return areMessagesEqual(prev, next) ? prev : next;
-  });
-}
-
-export function useDirectChat({ topic, meId }) {
-
+export function useDirectChat({ topic, meId, isAdmin = true, isCommunity = false }) {
   const dispatch = useDispatch()
 
   const channelRef = useRef(null);
@@ -58,53 +23,77 @@ export function useDirectChat({ topic, meId }) {
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [canLoadMoreMsgs, setCanLoadMoreMsgs] = useState(true)
 
-  const tableName = isCommunity ? 'community_chat' : isAdmin ? 'admin_mothers_chat' : isVendor ? 'vendor_bookings_chats' : 'bookings_chats'
-  const rpcName = isCommunity ? 'fetch_and_mark_community_chat_messages' : isAdmin ? 'mark_and_get_admin_mother_messages' : isVendor ? 'mark_vendor_messages_delivered_and_read' : 'fetch_and_mark_booking_chat_messages'
+  const tableName = isCommunity ? 'community_chat' : isAdmin ? 'admin_mothers_chat' : 'bookings_chats'
+  const rpcName = isCommunity ? 'fetch_and_mark_community_chat_messages' : isAdmin ? 'mark_and_get_admin_mother_messages' : 'fetch_and_mark_booking_chat_messages'
 
-  // const safeSetMessages = (updater) => {
-  //   setMessages(prev => {
-  //     const next = updater(prev);
-  //     return shallowEqual(prev, next) ? prev : next;
-  //   });
-  // }
+  const deleteMessage = async ({ msgId }) => {
+    try {
 
+      const { error } = await supabase
+        .from(tableName)
+        .delete()
+        .eq("id", msgId)
+
+      if (error) {
+        console.log(error)
+        throw new Error()
+      }
+
+      setMessages(prev => prev?.filter(msg => msg?.id !== msgId))
+
+    } catch (error) {
+      console.log(error)
+      toast.error('Cant seem to delete messages at this time')
+      return;
+    }
+  }
 
   const sendMessage = useCallback(
-    async ({ text, toUser, bookingId, channel_id, community_id, user_profile }) => {
+    async ({ from_type, text, fileType, toUser, bookingId, channel_id, community_id, user_profile, duration, oldMsgId }) => {
+
+      const file_type = fileType || 'text'
 
       try {
 
-        if (!text?.trim()) return;
+        const msg = text?.trim()
+
+        if (!msg) return;
 
         const tempId = uuidv4();
 
         const optimisticMessage = {
           id: tempId,
           from_user: meId,
-          message: text.trim(),
+          message: msg,
           created_at: new Date().toISOString(),
           delivered_at: null,
           read_at: null,
           pending: true,
           failed: false,
+          file_type,
+          duration: duration ?? null
         };
 
         if (!isCommunity) {
           optimisticMessage.to_user = toUser
         }
 
+        if (isCommunity) {
+          optimisticMessage.from_type = from_type || 'admin'
+        }
+
         const realMessage = {
           ...optimisticMessage,
           [isCommunity ? 'community_id' : isAdmin ? 'channel_id' : 'booking_id']:
-            isCommunity ? community_id : isAdmin ? topic : bookingId
+            isCommunity ? community_id : isAdmin ? channel_id : bookingId
         }
 
         delete realMessage.pending
         delete realMessage.failed
 
         // Optimistic UI update
+        // setMessages((prev) => [...prev, optimisticMessage]);
         setMessages((prev) => [...prev, optimisticMessage]);
-        // setMessages((prev) => [optimisticMessage, ...prev]);
 
         let attempts = 0;
         const maxAttempts = 2;
@@ -128,7 +117,6 @@ export function useDirectChat({ topic, meId }) {
           );
 
         } else {
-          console.log("Sending msg to the channel")
           channelRef.current?.send({
             type: 'broadcast',
             event: 'sendMsg',
@@ -139,6 +127,11 @@ export function useDirectChat({ topic, meId }) {
       } catch (error) {
         console.log(error)
         toast.error('Error sending chat message')
+
+      } finally {
+        if (oldMsgId) {
+          deleteMessage({ msgId: oldMsgId })
+        }
       }
     },
     [meId, topic]
@@ -146,7 +139,6 @@ export function useDirectChat({ topic, meId }) {
 
   // mark a message as delivered
   const messageDelivered = async (messageId, read_at) => {
-    console.log('running messageDelivered')
     const { data, error } = await supabase
       .from(tableName)
       .update({ delivered_at: new Date().toISOString() })
@@ -230,7 +222,6 @@ export function useDirectChat({ topic, meId }) {
 
   const onMsgReceived = (msg) => {
     if (msg?.to_user === meId) {
-      console.log('running inner onMsgReceived')
 
       const msgId = msg?.id
       const msgDelivered = messages.find(m => (m?.id == msgId) && m?.delivered_at)
@@ -242,8 +233,8 @@ export function useDirectChat({ topic, meId }) {
   }
 
   const onMsgRead = (msg) => {
+    // if (msg?.to_user === meId && false) {
     if (msg?.to_user === meId) {
-      console.log("Running onMsgRead")
 
       const msgId = msg?.id
       const msgRead = messages.find(m => (m?.id == msgId) && m?.read_at)
@@ -279,7 +270,6 @@ export function useDirectChat({ topic, meId }) {
 
   // helper: dedupe messages by id
   const dedupeMessages = (msgs) => {
-    console.log("running dedupeMessages")
     const seen = new Set();
     return msgs.filter((msg) => {
       if (seen.has(msg.id)) return false;
@@ -289,7 +279,6 @@ export function useDirectChat({ topic, meId }) {
   };
 
   const replaceOptimisticMessages = (msgs, newMsg) => {
-    console.log("running replaceOptimisticMessages")
     const idx = msgs.findIndex((msg) => msg.id === newMsg.id);
     if (idx !== -1) {
       // Replace optimistic message
@@ -317,16 +306,17 @@ export function useDirectChat({ topic, meId }) {
     });
   };
 
-  const loadMessages = useCallback(async ({ msgLoadedTimeStamp, last_loaded_at, isOlder }) => {
-    console.log("running loadMessages")
-    if (savedMsgs && savedMsgs?.length > 0) {
-      const lastSavedMsg = savedMsgs[savedMsgs?.length - 1]
-      const lastSavedMsg_createdAt = lastSavedMsg?.created_at
+  const loadMessages = async ({ msgLoadedTimeStamp, last_loaded_at, isRefreshing = false }) => {
 
-      //no msg, first time loading!
-      if (!last_loaded_at) {
-        console.log("loading from redux state")
-        return afterMsgsLoaded(savedMsgs, { isOlder })
+    if (!isRefreshing) {
+      if (savedMsgs && savedMsgs?.length > 0) {
+        const lastSavedMsg = savedMsgs[savedMsgs?.length - 1]
+        const lastSavedMsg_createdAt = lastSavedMsg?.created_at
+
+        //no msg, first time loading!
+        if (!last_loaded_at) {
+          return afterMsgsLoaded(savedMsgs)
+        }
       }
     }
 
@@ -338,21 +328,22 @@ export function useDirectChat({ topic, meId }) {
         [isCommunity ? 'c_user_id' : isAdmin ? 'ad_user_id' : 'p_user_id']: meId,
         [isCommunity ? 'c_timestamp' : isAdmin ? 'ad_timestamp' : 'p_timestamp']: msgLoadedTimeStamp,
         last_loaded_at,
-        _limit: 100
+        _limit: 1000
       });
+
+    // console.log("Loaded last 5 from", new Date(last_loaded_at).toTimeString())
 
     if (!error) {
       if (data.length === 0) {
         setCanLoadMoreMsgs(false)
       }
 
-      afterMsgsLoaded(data, { isOlder })
+      afterMsgsLoaded(data)
       return
     }
 
     console.log(error)
-  }, [meId, topic]);
-
+  };
   const afterMsgsLoaded = (_msgs, { isOlder = false } = {}) => {
     console.log("running afterMsgsLoaded")
     const msgs = [..._msgs].reverse(); // normalize to ASC
@@ -365,7 +356,6 @@ export function useDirectChat({ topic, meId }) {
       )
     );
   };
-
 
   const setup = useCallback(({ topic, meId, tableName, isAdmin, msgLoadedTimeStamp }) => {
     // Presence + broadcast channel
@@ -380,16 +370,13 @@ export function useDirectChat({ topic, meId }) {
 
     channel.on('broadcast', { event: 'sendMsg' }, (payload) => {
       const msg = payload.payload
-      console.log("sendMsgEvt Running replaceOptimisticMessages")
       setMessages((prev) => replaceOptimisticMessages(prev || [], msg));
-      console.log("sendMsgEvt Runnung onMsgReceived")
       onMsgReceived(msg)
     })
 
     channel.on('broadcast', { event: 'messageRead' }, (payload) => {
       const msg = payload.payload
-      console.log(msg)
-      console.log("messageRead Running replaceOptimisticMessages")
+      console.log("Message is read")
       setMessages((prev) => replaceOptimisticMessages(prev || [], msg));
     })
 
@@ -401,15 +388,15 @@ export function useDirectChat({ topic, meId }) {
 
     channel.on('broadcast', { event: 'messageDelivered' }, (payload) => {
       const msg = payload.payload
-      console.log("messageDeliveredEvt Running replaceOptimisticMessages")
       setMessages((prev) => replaceOptimisticMessages(prev || [], msg));
       if (!isAdmin && !isCommunity) {
-        console.log("messageDeliveredEvt Running onMsgRead")
+        console.log("running from channel")
         onMsgRead(msg)
       }
     })
 
     channel.on('broadcast', { event: 'messagesLoaded' }, (payload) => {
+      console.log("Receiving msgs loaded!!!")
       const { by_id, timestamp } = payload.payload
       onMsgsLoaded(by_id, timestamp)
     })
@@ -466,7 +453,6 @@ export function useDirectChat({ topic, meId }) {
         },
         (payload) => {
           const newMsg = payload.new;
-          console.log("insertSub Running replaceOptimisticMessages")
           setMessages((prev) => replaceOptimisticMessages(prev || [], newMsg));
           onMsgReceived(newMsg)
         }
@@ -500,9 +486,9 @@ export function useDirectChat({ topic, meId }) {
         },
         (payload) => {
           const newMsg = payload.new;
-          console.log("updateSub Running replaceOptimisticMessages")
           setMessages((prev) => replaceOptimisticMessages(prev || [], newMsg));
           // if (!isAdmin && !isCommunity) {
+          //   console.log("Running from realtime")
           //   onMsgRead(newMsg)
           // }
         }
@@ -537,6 +523,11 @@ export function useDirectChat({ topic, meId }) {
 
     const timer = setTimeout(() => {
       dispatch(appLoadStop())
+
+      const msgLoadedTimeStamp = new Date().toISOString()
+
+      loadMessages({ msgLoadedTimeStamp, isRefreshing: true })
+
       clearTimeout(timer)
     }, 3000)
   };
@@ -595,6 +586,7 @@ export function useDirectChat({ topic, meId }) {
     refreshConnection,
     cleanup,
     loadMessages,
-    canLoadMoreMsgs
+    canLoadMoreMsgs,
+    deleteMessage
   };
 }

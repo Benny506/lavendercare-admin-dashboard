@@ -421,7 +421,7 @@ function Communities() {
                       </td>
                       <td className="px-3 sm:px-6 py-4 whitespace-nowrap flex gap-2 items-center">
                         <button
-                          className="text-primary"
+                          className="text-primary cursor-pointer"
                           onClick={(e) => handleDrawer(community, e)}
                         >
                           <svg
@@ -458,6 +458,12 @@ function Communities() {
                               </clipPath>
                             </defs>
                           </svg>
+                        </button>
+                        <button 
+                          onClick={() => navigate('/admin/communities/chat', { state: { community } })}
+                          className="cursor-pointer text-white border bg-[#703dcb] rounded px-3 py-1 text-xs"
+                        >
+                          Enter chat
                         </button>
                         {/* <button
                           className="text-red-500"
@@ -583,6 +589,12 @@ function Communities() {
                       </button>
                       <button className="text-gray-500 border border-gray-300 rounded px-3 py-1 text-xs">
                         Edit
+                      </button>
+                      <button 
+                        onClick={() => navigate('/admin/communities/chat', { state: { community } })}
+                        className="cursor-pointer text-white border bg-[#703dcb] rounded px-3 py-1 text-xs"
+                      >
+                        Enter chat
                       </button>
                       {/* <button
                         className="text-red-500 border border-red-300 rounded px-3 py-1 text-xs"
