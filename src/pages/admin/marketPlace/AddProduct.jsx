@@ -16,6 +16,7 @@ import Carousel from '../components/ui/Carousel';
 import { getMultiplePublicUrls, getPublicUrl, uploadAsset } from '../../../lib/requestApi';
 import supabase from '../../../database/dbInit';
 import { formatNumberWithCommas } from '../../../lib/utils';
+import ProductVariants from './ProductVariants';
 
 const validationSchema = yup.object().shape({
   product_name: yup.string().required("Product name is required"),
@@ -26,11 +27,11 @@ const validationSchema = yup.object().shape({
     .typeError('Price must be a valid number')
     .required('Price is required')
     .positive('Price must be greater than zero'),
-  stock_count: yup
-    .number()
-    .typeError('Stock count must be a valid number')
-    .required('Stock count is required')
-    .positive('Stock count must be greater than zero')
+  // stock_count: yup
+  //   .number()
+  //   .typeError('Stock count must be a valid number')
+  //   .required('Stock count is required')
+  //   .positive('Stock count must be greater than zero')
 })
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024
@@ -70,10 +71,12 @@ function AddProduct() {
   const [productPreviews, setProductPreviews] = useState()
   const [categories, setCategories] = useState([])
   const [productInfo, setProductInfo] = useState(null)
+  const [showProductInfo, setShowProductInfo] = useState(false)
   const [qty, setQty] = useState(1);
   const [apiReqs, setApiReqs] = useState({
     isLoading: false, errorMsg: null, data: null
   })
+  const [productVariantsModal, setProductVariantsModal] = useState({ visible: false, hide: null })
 
   useEffect(() => {
     if (product) {
@@ -119,6 +122,8 @@ function AddProduct() {
       productPreviews: previews
     })
 
+    setShowProductInfo(true)
+
     setCategories(product?.categories)
 
     dispatch(appLoadStop())
@@ -155,12 +160,21 @@ function AddProduct() {
             .update(requestBody)
             .eq("id", product?.id)
           :
+          // await supabase
+          //   .from("products")
+          //   .insert({
+          //     ...requestBody,
+          //     by: 'admin'
+          //   })
           await supabase
-            .from("products")
-            .insert({
-              ...requestBody,
-              by: 'admin'
-            })
+            .rpc('create_product_with_default_variant', {
+              p_product_name: requestBody?.product_name,
+              p_product_description: requestBody?.product_description,
+              p_product_images: requestBody?.product_images,
+              p_price_currency: requestBody?.price_currency,
+              p_price_value: requestBody?.price_value,
+              p_categories: requestBody?.categories
+            });
 
       if (error) {
         console.log("Error here", error)
@@ -185,6 +199,9 @@ function AddProduct() {
 
     return;
   }
+
+  const openProductVariantsModal = () => setProductVariantsModal({ visible: true, hide: hideProductVariantsModal, product: productInfo })
+  const hideProductVariantsModal = () => setProductVariantsModal({ visible: false, hide: hideProductVariantsModal })
 
   return (
     <div className="w-full px-2 md:px-8 py-6">
@@ -216,7 +233,7 @@ function AddProduct() {
           product_description: product?.product_description || '',
           price_currency: product?.price_currency || '',
           price_value: product?.price_value || '',
-          stock_count: product?.stock_count || ''
+          // stock_count: product?.stock_count || ''
         }}
         onSubmit={(values) => {
           if (!productPreviews || productPreviews?.length === 0) {
@@ -256,7 +273,7 @@ function AddProduct() {
                   className="w-full border border-gray-200 rounded-lg px-3 py-2"
                   placeholder="Enter Product name"
                   type='text'
-                  disabled={product?.product_name ? true : false}
+                  disabled={productInfo?.product_name ? true : false}
                   name='product_name'
                   value={values.product_name}
                   onChange={handleChange}
@@ -291,6 +308,8 @@ function AddProduct() {
                         const { file, preview } = p
 
                         const removeSinglePreview = () => {
+                          if (!product) return;
+
                           const updated = productPreviews?.filter((_, _i) => _i !== i)
                           setProductPreviews(updated)
                         }
@@ -299,12 +318,20 @@ function AddProduct() {
                           <div key={i} className='relative w-2/5'>
                             <img
                               src={preview}
+                              style={{
+                                height: '300px',
+                                width: '200px'
+                              }}
                               className='w-full'
                             />
 
-                            <div onClick={removeSinglePreview} className='bg-[#703DCB] p-3 absolute cursor-pointer top-0 right-0'>
-                              <MdDelete size={20} color='#FFF' />
-                            </div>
+                            {
+                              !product
+                              &&
+                              <div onClick={removeSinglePreview} className='bg-[#703DCB] p-3 absolute cursor-pointer top-0 right-0'>
+                                <MdDelete size={20} color='#FFF' />
+                              </div>
+                            }
                           </div>
                         )
                       })
@@ -312,48 +339,54 @@ function AddProduct() {
                   </div>
                 }
                 <label className="block font-semibold mb-1">Upload Image</label>
-                <div onClick={() => productImgRef?.current?.click()} className="w-full border border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center py-8 cursor-pointer text-center text-gray-400">
-                  <svg width="32" height="32" fill="none" viewBox="0 0 24 24"><path stroke="#8B8B8A" strokeWidth="2" d="M12 16v-4m0 0V8m0 4h4m-4 0H8" /><rect width="20" height="20" x="2" y="2" stroke="#8B8B8A" strokeWidth="2" rx="4" /></svg>
-                  <span>Click to upload <span className="text-(--primary-500)">or drag and drop</span></span>
-                  <span className="text-xs mt-1">PNG, JPG or JPEG</span>
-                </div>
-                <input
-                  ref={productImgRef}
-                  type="file"
-                  multiple // 👈 allow multiple file selection
-                  className="hidden"
-                  onChange={e => {
-                    const files = Array.from(e.currentTarget.files ?? []);
-                    if (files.length === 0) return;
+                {
+                  !product
+                  &&
+                  <>
+                    <div onClick={() => productImgRef?.current?.click()} className="w-full border border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center py-8 cursor-pointer text-center text-gray-400">
+                      <svg width="32" height="32" fill="none" viewBox="0 0 24 24"><path stroke="#8B8B8A" strokeWidth="2" d="M12 16v-4m0 0V8m0 4h4m-4 0H8" /><rect width="20" height="20" x="2" y="2" stroke="#8B8B8A" strokeWidth="2" rx="4" /></svg>
+                      <span>Click to upload <span className="text-(--primary-500)">or drag and drop</span></span>
+                      <span className="text-xs mt-1">PNG, JPG or JPEG</span>
+                    </div>
+                    <input
+                      ref={productImgRef}
+                      type="file"
+                      multiple // 👈 allow multiple file selection
+                      className="hidden"
+                      onChange={e => {
+                        const files = Array.from(e.currentTarget.files ?? []);
+                        if (files.length === 0) return;
 
-                    const validPreviews = [];
+                        const validPreviews = [];
 
-                    files.forEach(file => {
-                      const { valid, error } = validateImageFile(file);
+                        files.forEach(file => {
+                          const { valid, error } = validateImageFile(file);
 
-                      if (!valid) {
-                        toast.error(error || "Invalid file");
-                        return;
-                      }
-
-                      const reader = new FileReader();
-                      reader.onloadend = () => {
-                        validPreviews.push({ file, preview: reader.result });
-
-                        // Once all readers are done, update preview state
-                        if (validPreviews.length === files.filter(f => validateImageFile(f).valid).length) {
-                          if (productPreviews?.length > 0) {
-                            setProductPreviews(prev => [...prev, ...validPreviews]);
-
-                          } else {
-                            setProductPreviews(validPreviews);
+                          if (!valid) {
+                            toast.error(error || "Invalid file");
+                            return;
                           }
-                        }
-                      };
-                      reader.readAsDataURL(file);
-                    });
-                  }}
-                />
+
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            validPreviews.push({ file, preview: reader.result });
+
+                            // Once all readers are done, update preview state
+                            if (validPreviews.length === files.filter(f => validateImageFile(f).valid).length) {
+                              if (productPreviews?.length > 0) {
+                                setProductPreviews(prev => [...prev, ...validPreviews]);
+
+                              } else {
+                                setProductPreviews(validPreviews);
+                              }
+                            }
+                          };
+                          reader.readAsDataURL(file);
+                        });
+                      }}
+                    />
+                  </>
+                }
               </div>
               <div>
                 <label className="block font-semibold mb-1">Product Price</label>
@@ -393,7 +426,7 @@ function AddProduct() {
                   {errorMsg => <ErrorMsg1 errorMsg={errorMsg} />}
                 </ErrorMessage>
               </div>
-              <div>
+              {/* <div>
                 <label className="block font-semibold mb-1">No of Stock</label>
                 <input
                   className="w-full border border-gray-200 rounded-lg px-3 py-2"
@@ -407,7 +440,7 @@ function AddProduct() {
                 <ErrorMessage name='stock_count'>
                   {errorMsg => <ErrorMsg1 errorMsg={errorMsg} />}
                 </ErrorMessage>
-              </div>
+              </div> */}
             </div>
             <div className="w-full md:w-64 flex flex-col gap-4">
               <div className="bg-gray-50 rounded-lg p-4 flex flex-col gap-2">
@@ -447,6 +480,8 @@ function AddProduct() {
                           ...values, productPreviews, categories
                         })
 
+                        setShowProductInfo(true)
+
                       } else {
                         console.log('Validation failed:', validationErrors);
                         toast.info("Not all fields are valid")
@@ -468,6 +503,22 @@ function AddProduct() {
                 >
                   Publish
                 </button>
+                {
+                  product
+                  &&
+                  <button
+                    // disabled={!(isValid && dirty)}
+                    onClick={openProductVariantsModal}
+                    style={{
+                      // opacity: !(isValid && dirty) ? 0.5 : 1
+                      border: '1px solid purple',
+                      color: 'purple'
+                    }}
+                    className="cursor-pointer rounded-lg px-4 py-2 font-semibold transition"
+                  >
+                    Variants
+                  </button>
+                }
               </div>
               <div className="bg-gray-50 rounded-lg p-4 flex flex-col gap-2">
                 <span className="font-semibold mb-2">Product categories</span>
@@ -508,16 +559,18 @@ function AddProduct() {
                     })
                   }
                 </div>
-                <button className="text-(--primary-500) text-xs text-left mt-2">+ Add new category</button>
+                {/* <button className="text-(--primary-500) text-xs text-left mt-2">+ Add new category</button> */}
               </div>
             </div>
           </div>
         )}
       </Formik>
 
+      <div className='py-7' />
+
       <Modal
-        isOpen={productInfo}
-        onClose={() => setProductInfo(null)}
+        isOpen={showProductInfo}
+        onClose={() => setShowProductInfo(false)}
       >
         <div className="bg-white rounded-lg shadow-sm p-8 flex flex-col items-center max-w-3xl mx-auto">
           <div className="w-full flex flex-col md:flex-row gap-8 items-center">
@@ -563,6 +616,14 @@ function AddProduct() {
           </div>
         </div>
       </Modal>
+
+      <ProductVariants
+        modalProps={productVariantsModal}
+        setApiReqs={setApiReqs}
+        apiReqs={apiReqs}
+        productInfo={productInfo}
+        setProductInfo={setProductInfo}
+      />
     </div>
   );
 }

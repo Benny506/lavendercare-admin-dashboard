@@ -7,7 +7,7 @@ import { toast } from "react-toastify";
 import supabase from "../../../database/dbInit";
 import { getAdminState } from "../../../redux/slices/adminState";
 import useApiReqs from "../../../hooks/useApiReqs";
-import { formatNumberWithCommas } from "../../../lib/utils";
+import { formatNumberWithCommas, sumArray } from "../../../lib/utils";
 import Badge from "../components/ui/Badge";
 import Pagination from "../components/Pagination";
 import { usePagination } from "../../../hooks/usePagination";
@@ -144,9 +144,17 @@ function Product() {
                 filteredData?.length > 0
                   ?
                   filteredData.map((p, idx) => {
+
+                    const stock_count = 
+                      p?.product_variants
+                      ?
+                        sumArray(p?.product_variants?.map(v => v?.stock))
+                      :
+                        0
+
                     return (
                       <tr
-                        key={p.sku}
+                        key={p?.id}
                         className="border-b last:border-b-0 hover:bg-gray-50"
                       >
                         <td className="py-2 px-2">{p.product_name}</td>
@@ -165,9 +173,9 @@ function Product() {
                         </td>
                         <td className="py-2 px-2">{p?.price_currency} {formatNumberWithCommas(p?.price_value)}</td>
                         <td className="py-2 px-2">
-                          {formatNumberWithCommas(p?.stock_count)}
+                          {formatNumberWithCommas(stock_count)}
                           {
-                            p?.stock_count === 0
+                            stock_count === 0
                             &&
                             <Badge
                               variant="danger"

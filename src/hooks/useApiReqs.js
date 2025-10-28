@@ -110,7 +110,7 @@ export default function useApiReqs() {
                 return;
             }
 
-            dispatch(setAdminState({ mentalHealthScreenings: data }))
+            dispatch(setAdminState({ mentalHealthScreenings: [...mentalHealthScreenings, ...data] }))
 
             dispatch(appLoadStop())
 
@@ -164,7 +164,7 @@ export default function useApiReqs() {
             }
 
             dispatch(setAdminState({
-                bookings: data
+                bookings: [...bookings, ...data]
             }))
 
             dispatch(appLoadStop())
@@ -333,7 +333,8 @@ export default function useApiReqs() {
             const { data, error } = await supabase
                 .from('products')
                 .select(`
-                    *
+                    *,
+                    product_variants ( * )
                 `)
                 .order("created_at", { ascending: false, nullsFirst: false })
                 .limit(limit)
@@ -354,7 +355,7 @@ export default function useApiReqs() {
             }
 
             dispatch(setAdminState({
-                products: data
+                products: [...products, ...data]
             }))
 
             dispatch(appLoadStop())

@@ -230,3 +230,19 @@ export function getHourFromHHMM({ timeStr }) {
   const [hourStr] = timeStr.split(":");
   return parseInt(hourStr, 10); // removes leading zeros
 }
+
+export function groupBy({arr, key}) {
+  return arr.reduce((acc, obj) => {
+    const value = obj[key]
+    if (!acc[value]) {
+      acc[value] = []
+    }
+    acc[value].push(obj)
+    return acc
+  }, {})
+}
+
+export function sumArray(numbers) {
+  if (!Array.isArray(numbers)) throw new Error("Input must be an array");
+  return numbers.reduce((total, num) => total + num, 0);
+}
