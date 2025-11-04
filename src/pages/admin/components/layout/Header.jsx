@@ -8,7 +8,7 @@ function Header() {
   const profile = useSelector(state => getUserDetailsState(state).profile)
 
   return (
-    <div className="flex sticky items-center py-3 px-[12px] lg:px-[32px] top-0 bg-white z-[500] justify-end">
+    <div className="flex items-center py-3 px-[12px] lg:px-[32px] top-0 bg-white z-[500] justify-end">
       <div className="flex gap-1 md:gap-4">
         {/*  */}
         <div className="border-[3px] border-gray-200 rounded-sm w-max p-2">

@@ -167,7 +167,7 @@ function MotherMessages() {
     }
 
     return (
-        <div className=" bg-[#F8F9FB] mt-6 flex flex-col">
+        <div className="bg-[#F8F9FB] w-full mt-6 flex flex-col">
             {/*  */}
             <div className="flex flex-col p-3 gap-4 flex-1">
                 {/* Chat Section */}

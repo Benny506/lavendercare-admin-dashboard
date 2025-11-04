@@ -5,13 +5,13 @@ import Sidebar from "./Sidebar";
 
 function Layout() {
   return (
-    <div className="flex w-full">
+    <div className="flex w-full h-screen overflow-hidden"> {/* ✅ lock overall height */}
       <Sidebar />
 
-      <div className="flex-col relative w-full lg:w-auto flex">
+      <div className="flex flex-col flex-1 overflow-hidden"> {/* ✅ prevent nested scroll fights */}
         <Header />
 
-        <div className="bg-(--gray-100) px-[12px] lg:px-[32px] w-full lg:w-[calc(100vw-260px)] h-full">
+        <div className="flex-1 bg-[var(--gray-100)] px-[12px] lg:px-[32px] overflow-y-auto"> {/* ✅ scroll only here */}
           <Outlet />
         </div>
       </div>

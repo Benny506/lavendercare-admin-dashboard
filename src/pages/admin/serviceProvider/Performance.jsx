@@ -139,7 +139,7 @@ function Performance() {
   })
 
   return (
-    <div ref={containerRef} className=" pt-6 min-h-screen">
+    <div ref={containerRef} className="pt-6 w-full pb-5">
       {/* Breadcrumbs */}
       <PathHeader
         paths={[

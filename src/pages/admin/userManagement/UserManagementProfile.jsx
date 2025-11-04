@@ -86,7 +86,7 @@ const bookingsData = [
 function UserManagementProfile() {
 
   return (
-    <div className="flex min-h-screen w-full">
+    <div className="pt-6 flex w-full">
       {/* Main Content */}
       <div className="flex-1 w-full flex flex-col">
       

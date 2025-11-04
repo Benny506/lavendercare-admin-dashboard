@@ -107,7 +107,7 @@ function Dashboard() {
   const { totalMothers, totalProviders, totalVendors, pendingProvidersCount, pendingServicesCount } = info
 
   return (
-    <div className="w-full">
+    <div className="pt-6 w-full">
       <h3 className="text-[24px] font-[800] pt-[24px]">Welcome back, {profile?.username}</h3>
 
       <PathHeader 

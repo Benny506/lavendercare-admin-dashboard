@@ -216,7 +216,7 @@ function ServiceProvider() {
   })
 
   return (
-    <div className=" pt-6 min-h-screen">
+    <div className="pt-6 w-full pb-5">
       {/* Breadcrumbs and title */}
       <PathHeader
         paths={[

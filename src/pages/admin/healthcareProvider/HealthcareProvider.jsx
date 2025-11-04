@@ -162,7 +162,7 @@ function HealthcareProvider() {
   }
 
   return (
-    <div className=" pt-6 min-h-screen">
+    <div className="pt-6 w-full">
       {/* Breadcrumbs and title */}
       <PathHeader
         paths={[

@@ -94,7 +94,7 @@ function BookingInformation() {
             ]
 
     return (
-        <div className="flex min-h-screen w-full pb-5">
+        <div className="pt-6 w-full flex pb-5">
             {/* Main Content */}
             <div ref={containerRef} className="flex-1 w-full flex flex-col">
 

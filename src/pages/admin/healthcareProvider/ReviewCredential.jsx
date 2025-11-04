@@ -143,7 +143,7 @@ function ReviewCredential() {
   }
 
   return (
-    <div className="pt-6 min-h-screen">
+    <div className="pt-6 w-full">
       {/* breadcrumbs*/}
       <PathHeader
         paths={[

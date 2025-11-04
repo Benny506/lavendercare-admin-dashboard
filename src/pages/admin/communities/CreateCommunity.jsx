@@ -163,7 +163,7 @@ function CreateCommunity() {
   }
 
   return (
-    <div className="pt-6 w-full min-h-screen ">
+    <div className="pt-6 w-full">
       <PathHeader
         paths={[
           { text: 'Communities' },

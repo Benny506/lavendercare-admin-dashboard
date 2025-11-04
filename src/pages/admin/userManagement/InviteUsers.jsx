@@ -72,7 +72,7 @@ function InviteUsers() {
 
   return (
     // breadcrumb navigation
-    <div className="pb-[31px]">
+    <div className="pt-6 w-full pb-5">
       <PathHeader 
         paths={[
           { text: 'User Management' },

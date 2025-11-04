@@ -293,7 +293,7 @@ function UserManagement() {
   }
 
   return (
-    <div className="pb-[31px]">
+    <div className="pt-6 w-full pb-5">
       {/* breadcrumb  */}
       <PathHeader 
         paths={[

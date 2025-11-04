@@ -143,7 +143,7 @@ function MotherProfile() {
     if (!user) return <></>
 
     return (
-        <div className="flex min-h-screen w-full">
+        <div className="pt-6 w-full flex">
             {/* Main Content */}
             <div className="flex-1 w-full flex flex-col">
 
