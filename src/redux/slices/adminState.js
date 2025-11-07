@@ -27,11 +27,14 @@ const adminState = createSlice({
         mothers: [],
         vendors: [],
         providers: [],
+        providerSpecialties: [],
         vendorServices: [],
+        vendorServiceCategories: [],
         mentalHealthScreenings: [],
         highRiskAlerts: [],
         bookings: [],
-        products: []
+        products: [],
+        productCategories: []
     },
     reducers: {
         setAdminState: (state, action) => {
@@ -77,7 +80,19 @@ const adminState = createSlice({
             
             if(action.payload?.products){
                 state.products = action.payload?.products
-            }                   
+            }   
+            
+            if(action?.payload?.productCategories){
+                state.productCategories = action?.payload?.productCategories
+            }
+
+            if(action?.payload?.providerSpecialties){
+                state.providerSpecialties = action?.payload?.providerSpecialties
+            }
+
+            if(action?.payload?.vendorServiceCategories){
+                state.vendorServiceCategories = action?.payload?.vendorServiceCategories
+            }
         },                
     }
 })

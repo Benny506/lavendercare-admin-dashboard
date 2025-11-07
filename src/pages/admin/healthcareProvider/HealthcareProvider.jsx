@@ -13,6 +13,7 @@ import { usePagination } from "../../../hooks/usePagination";
 import { useNavigate } from "react-router-dom";
 import { getStatusBadge, providerStatusColors } from "../../../lib/utils_Jsx";
 import useApiReqs from "../../../hooks/useApiReqs";
+import SpecialtiesModal from "./auxiliary/SpecialtiesModal";
 
 
 function HealthcareProvider() {
@@ -20,9 +21,10 @@ function HealthcareProvider() {
 
   const navigate = useNavigate()
 
-  const { loadMoreUsers } = useApiReqs()
+  const { loadMoreUsers, addProviderSpecialty, deleteProviderSpecialty } = useApiReqs()
 
   const providers = useSelector(state => getAdminState(state).providers)
+  const providerSpecialties = useSelector(state => getAdminState(state).providerSpecialties)
 
   const [searchFilter, setSearchFilter] = useState('')
   const [apiReqs, setApiReqs] = useState({ isLoading: false, data: null, errorMsg: null })
@@ -32,6 +34,7 @@ function HealthcareProvider() {
     totalProviders: 0, activeProviders: 0, inActiveProviders: 0
   })
   const [canLoadMore, setCanLoadMore] = useState(true)
+  const [specialtiesModal, setSpecialtiesModal] = useState({ visible: false, hide: null })
 
   useEffect(() => {
     setApiReqs({
@@ -50,7 +53,7 @@ function HealthcareProvider() {
     else dispatch(appLoadStop());
 
     if (isLoading && data) {
-      const { type } = data
+      const { type, requestInfo } = data
 
       if (type === 'initialFetch') {
         initialFetch()
@@ -61,6 +64,18 @@ function HealthcareProvider() {
           callBack: ({ canLoadMore }) => setCanLoadMore(canLoadMore)
         })
       }
+
+      if(type === 'addSpecialty'){
+        addProviderSpecialty({ 
+          specialty: requestInfo?.specialty,
+        })
+      }
+
+      if(type === 'deleteSpecialty'){
+        deleteProviderSpecialty({ 
+          specialty: requestInfo?.specialty,
+        })
+      }      
     }
   }, [apiReqs])
 
@@ -81,7 +96,11 @@ function HealthcareProvider() {
         .select('*', { count: 'exact', head: true })
         .eq("credentials_approved", false)
 
-      if (totalProvidersError || activeProvidersError || inActiveProvidersError) {
+      const { data: specialties, error: specialtiesError } = await supabase
+        .from('provider_specialties')
+        .select("*")
+
+      if (totalProvidersError || activeProvidersError || inActiveProvidersError || specialtiesError) {
         console.log("totalProvidersError", totalProvidersError)
         console.log("activeProvidersError", activeProvidersError)
         console.log("inActiveProvidersError", inActiveProvidersError)
@@ -92,6 +111,10 @@ function HealthcareProvider() {
       setStatsData({
         totalProviders, activeProviders, inActiveProviders
       })
+
+      dispatch(setAdminState({
+        providerSpecialties: specialties
+      }))
 
       setApiReqs({ isLoading: false, errorMsg: null, data: null })
 
@@ -108,6 +131,9 @@ function HealthcareProvider() {
 
     return
   }
+
+  const openSpecialtiesModal = () => setSpecialtiesModal({ visible: true, hide: hideSpecialtiesModal }) 
+  const hideSpecialtiesModal = () => setSpecialtiesModal({ visible: false, hide: null })
 
   const filteredData = (providers || []).filter(p => {
     const { provider_name, professional_title } = p
@@ -197,12 +223,26 @@ function HealthcareProvider() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-xl p-4 flex flex-col items-start min-w-[120px]">
           <span className="text-xs text-gray-500 mb-1">Total Providers</span>
           <span className="text-3xl font-bold">
             {totalProvidersCount}
           </span>
+        </div>
+        <div className="bg-white rounded-xl p-4 flex flex-col min-w-[120px]">
+          <span className="text-xs text-gray-500 mb-1">Provider Specialties</span>
+          <span className="text-3xl font-bold">
+            {providerSpecialties?.length || 0}
+          </span>
+          <div className="flex items-center justify-end w-full">
+            <button
+              onClick={openSpecialtiesModal}
+              className="text-(--primary-500) text-sm text-right mt-2 cursor-pointer"
+            >
+              + Add
+            </button>
+          </div>
         </div>
         <div className="bg-white rounded-xl p-4 flex flex-col items-start min-w-[120px]">
           <span className="text-xs text-gray-500 mb-1 flex items-center gap-1">
@@ -422,24 +462,29 @@ function HealthcareProvider() {
         {
           canLoadMore
           &&
-            <div className="w-full flex items-center justify-center my-5">
-                <button
-                    onClick={() => {
-                        setApiReqs({
-                            isLoading: true,
-                            errorMsg: null,
-                            data: {
-                                type: 'loadMoreUsers'
-                            }
-                        })
-                    }}
-                    className={'bg-purple-600 text-white px-4 py-2 rounded-lg cursor-pointer'}
-                >
-                    Load more
-                </button>
-            </div>            
-        }         
+          <div className="w-full flex items-center justify-center my-5">
+            <button
+              onClick={() => {
+                setApiReqs({
+                  isLoading: true,
+                  errorMsg: null,
+                  data: {
+                    type: 'loadMoreUsers'
+                  }
+                })
+              }}
+              className={'bg-purple-600 text-white px-4 py-2 rounded-lg cursor-pointer'}
+            >
+              Load more
+            </button>
+          </div>
+        }
       </div>
+
+      <SpecialtiesModal 
+        modalProps={specialtiesModal}
+        setApiReqs={setApiReqs}
+      />
     </div>
   );
 }

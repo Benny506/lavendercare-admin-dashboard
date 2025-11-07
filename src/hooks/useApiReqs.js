@@ -4,6 +4,7 @@ import supabase from "../database/dbInit";
 import { formatBookings, getAdminState, setAdminState } from "../redux/slices/adminState";
 import { appLoadStart, appLoadStop } from "../redux/slices/appLoadingSlice";
 import { toast } from "react-toastify";
+import { setUserDetails } from "../redux/slices/userDetailsSlice";
 
 export default function useApiReqs() {
     const dispatch = useDispatch()
@@ -13,7 +14,10 @@ export default function useApiReqs() {
     const providers = useSelector(state => getAdminState(state).providers)
     const bookings = useSelector(state => getAdminState(state).bookings)
     const products = useSelector(state => getAdminState(state).products)
+    const productCategories = useSelector(state => getAdminState(state).productCategories)
+    const providerSpecialties = useSelector(state => getAdminState(state).providerSpecialties)
     const mentalHealthScreenings = useSelector(state => getAdminState(state).mentalHealthScreenings)
+    const vendorServiceCategories = useSelector(state => getAdminState(state).vendorServiceCategories)    
 
 
 
@@ -181,86 +185,6 @@ export default function useApiReqs() {
 
 
 
-    //mothers
-    // const fetchMotherBookings = async ({ callBack = () => {}, mother_id }) => {
-    //     try {
-
-    //         if(!mother_id) throw new Error();
-
-    //         const { data: bookings, error: bookingsError } = await supabase
-    //             .from('all_bookings')
-    //             .select(`
-    //                 *,
-    //                 provider_profile: provider_profiles(*),             
-    //                 vendor_profile: vendor_profiles(*)             
-    //             `)
-    //             .eq('user_id', mother_id)
-    //             .order("day", { ascending: false, nullsFirst: false })      
-    //             .order('start_time', { ascending: false, nullsFirst: false })            
-
-    //         if(bookingsError){
-    //             console.log("Bookings error", bookingsError)
-
-    //             throw new Error()
-    //         }       
-
-    //         const formatted = formatBookings({ bookings })
-
-    //         callBack({
-    //             v_bookings: formatted.filter(b => b?.vendor_profile ? true : false),
-    //             bookings: formatted.filter(b => b?.provider_profile ? true : false),
-    //         })
-
-    //         return;
-
-    //     } catch (error) {
-    //         console.log(error)
-    //         toast.error("Error fetching mother bookings")
-    //     }
-    // }
-
-
-
-
-
-    //providers  
-    // const fetchProviderBookings = async ({ callBack = () => {}, provider_id }) => {
-    //     try {
-
-    //         if(!provider_id) throw new Error();
-
-    //         const { data, error } = await supabase
-    //             .from('all_bookings')
-    //             .select(`
-    //                 *,
-    //                 user_profile: user_profiles (*)
-    //             `)
-    //             .eq('provider_id', provider_id)
-    //             .order("day", { ascending: false, nullsFirst: false })      
-    //             .order('start_time', { ascending: false, nullsFirst: false })                
-
-    //         if(error){
-    //             console.log(error)
-    //             throw new Error()
-    //         }
-
-    //         callBack({
-    //             bookings: formatBookings({ bookings: data }) 
-    //         })
-
-    //         return;
-
-    //     } catch (error) {
-    //         console.log(error)
-    //         toast.error("Error fetching provider availabiliy")
-    //     }
-    // }  
-
-
-
-
-
-    //vendors
     const fetchVendorServices = async ({ callBack = () => { }, vendor_id }) => {
         try {
 
@@ -285,42 +209,111 @@ export default function useApiReqs() {
         } catch (error) {
             console.log(error)
             toast.error("Error retrieving vendor services")
+            // dispatch(appL)
         }
     }
-    // const fetchVendorBookings = async ({ callBack = () => {}, vendor_id }) => {
-    //     try {
+    const fetchVendorServiceCategories = async ({ callBack = () => {} }) => {
+        try {
 
-    //         if(!vendor_id) throw new Error();
+            dispatch(appLoadStart())
 
-    //         const { data, error } = await supabase
-    //             .from('all_bookings')
-    //             .select('*')
-    //             .eq("vendor_id", vendor_id)
+            const { data, error } = await supabase
+                .from('vendor_service_categories')
+                .select("*")
 
-    //         console.log(data)
+            if(error){
+                console.log(error)
+                throw new Error()
+            }
 
-    //         if(error){
-    //             console.log(error)
-    //             throw new Error()
-    //         }
+            dispatch(setAdminState({
+                vendorServiceCategories: data
+            }))
 
-    //         callBack({
-    //             vendorBookings: data
-    //         })
+            dispatch(appLoadStop())
 
-    //         return;
+            callBack && callBack({})
+            
+        } catch (error) {
+            console.log(error)
+            toast.error("Error retrieving vendor services") 
+            dispatch(appLoadStop())           
+        }
+    }
+    const addVendorServiceCategory = async ({ callBack = () => {}, service }) => {
+        try {
 
-    //     } catch (error) {
-    //         console.log(error)
-    //         toast.error("Error retrieving vendor bookings")
-    //     }
-    // }
+            dispatch(appLoadStart())
 
+            const { data, error } = await supabase
+                .from('vendor_service_categories')
+                .insert({
+                    service
+                })
+                .select()
+                .single()
 
+            if(error){
+                console.log(error)
+                throw new Error()
+            }
 
+            const vsCategories = [...(vendorServiceCategories || []), data]
 
+            dispatch(setAdminState({
+                vendorServiceCategories: vsCategories
+            }))
 
-    //products
+            dispatch(appLoadStop())
+
+            callBack && callBack({})
+
+            toast.success("New service category added!")
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error adding vendor service category") 
+            dispatch(appLoadStop())                 
+        }
+    }
+    const deleteVendorServiceCategory = async ({ callBack = () => {}, service }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from('vendor_service_categories')
+                .delete()
+                .eq("service", service)
+
+            if(error){
+                console.log(error)
+                throw new Error()
+            }
+
+            const vsCategories = vendorServiceCategories?.filter(sc => sc?.service?.toLowerCase() !== service?.toLowerCase())
+
+            dispatch(setAdminState({
+                vendorServiceCategories: vsCategories
+            }))
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({})
+
+            toast.success("Service category deleted!")
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error deleting vendor service category") 
+            dispatch(appLoadStop())                 
+        }
+    }    
+    
+    
+    
+    
+    
     const fetchProducts = async ({ callBack = () => { } }) => {
         try {
 
@@ -368,6 +361,206 @@ export default function useApiReqs() {
             dispatch(appLoadStop())
         }
     }
+    const fetchProductCategories = async ({ callBack = () => {} }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from("product_categories")
+                .select('*')
+
+            if(error){
+                console.log(error)
+                throw new Error()
+            }
+
+            dispatch(setAdminState({ 
+                productCategories: data
+            }))
+
+            dispatch(appLoadStop())
+
+            callBack && callBack()            
+            
+        } catch (error) {
+            console.log(error)
+            toast.error("Error fetching product categories")
+            dispatch(appLoadStop())
+        }
+    }
+    const addProductCategory = async ({ callBack = () => {}, category }) => {
+        try {
+            
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from('product_categories')
+                .insert({
+                    category
+                })
+                .select("*")
+                .single()
+
+            if(error){
+                console.log(error)
+                throw new Error()
+            }
+
+            const pCats = [...(productCategories || []), data]
+
+            dispatch(setAdminState({ 
+                productCategories: pCats
+            }))
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({})  
+            
+            toast.success("Product category added!")
+            
+        } catch (error) {
+            console.log(error)
+            toast.error("Error adding product category")
+            dispatch(appLoadStop())            
+        }
+    }
+    const deleteProductCategory = async ({ callBack = () => {}, category }) => {
+        try {
+            
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from('product_categories')
+                .delete()
+                .eq("category", category)
+
+            if(error){
+                console.log(error)
+                throw new Error()
+            }
+
+            const pCats = productCategories?.filter(c => c?.category?.toLowerCase() !== category?.toLowerCase())
+
+            dispatch(setAdminState({ 
+                productCategories: pCats
+            }))
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({})  
+            
+            toast.success("Product category deleted!")
+            
+        } catch (error) {
+            console.log(error)
+            toast.error("Error deleting product category")
+            dispatch(appLoadStop())            
+        }
+    } 
+    
+    
+
+
+
+    //providers
+    const fetchProviderSpecialties = async ({ callback = () => {}, specialty, noLoad }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from('provider_specialties')
+                .select("*")
+
+            if(error){
+                console.log(error)
+                throw new Error()
+            }
+
+            dispatch(setAdminState({
+                providerSpecialties: data
+            }))
+
+            dispatch(appLoadStop())
+
+            callback && callback({})
+            
+        } catch (error) {
+            console.log(error)
+            toast.error("Error fetching provider specialty")
+            dispatch(appLoadStop())             
+        }
+    }
+    const addProviderSpecialty = async ({ callBack = () => {}, specialty }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from('provider_specialties')
+                .insert({
+                    specialty
+                })
+                .select()
+                .single()
+
+            if(error){
+                console.log(error)
+                throw new Error()
+            }
+
+            const specialties = [...(providerSpecialties || []), data]
+
+            dispatch(setAdminState({
+                providerSpecialties: specialties
+            }))
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({})
+
+            toast.success("Specialty added!")
+            
+        } catch (error) {
+            console.log(error)
+            toast.error("Error adding provider specialty")
+            dispatch(appLoadStop())              
+        }
+    }
+    const deleteProviderSpecialty = async ({ callBack = () => {}, specialty }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from("provider_specialties")
+                .delete()
+                .eq('specialty', specialty)
+
+            if(error){
+                console.log(error)
+                throw new Error()
+            }
+
+            const specialties = providerSpecialties?.filter(sp => sp?.specialty?.toLowerCase() !== specialty?.toLowerCase())
+
+            dispatch(setAdminState({
+                providerSpecialties: specialties
+            }))
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({})
+
+            toast.success("Specialty deleted")
+            
+        } catch (error) {
+            console.log(error)
+            toast.error("Error deleting provider specialty")
+            dispatch(appLoadStop())              
+        }
+    }
 
 
 
@@ -403,7 +596,9 @@ export default function useApiReqs() {
 
 
         //providers
-        // fetchProviderBookings,
+        fetchProviderSpecialties,
+        addProviderSpecialty,
+        deleteProviderSpecialty,
 
 
 
@@ -411,7 +606,9 @@ export default function useApiReqs() {
 
         //vendors
         fetchVendorServices,
-        // fetchVendorBookings,
+        fetchVendorServiceCategories,
+        deleteVendorServiceCategory,
+        addVendorServiceCategory,
 
 
 
@@ -419,5 +616,8 @@ export default function useApiReqs() {
 
         //products
         fetchProducts,
+        fetchProductCategories,
+        addProductCategory,
+        deleteProductCategory,
     }
 }

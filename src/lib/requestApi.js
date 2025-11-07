@@ -271,3 +271,5 @@ export async function uploadAsset({ file, id, bucket_name, ext }) {
   }
 }
 
+export const getPublicImageUrl = ({ path, bucket_name }) => 
+  `https://tzsbbbxpdlupybfrgdbs.supabase.co/storage/v1/object/public/${bucket_name}/${path}`;

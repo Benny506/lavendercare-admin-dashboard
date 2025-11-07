@@ -6,17 +6,19 @@ import * as yup from 'yup'
 import ErrorMsg1 from '../components/ErrorMsg1';
 import { currencies } from '../../../lib/currencies';
 import { MdCheckBox, MdCheckBoxOutlineBlank, MdDelete } from 'react-icons/md';
-import { productCategories } from '../../../lib/utils_Jsx';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { appLoadStart, appLoadStop } from '../../../redux/slices/appLoadingSlice';
 import { toast } from 'react-toastify';
 import Modal from '../components/ui/Modal';
 import Badge from '../components/ui/Badge';
 import Carousel from '../components/ui/Carousel';
-import { getMultiplePublicUrls, getPublicUrl, uploadAsset } from '../../../lib/requestApi';
+import { getMultiplePublicUrls, getPublicImageUrl, getPublicUrl, uploadAsset } from '../../../lib/requestApi';
 import supabase from '../../../database/dbInit';
 import { formatNumberWithCommas } from '../../../lib/utils';
 import ProductVariants from './ProductVariants';
+import { getAdminState } from '../../../redux/slices/adminState';
+import useApiReqs from '../../../hooks/useApiReqs';
+import { BsTrash } from 'react-icons/bs';
 
 const validationSchema = yup.object().shape({
   product_name: yup.string().required("Product name is required"),
@@ -66,8 +68,13 @@ function AddProduct() {
   const { state } = useLocation()
   const product = state?.productInfo
 
+  const { fetchProductCategories, addProductCategory, deleteProductCategory } = useApiReqs()
+
+  const productCategories = useSelector(state => getAdminState(state).productCategories)
+
   const productImgRef = useRef(null)
 
+  const [categoryInput, setCategoryInput] = useState('')
   const [productPreviews, setProductPreviews] = useState()
   const [categories, setCategories] = useState([])
   const [productInfo, setProductInfo] = useState(null)
@@ -81,6 +88,7 @@ function AddProduct() {
   useEffect(() => {
     if (product) {
       loadImages()
+      fetchProductCategories({})
     }
   }, [product])
 
@@ -104,9 +112,9 @@ function AddProduct() {
 
     dispatch(appLoadStart());
 
-    const { urls } = await getMultiplePublicUrls({
-      filePaths: product?.product_images,
-      bucket_name: 'admin_products'
+    const urls = product?.product_images?.map(pImg => {
+      const url = getPublicImageUrl({ path: pImg, bucket_name: 'admin_products' })
+      return url
     })
 
     const previews = urls.map((u, i) => ({
@@ -524,9 +532,11 @@ function AddProduct() {
                 <span className="font-semibold mb-2">Product categories</span>
                 <div className="flex flex-col gap-1">
                   {
-                    productCategories.map((cat, i) => {
+                    productCategories.map((pCategory, i) => {
 
-                      const isSelected = categories?.includes(cat)
+                      const { category: cat } = pCategory
+
+                      const isSelected = categories?.map(c => c?.toLowerCase())?.includes(cat?.toLowerCase())
 
                       const handleCatClick = () => {
                         if (isSelected) {
@@ -543,23 +553,70 @@ function AddProduct() {
                       return (
                         <div
                           key={i}
-                          onClick={handleCatClick}
-                          className="flex items-center gap-2 cursor-pointer">
-                          {
-                            isSelected
-                              ?
-                              <MdCheckBox size={20} color={"#703dcb"} />
-                              :
-                              <MdCheckBoxOutlineBlank size={20} color={"#000"} />
-                          }
+                          className='flex items-center justify-between gap-2'
+                        >
+                          <div
+                            onClick={handleCatClick}
+                            className="flex items-center gap-2 cursor-pointer capitalize">
+                            {
+                              isSelected
+                                ?
+                                <MdCheckBox size={20} color={"#703dcb"} />
+                                :
+                                <MdCheckBoxOutlineBlank size={20} color={"#000"} />
+                            }
 
-                          {cat}
+                            {cat}
+                          </div>
+
+                          <BsTrash
+                            onClick={() => {
+                              if (productCategories?.length > 1) {
+
+                                deleteProductCategory({
+                                  category: pCategory?.category
+                                })
+
+                              } else {
+                                toast.info("At least 1 product category must exist!")
+                              }
+                            }}
+                            className='cursor-pointer'
+                          />
                         </div>
                       )
                     })
                   }
                 </div>
-                {/* <button className="text-(--primary-500) text-xs text-left mt-2">+ Add new category</button> */}
+                <input
+                  type="text"
+                  value={categoryInput}
+                  onChange={e => setCategoryInput(e?.target?.value)}
+                  placeholder="New category..."
+                  class="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 outline-none"
+                />
+
+                <button
+                  onClick={() => {
+                    if (!categoryInput) return;
+
+                    const cats = productCategories?.map(c => c?.category?.toLowerCase())
+
+                    if (cats?.includes(categoryInput?.toLowerCase())) {
+                      return toast.info("Category already exists")
+                    }
+
+                    addProductCategory({
+                      category: categoryInput,
+                      callBack: ({ }) => {
+                        setCategoryInput('')
+                      }
+                    })
+                  }}
+                  className="text-(--primary-500) text-sm text-left mt-2 cursor-pointer"
+                >
+                  + Add new category
+                </button>
               </div>
             </div>
           </div>

@@ -10,6 +10,8 @@ import ServiceInfoModal from "./auxiliary/ServiceInfoModal";
 import ConfirmModal from "../components/ConfirmModal";
 import { data, useNavigate } from "react-router-dom";
 import PathHeader from "../components/PathHeader";
+import useApiReqs from "../../../hooks/useApiReqs";
+import ServiceCategoryModal from "./auxiliary/ServiceCategoryModal";
 
 
 function ServiceProvider() {
@@ -17,8 +19,11 @@ function ServiceProvider() {
 
   const navigate = useNavigate()
 
+  const { fetchVendorServiceCategories, deleteVendorServiceCategory, addVendorServiceCategory, } = useApiReqs()
+
   const vendors = useSelector(state => getAdminState(state).vendors)
   const vendorServices = useSelector(state => getAdminState(state).vendorServices)
+  const vendorServiceCategories = useSelector(state => getAdminState(state).vendorServiceCategories)
 
   const [rejectModal, setRejectModal] = useState({ visible: false, hide: null, data: {} });
   const [activeTab, setActiveTab] = useState('all')
@@ -26,9 +31,12 @@ function ServiceProvider() {
   const [apiReqs, setApiReqs] = useState({ isLoading: false, data: null, errorMsg: null })
   const [searchFilter, setSearchFilter] = useState('')
   const [canLoadMore, setCanLoadMore] = useState(true)
+  const [serviceCategoryModal, setServiceCategoryModal] = useState({ visible: false, hide: null })
 
   useEffect(() => {
     const loadedServices = (vendorServices || [])
+
+    fetchVendorServiceCategories({})
 
     if (loadedServices?.length > 0) {
       setServices(loadedServices)
@@ -61,6 +69,18 @@ function ServiceProvider() {
       if (type === 'updateServiceStatus') {
         updateServiceStatus({ requestInfo })
       }
+
+      if(type === 'addVendorServiceCategory'){
+        addVendorServiceCategory({
+          service: requestInfo?.service
+        })
+      }
+
+      if(type === 'deleteVendorServiceCategory'){
+        deleteVendorServiceCategory({
+          service: requestInfo?.service
+        })
+      }      
     }
   }, [apiReqs])
 
@@ -167,6 +187,9 @@ function ServiceProvider() {
     return
   }
 
+  const openServiceCategoryModal = () => setServiceCategoryModal({ visible: true, hide: hideServiceCategoryModal })
+  const hideServiceCategoryModal = () => setServiceCategoryModal({ visible: false, hide: null })
+
   const openRejectModal = (v) => setRejectModal({ visible: true, hide: hideRejectModal, data: v })
   const hideRejectModal = () => setRejectModal({ visible: false, hide: null, data: {} })
 
@@ -225,11 +248,28 @@ function ServiceProvider() {
       />
 
       {/* service providers */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
-        <h2 className="text-xl sm:text-2xl font-bold">Service Providers</h2>
-        {/* <button className="bg-purple-600 text-white px-4 py-2 rounded font-semibold text-xs">
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+          <h2 className="text-xl sm:text-2xl font-bold">Service Providers</h2>
+          {/* <button className="bg-purple-600 text-white px-4 py-2 rounded font-semibold text-xs">
           Add Provider
         </button> */}
+        </div>
+
+        <div className="bg-white rounded-xl p-4 flex flex-col min-w-[120px] mb-4">
+          <span className="text-xs text-gray-500 mb-1">Vendor Service Categories</span>
+          <span className="text-3xl font-bold">
+            {vendorServiceCategories?.length || 0}
+          </span>
+          <div className="flex items-center justify-end w-full">
+            <button
+              onClick={openServiceCategoryModal}
+              className="text-(--primary-500) text-sm text-right mt-2 cursor-pointer"
+            >
+              + Add
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -437,6 +477,11 @@ function ServiceProvider() {
             noFunc: () => { },
           }
         }}
+      />
+
+      <ServiceCategoryModal 
+        modalProps={serviceCategoryModal}
+        setApiReqs={setApiReqs}
       />
     </div>
   );
