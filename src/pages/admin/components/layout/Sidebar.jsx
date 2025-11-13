@@ -89,8 +89,8 @@ const sidebarMenu = [
     submenu: [
       { title: "Manage Products", path: "/admin/marketplace/manage-product" },
       {
-        title: "Promotions and Discounts",
-        // path: "/admin/marketplace/promotions",
+        title: "Orders",
+        path: "/admin/marketplace/orders",
       },
     ],
   },

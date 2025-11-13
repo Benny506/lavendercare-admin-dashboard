@@ -68,7 +68,7 @@ function AddProduct() {
   const { state } = useLocation()
   const product = state?.productInfo
 
-  const { fetchProductCategories, addProductCategory, deleteProductCategory } = useApiReqs()
+  const { fetchProductCategories, addProductCategory, deleteProductCategory, updateProductVisibility } = useApiReqs()
 
   const productCategories = useSelector(state => getAdminState(state).productCategories)
 
@@ -327,8 +327,8 @@ function AddProduct() {
                             <img
                               src={preview}
                               style={{
-                                height: '300px',
-                                width: '200px'
+                                // height: '300px',
+                                // width: '200px'
                               }}
                               className='w-full'
                             />
@@ -499,6 +499,34 @@ function AddProduct() {
                     }}>
                     Preview
                   </button>
+
+                  {
+                    product
+                    &&
+                    <button
+                      onClick={() => {
+                        const product_visibility = productInfo?.product_visibility ? false : true
+
+                        updateProductVisibility({
+                          callback: ({}) => {
+                            const updatedProductInfo = {
+                              ...(productInfo || {}),
+                              product_visibility
+                            }
+
+                            setProductInfo(updatedProductInfo)
+                          },
+                          product_id: productInfo?.id,
+                          product_visibility: product_visibility
+                        })
+                      }}
+                      className={`${productInfo?.product_visibility ? 'text-gray-700' : 'bg-[#703dcb] text-white'} border cursor-pointer border-gray-300 rounded-lg px-3 py-1`}
+                    >
+                      {
+                        productInfo?.product_visibility ? 'Hide' : 'Make Visible'
+                      }
+                    </button>
+                  }
                 </div>
                 <button
                   type='submit'

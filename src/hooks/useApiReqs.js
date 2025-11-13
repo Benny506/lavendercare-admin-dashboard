@@ -17,7 +17,7 @@ export default function useApiReqs() {
     const productCategories = useSelector(state => getAdminState(state).productCategories)
     const providerSpecialties = useSelector(state => getAdminState(state).providerSpecialties)
     const mentalHealthScreenings = useSelector(state => getAdminState(state).mentalHealthScreenings)
-    const vendorServiceCategories = useSelector(state => getAdminState(state).vendorServiceCategories)    
+    const vendorServiceCategories = useSelector(state => getAdminState(state).vendorServiceCategories)
 
 
 
@@ -185,6 +185,7 @@ export default function useApiReqs() {
 
 
 
+    //vendors
     const fetchVendorServices = async ({ callBack = () => { }, vendor_id }) => {
         try {
 
@@ -212,7 +213,7 @@ export default function useApiReqs() {
             // dispatch(appL)
         }
     }
-    const fetchVendorServiceCategories = async ({ callBack = () => {} }) => {
+    const fetchVendorServiceCategories = async ({ callBack = () => { } }) => {
         try {
 
             dispatch(appLoadStart())
@@ -221,7 +222,7 @@ export default function useApiReqs() {
                 .from('vendor_service_categories')
                 .select("*")
 
-            if(error){
+            if (error) {
                 console.log(error)
                 throw new Error()
             }
@@ -233,14 +234,14 @@ export default function useApiReqs() {
             dispatch(appLoadStop())
 
             callBack && callBack({})
-            
+
         } catch (error) {
             console.log(error)
-            toast.error("Error retrieving vendor services") 
-            dispatch(appLoadStop())           
+            toast.error("Error retrieving vendor services")
+            dispatch(appLoadStop())
         }
     }
-    const addVendorServiceCategory = async ({ callBack = () => {}, service }) => {
+    const addVendorServiceCategory = async ({ callBack = () => { }, service }) => {
         try {
 
             dispatch(appLoadStart())
@@ -253,7 +254,7 @@ export default function useApiReqs() {
                 .select()
                 .single()
 
-            if(error){
+            if (error) {
                 console.log(error)
                 throw new Error()
             }
@@ -272,11 +273,11 @@ export default function useApiReqs() {
 
         } catch (error) {
             console.log(error)
-            toast.error("Error adding vendor service category") 
-            dispatch(appLoadStop())                 
+            toast.error("Error adding vendor service category")
+            dispatch(appLoadStop())
         }
     }
-    const deleteVendorServiceCategory = async ({ callBack = () => {}, service }) => {
+    const deleteVendorServiceCategory = async ({ callBack = () => { }, service }) => {
         try {
 
             dispatch(appLoadStart())
@@ -286,7 +287,7 @@ export default function useApiReqs() {
                 .delete()
                 .eq("service", service)
 
-            if(error){
+            if (error) {
                 console.log(error)
                 throw new Error()
             }
@@ -305,20 +306,21 @@ export default function useApiReqs() {
 
         } catch (error) {
             console.log(error)
-            toast.error("Error deleting vendor service category") 
-            dispatch(appLoadStop())                 
+            toast.error("Error deleting vendor service category")
+            dispatch(appLoadStop())
         }
-    }    
-    
-    
-    
-    
-    
+    }
+
+
+
+
+
+    //products
     const fetchProducts = async ({ callBack = () => { } }) => {
         try {
 
             const limit = 1000;
-            const from = (products?.length || 0);
+            const from = [] || (products?.length || 0);
             const to = from + limit - 1;
 
             dispatch(appLoadStart())
@@ -348,7 +350,8 @@ export default function useApiReqs() {
             }
 
             dispatch(setAdminState({
-                products: [...products, ...data]
+                // products: [...products, ...data]
+                products: data
             }))
 
             dispatch(appLoadStop())
@@ -357,11 +360,11 @@ export default function useApiReqs() {
 
         } catch (error) {
             console.log(error)
-            toast.error("Error fetching bookings")
+            toast.error("Error fetching products")
             dispatch(appLoadStop())
         }
     }
-    const fetchProductCategories = async ({ callBack = () => {} }) => {
+    const fetchProductCategories = async ({ callBack = () => { } }) => {
         try {
 
             dispatch(appLoadStart())
@@ -370,28 +373,28 @@ export default function useApiReqs() {
                 .from("product_categories")
                 .select('*')
 
-            if(error){
+            if (error) {
                 console.log(error)
                 throw new Error()
             }
 
-            dispatch(setAdminState({ 
+            dispatch(setAdminState({
                 productCategories: data
             }))
 
             dispatch(appLoadStop())
 
-            callBack && callBack()            
-            
+            callBack && callBack()
+
         } catch (error) {
             console.log(error)
             toast.error("Error fetching product categories")
             dispatch(appLoadStop())
         }
     }
-    const addProductCategory = async ({ callBack = () => {}, category }) => {
+    const addProductCategory = async ({ callBack = () => { }, category }) => {
         try {
-            
+
             dispatch(appLoadStart())
 
             const { data, error } = await supabase
@@ -402,32 +405,32 @@ export default function useApiReqs() {
                 .select("*")
                 .single()
 
-            if(error){
+            if (error) {
                 console.log(error)
                 throw new Error()
             }
 
             const pCats = [...(productCategories || []), data]
 
-            dispatch(setAdminState({ 
+            dispatch(setAdminState({
                 productCategories: pCats
             }))
 
             dispatch(appLoadStop())
 
-            callBack && callBack({})  
-            
+            callBack && callBack({})
+
             toast.success("Product category added!")
-            
+
         } catch (error) {
             console.log(error)
             toast.error("Error adding product category")
-            dispatch(appLoadStop())            
+            dispatch(appLoadStop())
         }
     }
-    const deleteProductCategory = async ({ callBack = () => {}, category }) => {
+    const deleteProductCategory = async ({ callBack = () => { }, category }) => {
         try {
-            
+
             dispatch(appLoadStart())
 
             const { data, error } = await supabase
@@ -435,36 +438,84 @@ export default function useApiReqs() {
                 .delete()
                 .eq("category", category)
 
-            if(error){
+            if (error) {
                 console.log(error)
                 throw new Error()
             }
 
             const pCats = productCategories?.filter(c => c?.category?.toLowerCase() !== category?.toLowerCase())
 
-            dispatch(setAdminState({ 
+            dispatch(setAdminState({
                 productCategories: pCats
             }))
 
             dispatch(appLoadStop())
 
-            callBack && callBack({})  
-            
+            callBack && callBack({})
+
             toast.success("Product category deleted!")
-            
+
         } catch (error) {
             console.log(error)
             toast.error("Error deleting product category")
-            dispatch(appLoadStop())            
+            dispatch(appLoadStop())
         }
-    } 
-    
-    
+    }
+    const updateProductVisibility = async ({ callback = () => {}, product_visibility, product_id }) => {
+        try {
+
+            if((product_visibility !== true && product_visibility !== false) || !product_id) throw new Error();
+
+            dispatch(appLoadStart())
+            
+            alert(product_visibility)
+
+            const { data, error } = await supabase
+                .from("products")
+                .update({
+                    product_visibility
+                })
+                .eq("id", product_id)
+
+            if(error){
+                console.log(error)
+                throw new Error()
+            }
+
+            const updatedProducts = products?.map(p => {
+                if(p?.id === product_id){
+                    return {
+                        ...p,
+                        product_visibility
+                    }
+                }
+
+                return p
+            })
+
+            dispatch(setAdminState({
+                products: updatedProducts
+            }))
+
+            dispatch(appLoadStop())
+
+            callback && callback({})
+
+            toast.success("Updated product visibility")
+            
+        } catch (error) {
+            console.log(error)
+            toast.error("Error updating product visibility")
+            dispatch(appLoadStop())
+        }
+    }
+
+
 
 
 
     //providers
-    const fetchProviderSpecialties = async ({ callback = () => {}, specialty, noLoad }) => {
+    const fetchProviderSpecialties = async ({ callback = () => { }, specialty, noLoad }) => {
         try {
 
             dispatch(appLoadStart())
@@ -473,7 +524,7 @@ export default function useApiReqs() {
                 .from('provider_specialties')
                 .select("*")
 
-            if(error){
+            if (error) {
                 console.log(error)
                 throw new Error()
             }
@@ -485,14 +536,14 @@ export default function useApiReqs() {
             dispatch(appLoadStop())
 
             callback && callback({})
-            
+
         } catch (error) {
             console.log(error)
             toast.error("Error fetching provider specialty")
-            dispatch(appLoadStop())             
+            dispatch(appLoadStop())
         }
     }
-    const addProviderSpecialty = async ({ callBack = () => {}, specialty }) => {
+    const addProviderSpecialty = async ({ callBack = () => { }, specialty }) => {
         try {
 
             dispatch(appLoadStart())
@@ -505,7 +556,7 @@ export default function useApiReqs() {
                 .select()
                 .single()
 
-            if(error){
+            if (error) {
                 console.log(error)
                 throw new Error()
             }
@@ -521,14 +572,14 @@ export default function useApiReqs() {
             callBack && callBack({})
 
             toast.success("Specialty added!")
-            
+
         } catch (error) {
             console.log(error)
             toast.error("Error adding provider specialty")
-            dispatch(appLoadStop())              
+            dispatch(appLoadStop())
         }
     }
-    const deleteProviderSpecialty = async ({ callBack = () => {}, specialty }) => {
+    const deleteProviderSpecialty = async ({ callBack = () => { }, specialty }) => {
         try {
 
             dispatch(appLoadStart())
@@ -538,7 +589,7 @@ export default function useApiReqs() {
                 .delete()
                 .eq('specialty', specialty)
 
-            if(error){
+            if (error) {
                 console.log(error)
                 throw new Error()
             }
@@ -554,11 +605,47 @@ export default function useApiReqs() {
             callBack && callBack({})
 
             toast.success("Specialty deleted")
-            
+
         } catch (error) {
             console.log(error)
             toast.error("Error deleting provider specialty")
-            dispatch(appLoadStop())              
+            dispatch(appLoadStop())
+        }
+    }
+
+
+
+
+
+    //orders
+    const fetchOrders = async ({ callBack = () => { } }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from('orders')
+                .select(`
+                    *,
+                    order_items ( * )
+                `)
+                .order("created_at", { ascending: false })
+
+            if (error) {
+                console.log(error)
+                throw new Error()
+            }
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ orders: data })
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error fetching orders. Try again later!")
+
+        } finally {
+            dispatch(appLoadStop())
         }
     }
 
@@ -619,5 +706,13 @@ export default function useApiReqs() {
         fetchProductCategories,
         addProductCategory,
         deleteProductCategory,
+        updateProductVisibility,
+
+
+
+
+
+        //orders
+        fetchOrders
     }
 }

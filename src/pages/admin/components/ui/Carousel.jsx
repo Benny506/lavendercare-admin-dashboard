@@ -7,6 +7,7 @@ export default function Carousel({
     showArrows = true,
     showDots = true,
 }) {
+    console.log(slides)
     const [index, setIndex] = useState(0);
     const [paused, setPaused] = useState(false);
     const timerRef = useRef(null);

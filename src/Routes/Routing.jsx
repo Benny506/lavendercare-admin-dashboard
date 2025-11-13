@@ -68,6 +68,7 @@ import CreateAccount from "../pages/admin/createAccount/CreateAccount";
 import NotFound from "../pages/admin/notFound/NotFound";
 import CommunityChat from "../pages/admin/communities/CommunityChat";
 import { VoiceNoteProvider } from "../hooks/chatHooks/voiceNotes/useVoiceNote";
+import Orders from "../pages/admin/marketPlace/Orders";
 
 function Routing() {
 
@@ -189,6 +190,7 @@ function Routing() {
             <Route path="/admin/marketplace/manage-product" element={<Product />} />
             <Route path="/admin/marketplace/add-product" element={<AddProduct />} />
             <Route path="/admin/marketplace/edit-product" element={<AddProduct />} />
+            <Route path="/admin/marketplace/orders" element={<Orders />} />
             {/* <Route path="/admin/marketplace/promotions" element={<MarketPromotions />} /> */}
 
             {/* order and transactions */}
