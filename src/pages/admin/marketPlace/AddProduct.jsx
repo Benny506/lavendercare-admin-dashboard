@@ -15,25 +15,17 @@ import Carousel from '../components/ui/Carousel';
 import { getMultiplePublicUrls, getPublicImageUrl, getPublicUrl, uploadAsset } from '../../../lib/requestApi';
 import supabase from '../../../database/dbInit';
 import { formatNumberWithCommas } from '../../../lib/utils';
-import ProductVariants from './ProductVariants';
-import { getAdminState } from '../../../redux/slices/adminState';
+import ProductVariants from './AddVariantValueModal';
+import { getAdminState, setAdminState } from '../../../redux/slices/adminState';
 import useApiReqs from '../../../hooks/useApiReqs';
 import { BsTrash } from 'react-icons/bs';
+import ProductImage from './ProductImage';
+import { v4 as uuidv4 } from 'uuid';
+
 
 const validationSchema = yup.object().shape({
   product_name: yup.string().required("Product name is required"),
   product_description: yup.string().required("Product description is required"),
-  price_currency: yup.string().required("Currency is required"),
-  price_value: yup
-    .number()
-    .typeError('Price must be a valid number')
-    .required('Price is required')
-    .positive('Price must be greater than zero'),
-  // stock_count: yup
-  //   .number()
-  //   .typeError('Stock count must be a valid number')
-  //   .required('Stock count is required')
-  //   .positive('Stock count must be greater than zero')
 })
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024
@@ -66,11 +58,17 @@ function AddProduct() {
   const navigate = useNavigate();
 
   const { state } = useLocation()
-  const product = state?.productInfo
 
-  const { fetchProductCategories, addProductCategory, deleteProductCategory, updateProductVisibility } = useApiReqs()
+  const product = state?.product
+  const product_id = state?.product_id
+
+  const {
+    fetchSingleProduct, fetchProductCategories, addProductCategory, deleteProductCategory, updateProductVisibility,
+    updateProduct
+  } = useApiReqs()
 
   const productCategories = useSelector(state => getAdminState(state).productCategories)
+  const products = useSelector(state => getAdminState(state).products)
 
   const productImgRef = useRef(null)
 
@@ -78,25 +76,34 @@ function AddProduct() {
   const [productPreviews, setProductPreviews] = useState()
   const [categories, setCategories] = useState([])
   const [productInfo, setProductInfo] = useState(null)
-  const [showProductInfo, setShowProductInfo] = useState(false)
-  const [qty, setQty] = useState(1);
   const [apiReqs, setApiReqs] = useState({
     isLoading: false, errorMsg: null, data: null
   })
-  const [productVariantsModal, setProductVariantsModal] = useState({ visible: false, hide: null })
 
   useEffect(() => {
-    if (product) {
-      loadImages()
-      fetchProductCategories({})
+    fetchProductCategories({})
+
+    if (product_id) {
+      fetchSingleProduct({
+        callBack: ({ product }) => {
+          if (product) {
+            loadImages({ product })
+
+          } else {
+            toast.error("Error loading product information! Try again.")
+            navigate('/admin/marketplace/manage-product')
+          }
+        },
+        product_id
+      })
     }
-  }, [product])
+  }, [product_id])
 
   useEffect(() => {
     const { isLoading, data } = apiReqs
 
-    if (isLoading) dispatch(appLoadStart());
-    else dispatch(appLoadStop());
+    // if (isLoading) dispatch(appLoadStart());
+    // else dispatch(appLoadStop());
 
     if (isLoading && data) {
       const { type, requestInfo } = data
@@ -107,98 +114,107 @@ function AddProduct() {
     }
   }, [apiReqs])
 
-  const loadImages = async () => {
+  const loadImages = ({ product }) => {
     if (!product) return;
-
-    dispatch(appLoadStart());
 
     const urls = product?.product_images?.map(pImg => {
       const url = getPublicImageUrl({ path: pImg, bucket_name: 'admin_products' })
       return url
     })
 
-    const previews = urls.map((u, i) => ({
-      preview: u,
-      file: null,
-      path: product?.product_images[i]
-    }))
-
-    setProductPreviews(previews)
-
     setProductInfo({
       ...product,
-      productPreviews: previews
+      productPreviews: urls
     })
 
-    setShowProductInfo(true)
-
     setCategories(product?.categories)
-
-    dispatch(appLoadStop())
   }
 
   const createProducts = async ({ requestInfo }) => {
     try {
 
-      const { product_images, product_name } = requestInfo
+      dispatch(appLoadStart())
 
+      const { product_images } = requestInfo
+
+      const id = product_id || uuidv4()
 
       const { filePaths } = await uploadAsset({
-        file: product_images?.map(img => img?.file).filter(img => img instanceof File),
+        file: (product_images || [])?.map(img => img?.file).filter(img => img instanceof File),
         ext: 'png',
-        id: `${product_name}-img`,
+        id,
         bucket_name: 'admin_products'
       })
 
-      const allExisting = product_images?.map(img => img?.path).filter(Boolean)
+      const allExisting = productInfo?.product_images || []
 
-      const images = [...allExisting, ...filePaths]
+      const images = [...allExisting, ...(filePaths || [])]
 
       const requestBody = {
         ...requestInfo,
-        stock_count: Math.floor(requestInfo?.stock_count),
+        id,
         product_images: images
       }
 
-      const { error } =
-        product && product?.id
+      const { data, error } =
+        product_id
           ?
           await supabase
             .from("products")
             .update(requestBody)
-            .eq("id", product?.id)
+            .eq("id", product_id)
+            .select()
+            .single()
           :
-          // await supabase
-          //   .from("products")
-          //   .insert({
-          //     ...requestBody,
-          //     by: 'admin'
-          //   })
           await supabase
-            .rpc('create_product_with_default_variant', {
-              p_product_name: requestBody?.product_name,
-              p_product_description: requestBody?.product_description,
-              p_product_images: requestBody?.product_images,
-              p_price_currency: requestBody?.price_currency,
-              p_price_value: requestBody?.price_value,
-              p_categories: requestBody?.categories
-            });
+            .from("products")
+            .insert({
+              ...requestBody,
+              uploaded_by: 'admin'
+            })
+            .select()
+            .single()
 
       if (error) {
         console.log("Error here", error)
         throw new Error()
       }
 
-      setApiReqs({ isLoading: false, errorMsg: null, data: null })
-      toast.success(product ? 'Product updated' : 'Product created')
+      if (product_id) {
+        const updatedProduct = {
+          ...data,
+          image_urls: (data?.product_images || [])?.map(imgPath => getPublicImageUrl({ path: imgPath, bucket_name: 'admin_products' }))
+        }
 
-      navigate(-1)
+        const updatedProducts = (products || [])?.map(p => {
+          if(p?.id === product_id){
+            return {
+              ...p,
+              ...updatedProduct              
+            }
+          }
+
+          return p
+        })
+
+        dispatch(setAdminState({
+          products: updatedProducts
+        }))
+      }
+
+      setApiReqs({ isLoading: false, errorMsg: null, data: null })
+      toast.success(product_id ? 'Product updated' : 'Product created')
+
+      navigate('/admin/marketplace/manage-product')
 
       return;
 
     } catch (error) {
       console.log(error)
       return createProductsFailure({ errorMsg: 'Something went wrong! Try again.' })
+
+    } finally {
+      dispatch(appLoadStop())
     }
   }
   const createProductsFailure = ({ errorMsg }) => {
@@ -208,21 +224,18 @@ function AddProduct() {
     return;
   }
 
-  const openProductVariantsModal = () => setProductVariantsModal({ visible: true, hide: hideProductVariantsModal, product: productInfo })
-  const hideProductVariantsModal = () => setProductVariantsModal({ visible: false, hide: hideProductVariantsModal })
-
   return (
-    <div className="w-full px-2 md:px-8 py-6">
+    <div className="w-full py-6">
       {/* Breadcrumbs */}
       <PathHeader
         paths={[
           { text: 'MarketPlace' },
           ...(
-            product
+            productInfo
               ?
               [
                 { text: 'Edit Product' },
-                { text: product?.product_name },
+                { text: productInfo?.product_name },
               ]
               :
               [
@@ -232,19 +245,16 @@ function AddProduct() {
         ]}
       />
 
-      <h2 className="text-xl md:text-2xl font-bold mb-2">Add New Product</h2>
+      <h2 className="text-xl md:text-2xl font-bold mb-2">{productInfo ? 'Edit' : 'Add New'} Product</h2>
 
       <Formik
         validationSchema={validationSchema}
         initialValues={{
           product_name: product?.product_name || '',
           product_description: product?.product_description || '',
-          price_currency: product?.price_currency || '',
-          price_value: product?.price_value || '',
-          // stock_count: product?.stock_count || ''
         }}
         onSubmit={(values) => {
-          if (!productPreviews || productPreviews?.length === 0) {
+          if ((!productPreviews || productPreviews?.length === 0) && productInfo?.product_images?.length === 0) {
             toast.info("Select at least one image preview of your product")
             dispatch(appLoadStop())
             return
@@ -308,217 +318,152 @@ function AddProduct() {
               </div>
               <div>
                 {
-                  productPreviews?.length > 0
+                  productInfo?.product_images?.length > 0
                   &&
-                  <div className='flex items-center gap-2 flex-wrap mb-2'>
-                    {
-                      productPreviews?.map((p, i) => {
-                        const { file, preview } = p
+                  <div>
+                    <label className="block font-semibold mb-1">Existing Images</label>
+                    <div className='flex items-center gap-2 flex-wrap mb-7'>
+                      {
+                        productInfo?.product_images?.map((img, i) => {
 
-                        const removeSinglePreview = () => {
-                          if (!product) return;
-
-                          const updated = productPreviews?.filter((_, _i) => _i !== i)
-                          setProductPreviews(updated)
-                        }
-
-                        return (
-                          <div key={i} className='relative w-2/5'>
-                            <img
-                              src={preview}
-                              style={{
-                                // height: '300px',
-                                // width: '200px'
-                              }}
-                              className='w-full'
-                            />
-
-                            {
-                              !product
-                              &&
-                              <div onClick={removeSinglePreview} className='bg-[#703DCB] p-3 absolute cursor-pointer top-0 right-0'>
-                                <MdDelete size={20} color='#FFF' />
-                              </div>
+                          const handleImgDelete = () => {
+                            if (productInfo?.product_images?.length === 1) {
+                              return toast.info("Product MUST have at least 1 image")
                             }
-                          </div>
-                        )
-                      })
-                    }
+
+                            const updatedProductImages = productInfo?.product_images?.filter(_img => img != _img)
+
+                            updateProduct({
+                              callBack: ({ update }) => {
+                                setProductInfo({
+                                  ...productInfo,
+                                  ...update
+                                })
+                              },
+                              update: {
+                                product_images: updatedProductImages
+                              },
+                              product_id: productInfo?.id
+                            })
+                          }
+
+                          const image_url = getPublicImageUrl({ path: img, bucket_name: 'admin_products' })
+
+                          return (
+                            <ProductImage
+                              key={i}
+                              img={image_url}
+                              handleImgDelete={handleImgDelete}
+                            />
+                          )
+                        })
+                      }
+                    </div>
                   </div>
                 }
                 <label className="block font-semibold mb-1">Upload Image</label>
+                <div onClick={() => productImgRef?.current?.click()} className="w-full border border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center py-8 cursor-pointer text-center text-gray-400">
+                  <svg width="32" height="32" fill="none" viewBox="0 0 24 24"><path stroke="#8B8B8A" strokeWidth="2" d="M12 16v-4m0 0V8m0 4h4m-4 0H8" /><rect width="20" height="20" x="2" y="2" stroke="#8B8B8A" strokeWidth="2" rx="4" /></svg>
+                  <span>Click to upload <span className="text-(--primary-500)">or drag and drop</span></span>
+                  <span className="text-xs mt-1">PNG, JPG or JPEG</span>
+                </div>
+                <input
+                  ref={productImgRef}
+                  type="file"
+                  multiple // 👈 allow multiple file selection
+                  className="hidden"
+                  onChange={e => {
+                    const files = Array.from(e.currentTarget.files ?? []);
+                    if (files.length === 0) return;
+
+                    const validPreviews = [];
+
+                    files.forEach(file => {
+                      const { valid, error } = validateImageFile(file);
+
+                      if (!valid) {
+                        toast.error(error || "Invalid file");
+                        return;
+                      }
+
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        validPreviews.push({ file, preview: reader.result });
+
+                        // Once all readers are done, update preview state
+                        if (validPreviews.length === files.filter(f => validateImageFile(f).valid).length) {
+                          if (productPreviews?.length > 0) {
+                            setProductPreviews(prev => [...prev, ...validPreviews]);
+
+                          } else {
+                            setProductPreviews(validPreviews);
+                          }
+                        }
+                      };
+                      reader.readAsDataURL(file);
+                    });
+                  }}
+                />
                 {
-                  !product
+                  productPreviews?.length > 0
                   &&
-                  <>
-                    <div onClick={() => productImgRef?.current?.click()} className="w-full border border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center py-8 cursor-pointer text-center text-gray-400">
-                      <svg width="32" height="32" fill="none" viewBox="0 0 24 24"><path stroke="#8B8B8A" strokeWidth="2" d="M12 16v-4m0 0V8m0 4h4m-4 0H8" /><rect width="20" height="20" x="2" y="2" stroke="#8B8B8A" strokeWidth="2" rx="4" /></svg>
-                      <span>Click to upload <span className="text-(--primary-500)">or drag and drop</span></span>
-                      <span className="text-xs mt-1">PNG, JPG or JPEG</span>
-                    </div>
-                    <input
-                      ref={productImgRef}
-                      type="file"
-                      multiple // 👈 allow multiple file selection
-                      className="hidden"
-                      onChange={e => {
-                        const files = Array.from(e.currentTarget.files ?? []);
-                        if (files.length === 0) return;
+                  <div className='mt-10'>
+                    <label className="block font-semibold mb-1">New Images</label>
+                    <div className='flex items-center gap-2 flex-wrap mb-7'>
+                      {
+                        productPreviews?.map((img, i) => {
 
-                        const validPreviews = [];
-
-                        files.forEach(file => {
-                          const { valid, error } = validateImageFile(file);
-
-                          if (!valid) {
-                            toast.error(error || "Invalid file");
-                            return;
+                          const handleImgDelete = () => {
+                            const updatedPreviews = productPreviews?.filter((p, _i) => _i !== i)
+                            setProductPreviews(updatedPreviews)
                           }
 
-                          const reader = new FileReader();
-                          reader.onloadend = () => {
-                            validPreviews.push({ file, preview: reader.result });
+                          const image_url = img?.preview
 
-                            // Once all readers are done, update preview state
-                            if (validPreviews.length === files.filter(f => validateImageFile(f).valid).length) {
-                              if (productPreviews?.length > 0) {
-                                setProductPreviews(prev => [...prev, ...validPreviews]);
-
-                              } else {
-                                setProductPreviews(validPreviews);
-                              }
-                            }
-                          };
-                          reader.readAsDataURL(file);
-                        });
-                      }}
-                    />
-                  </>
+                          return (
+                            <ProductImage
+                              key={i}
+                              img={image_url}
+                              handleImgDelete={handleImgDelete}
+                            />
+                          )
+                        })
+                      }
+                    </div>
+                  </div>
                 }
               </div>
-              <div>
-                <label className="block font-semibold mb-1">Product Price</label>
-                <div className="flex gap-2">
-                  <select
-                    className="border border-gray-200 rounded-lg px-2 py-2 bg-white text-gray-700"
-                    value={values.price_currency}
-                    name='price_currency'
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                  >
-                    <option selected value='' disabled>Currency</option>
-                    {
-                      currencies.map((c, i) => {
-                        const { title, value } = c
-
-                        return (
-                          <option key={i} value={value}> {title} </option>
-                        )
-                      })
-                    }
-                  </select>
-                  <input
-                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2"
-                    placeholder="Price"
-                    type='number'
-                    value={values.price_value}
-                    name='price_value'
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                  />
-                </div>
-                <ErrorMessage name='price_value'>
-                  {errorMsg => <ErrorMsg1 errorMsg={errorMsg} />}
-                </ErrorMessage>
-                <ErrorMessage name='price_currency'>
-                  {errorMsg => <ErrorMsg1 errorMsg={errorMsg} />}
-                </ErrorMessage>
-              </div>
-              {/* <div>
-                <label className="block font-semibold mb-1">No of Stock</label>
-                <input
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2"
-                  placeholder="Number of stock"
-                  type='number'
-                  value={values.stock_count}
-                  name='stock_count'
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                />
-                <ErrorMessage name='stock_count'>
-                  {errorMsg => <ErrorMsg1 errorMsg={errorMsg} />}
-                </ErrorMessage>
-              </div> */}
             </div>
             <div className="w-full md:w-64 flex flex-col gap-4">
               <div className="bg-gray-50 rounded-lg p-4 flex flex-col gap-2">
                 <span className="font-semibold mb-2">Publish</span>
                 <div className="flex gap-2 mb-2">
-                  {/* <button className="border border-gray-300 rounded-lg px-3 py-1 text-gray-700">Save Draft</button> */}
-                  <button
-                    className="border cursor-pointer border-gray-300 rounded-lg px-3 py-1 text-gray-700"
-                    onClick={async () => {
-                      dispatch(appLoadStart())
-
-                      const validationErrors = await validateForm();
-
-                      // Mark all fields as touched so errors show
-                      setTouched(
-                        Object.keys(validationSchema.fields).reduce((acc, key) => {
-                          acc[key] = true;
-                          return acc;
-                        }, {})
-                      );
-
-                      if (Object.keys(validationErrors).length === 0) {
-
-                        if (!productPreviews || productPreviews?.length === 0) {
-                          toast.info("Select at least one image preview of your product")
-                          dispatch(appLoadStop())
-                          return
-                        }
-
-                        if (categories?.length === 0) {
-                          toast.info("Select at least one category which your product belongs to")
-                          dispatch(appLoadStop())
-                          return
-                        }
-
-                        setProductInfo({
-                          ...values, productPreviews, categories
-                        })
-
-                        setShowProductInfo(true)
-
-                      } else {
-                        console.log('Validation failed:', validationErrors);
-                        toast.info("Not all fields are valid")
-                      }
-
-                      dispatch(appLoadStop())
-                    }}>
-                    Preview
-                  </button>
-
                   {
-                    product
+                    product_id
                     &&
                     <button
                       onClick={() => {
                         const product_visibility = productInfo?.product_visibility ? false : true
 
-                        updateProductVisibility({
-                          callback: ({}) => {
-                            const updatedProductInfo = {
-                              ...(productInfo || {}),
-                              product_visibility
-                            }
+                        if (product_visibility === true) {
+                          if (productInfo?.product_variants_combinations?.length > 0) {
+                            updateProductVisibility({
+                              callback: ({ }) => {
+                                const updatedProductInfo = {
+                                  ...(productInfo || {}),
+                                  product_visibility
+                                }
 
-                            setProductInfo(updatedProductInfo)
-                          },
-                          product_id: productInfo?.id,
-                          product_visibility: product_visibility
-                        })
+                                setProductInfo(updatedProductInfo)
+                              },
+                              product_id: productInfo?.id,
+                              product_visibility: product_visibility
+                            })
+
+                          } else {
+                            toast.info("You need to setup variants for this product first before you can make it visible")
+                          }
+                        }
                       }}
                       className={`${productInfo?.product_visibility ? 'text-gray-700' : 'bg-[#703dcb] text-white'} border cursor-pointer border-gray-300 rounded-lg px-3 py-1`}
                     >
@@ -540,11 +485,11 @@ function AddProduct() {
                   Publish
                 </button>
                 {
-                  product
+                  product_id
                   &&
                   <button
                     // disabled={!(isValid && dirty)}
-                    onClick={openProductVariantsModal}
+                    onClick={() => navigate("/admin/marketplace/manage-product/product-variants", { state: { product_id } })}
                     style={{
                       // opacity: !(isValid && dirty) ? 0.5 : 1
                       border: '1px solid purple',
@@ -650,65 +595,6 @@ function AddProduct() {
           </div>
         )}
       </Formik>
-
-      <div className='py-7' />
-
-      <Modal
-        isOpen={showProductInfo}
-        onClose={() => setShowProductInfo(false)}
-      >
-        <div className="bg-white rounded-lg shadow-sm p-8 flex flex-col items-center max-w-3xl mx-auto">
-          <div className="w-full flex flex-col md:flex-row gap-8 items-center">
-            <div className="flex-1 flex justify-center items-center">
-              <div className="w-64 h-64 bg-gray-100 rounded-lg flex items-center justify-center">
-                <Carousel
-                  slides={productInfo?.productPreviews?.map((p, i) => ({ src: p?.preview, alt: `${productInfo?.product_name} image ${i + 1}` }))}
-                />
-              </div>
-            </div>
-            <div className="flex-1 flex flex-col gap-2">
-              <h2 className="text-2xl font-bold">{productInfo?.product_name}</h2>
-              <div className="text-lg font-semibold mb-2">{productInfo?.price_currency} {formatNumberWithCommas(productInfo?.price_value)}</div>
-              <div className="text-gray-500 mb-4">{productInfo?.product_description}</div>
-              <div className="flex items-center gap-2 mb-4">
-                <button className="border border-gray-300 rounded px-2" onClick={() => setQty(qty > 1 ? qty - 1 : 1)}>-</button>
-                <span className="px-2">{qty}</span>
-                <button className="border border-gray-300 rounded px-2" onClick={() => {
-                  if (qty === productInfo?.stock_count) {
-                    toast.info("No more in stock")
-                    return
-                  }
-                  setQty(qty + 1)
-                }}>+</button>
-                <button className="ml-4 bg-gray-200 rounded px-4 py-2 font-semibold">Add to cart</button>
-              </div>
-              <div className="text-xs text-gray-600">
-                <div className='flex items-center gap-1 flex-wrap'>
-                  {productInfo?.categories?.map((c, i) => {
-                    return (
-                      <Badge
-                        key={i}
-                        variant='default'
-                        className='rounded-lg py-2 px-5'
-                      >
-                        {c}
-                      </Badge>
-                    )
-                  })}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Modal>
-
-      <ProductVariants
-        modalProps={productVariantsModal}
-        setApiReqs={setApiReqs}
-        apiReqs={apiReqs}
-        productInfo={productInfo}
-        setProductInfo={setProductInfo}
-      />
     </div>
   );
 }

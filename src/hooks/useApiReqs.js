@@ -5,6 +5,8 @@ import { formatBookings, getAdminState, setAdminState } from "../redux/slices/ad
 import { appLoadStart, appLoadStop } from "../redux/slices/appLoadingSlice";
 import { toast } from "react-toastify";
 import { setUserDetails } from "../redux/slices/userDetailsSlice";
+import { getPublicImageUrl } from "../lib/requestApi";
+import { v4 as uuidv4 } from "uuid";
 
 export default function useApiReqs() {
     const dispatch = useDispatch()
@@ -329,7 +331,7 @@ export default function useApiReqs() {
                 .from('products')
                 .select(`
                     *,
-                    product_variants ( * )
+                    product_variant_types ( * )
                 `)
                 .order("created_at", { ascending: false, nullsFirst: false })
                 .limit(limit)
@@ -342,7 +344,7 @@ export default function useApiReqs() {
 
             if (data?.length === 0) {
                 dispatch(appLoadStop())
-                toast.info("All products loaded")
+                // toast.info("All products loaded")
 
                 callBack && callBack({ canLoadMore: false })
 
@@ -362,6 +364,283 @@ export default function useApiReqs() {
             console.log(error)
             toast.error("Error fetching products")
             dispatch(appLoadStop())
+        }
+    }
+    const fetchSingleProduct = async ({ callBack = () => { }, product_id }) => {
+        try {
+
+            if (!product_id) throw new Error();
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from('products')
+                .select(`
+                    *,
+                    product_variant_types ( 
+                        *,
+                        product_variant_values ( * )
+                    ),
+                    product_variants_combinations ( * )
+                `)
+                .single()
+                .eq("id", product_id)
+
+            if (error) {
+                console.log(error)
+                throw new Error()
+            }
+
+            const image_urls = (data?.product_images || [])?.map(imgPath => {
+                return getPublicImageUrl({ path: imgPath, bucket_name: 'admin_products' })
+            })
+
+            const enrichedProduct = {
+                ...data,
+                image_urls
+            }
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ product: enrichedProduct })
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error fetching single product")
+            dispatch(appLoadStop())
+            callBack && callBack({ product: null })
+        }
+    }
+    const addVariantsCombination = async ({ callBack = () => { }, product_id, price_value, price_currency, stock, options }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from('product_variants_combinations')
+                .insert({
+                    product_id,
+                    price_value,
+                    price_currency,
+                    stock,
+                    options
+                })
+                .select()
+                .single()
+
+            if (error) {
+                if (error.message?.toLowerCase().includes("duplicate key")) {
+                    dispatch(appLoadStop())
+                    return toast.error("Variants combination already exists for this product")
+                }
+            }
+
+            const updatedProducts = (products || [])?.map(p => {
+                if(p?.id === product_id){
+                    const updatedVariantsCombinations = [data, ...(p?.product_variants_combinations || [])]
+
+                    return {
+                        ...p,
+                        product_variants_combinations: updatedVariantsCombinations
+                    }
+                }
+
+                return p
+            })
+
+            dispatch(setAdminState({
+                products: updatedProducts
+            }))
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ newVariantCombo: data })
+
+            toast.success("Added variants combination")
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error adding variant combination")
+            dispatch(appLoadStop())
+        }
+    }
+    const addVariantType = async ({ callBack = () => { }, product_id, name }) => {
+        try {
+
+            if (!product_id || !name) throw new Error();
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from("product_variant_types")
+                .insert({
+                    name,
+                    product_id
+                })
+                .select()
+                .single()
+
+            if (error) {
+                console.log(error)
+                if (error.message?.toLowerCase().includes("duplicate key")) {
+                    dispatch(appLoadStop())
+                    return toast.error("Variant type already exists for this product")
+                }
+                throw new Error()
+            }
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ newVariant: data })
+
+            toast.success("Variant type added")
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error adding varaint type")
+            dispatch(appLoadStop())
+        }
+    }
+    const deleteVariantType = async ({ callBack = () => { }, type_id }) => {
+        try {
+
+            if (!type_id) throw new Error();
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from("product_variant_types")
+                .delete()
+                .eq("id", type_id)
+
+            if (error) {
+                console.log(error)
+                throw new Error();
+            }
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ deleted_type_id: type_id })
+
+            toast.success("Variant type deleted")
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error deleting varaint type")
+            dispatch(appLoadStop())
+        }
+    }
+    const addVariantValue = async ({ callBack = () => { }, variant_type_id, value }) => {
+        try {
+
+            if (!variant_type_id || !value) throw new Error();
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from('product_variant_values')
+                .insert({
+                    variant_type_id,
+                    value
+                })
+                .select()
+                .single()
+
+            if (error) {
+                console.log(error)
+                if (error.message?.toLowerCase().includes("duplicate key")) {
+                    dispatch(appLoadStop())
+                    return toast.error("Variant type and value combination already exists")
+                }
+                throw new Error()
+            }
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({
+                newVariantValue: data
+            })
+
+            toast.success("Variant value added")
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error adding varaint value")
+            dispatch(appLoadStop())
+        }
+    }
+    const deleteVariantValue = async ({ callBack = () => { }, value_id }) => {
+        try {
+
+            if (!value_id) throw new Error();
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from("product_variant_values")
+                .delete()
+                .eq("id", value_id)
+
+            if (error) {
+                console.log(error)
+                throw new Error()
+            }
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ deleted_value_id: value_id })
+
+            toast.success("Variant value deleted!")
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error deleting variant value")
+            dispatch(appLoadStop())
+        }
+    }
+    const updateProduct = async ({ callBack = () => { }, product_id, update }) => {
+        try {
+
+            if (!product_id || !update) throw new Error();
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from('products')
+                .update(update)
+                .eq("id", product_id)
+                .select()
+                .single()
+
+            if (error) {
+                console.log(error)
+                throw new Error()
+            }
+
+            const updatedProducts = products?.map(p => {
+                if (p?.id === product_id) {
+                    return {
+                        ...p,
+                        ...update
+                    }
+                }
+
+                return p
+            })
+
+            dispatch(appLoadStop())
+
+            dispatch(setAdminState({ products: updatedProducts }))
+
+            callBack && callBack({ update })
+
+            toast.success("Product updated!")
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error Updating product")
+            dispatch(appLoadStop())
+            callBack && callBack({ product: null })
         }
     }
     const fetchProductCategories = async ({ callBack = () => { } }) => {
@@ -461,14 +740,12 @@ export default function useApiReqs() {
             dispatch(appLoadStop())
         }
     }
-    const updateProductVisibility = async ({ callback = () => {}, product_visibility, product_id }) => {
+    const updateProductVisibility = async ({ callback = () => { }, product_visibility, product_id }) => {
         try {
 
-            if((product_visibility !== true && product_visibility !== false) || !product_id) throw new Error();
+            if ((product_visibility !== true && product_visibility !== false) || !product_id) throw new Error();
 
             dispatch(appLoadStart())
-            
-            alert(product_visibility)
 
             const { data, error } = await supabase
                 .from("products")
@@ -477,13 +754,13 @@ export default function useApiReqs() {
                 })
                 .eq("id", product_id)
 
-            if(error){
+            if (error) {
                 console.log(error)
                 throw new Error()
             }
 
             const updatedProducts = products?.map(p => {
-                if(p?.id === product_id){
+                if (p?.id === product_id) {
                     return {
                         ...p,
                         product_visibility
@@ -502,10 +779,56 @@ export default function useApiReqs() {
             callback && callback({})
 
             toast.success("Updated product visibility")
-            
+
         } catch (error) {
             console.log(error)
             toast.error("Error updating product visibility")
+            dispatch(appLoadStop())
+        }
+    }
+    const deleteProductVariant = async ({ callBack = () => { }, variant_id, product_id }) => {
+        try {
+
+            if (!variant_id || !product_id) throw new Error();
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from("product_variants")
+                .delete()
+                .eq("id", variant_id)
+
+            if (error) {
+                console.log(error)
+                throw new Error()
+            }
+
+            const updatedProducts = products?.map(p => {
+                if (p?.id === product_id) {
+                    const updatedVariants = p?.product_variants?.filter(v => v?.id !== variant_id)
+
+                    return {
+                        ...p,
+                        product_variants: updatedVariants
+                    }
+                }
+
+                return p
+            })
+
+            dispatch(setAdminState({
+                products: updatedProducts
+            }))
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ variant_id })
+
+            toast.success("Variant deleted!")
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error deleting product variant")
             dispatch(appLoadStop())
         }
     }
@@ -707,6 +1030,14 @@ export default function useApiReqs() {
         addProductCategory,
         deleteProductCategory,
         updateProductVisibility,
+        deleteProductVariant,
+        fetchSingleProduct,
+        updateProduct,
+        addVariantType,
+        deleteVariantType,
+        addVariantValue,
+        deleteVariantValue,
+        addVariantsCombination,
 
 
 

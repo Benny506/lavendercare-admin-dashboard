@@ -1,6 +1,11 @@
+import { useNavigate } from "react-router-dom"
+
 export default function PathHeader({
     paths = []
 }) {
+
+    const navigate = useNavigate()
+
     return (
         <div className="flex items-center flex-wrap gap-1 my-3">
             <svg
@@ -22,6 +27,14 @@ export default function PathHeader({
             {
                 paths.map((p, i) => {
                     const { text } = p
+
+                    const negativeIndex = -1 * (paths?.length - (i+1))
+
+                    const handlePathClick = () => {
+                        if(i === paths?.length - 1 || i === 0) return;
+
+                        navigate(negativeIndex)
+                    }
 
                     return (
                         <>
@@ -46,7 +59,7 @@ export default function PathHeader({
                                 </defs>
                             </svg>
 
-                            <p className={`capitalize text-[15px]  ${i === paths?.length-1 ? 'text-(--primary-500) font-semibold' : 'text-gray-600'}`}>
+                            <p onClick={handlePathClick} className={`cursor-pointer capitalize text-[15px]  ${i === paths?.length-1 ? 'text-(--primary-500) font-semibold' : 'text-gray-600'}`}>
                                 { text }
                             </p>                            
                         </>

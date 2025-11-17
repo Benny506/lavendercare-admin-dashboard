@@ -22,9 +22,6 @@ export default function SingleOrder({ visible, order = [] }) {
                                 getPublicImageUrl({ path: imgPath, bucket_name: "admin_products" })
                             );
 
-                        const variants = item?.variant_info;
-                        const selectedVariants = {};
-
                         return (
                             <div key={idx} className="w-full lg:w-1/2 px-1 mb-3">
                                 <div className="bg-white shadow-lg rounded-lg p-3">
@@ -51,9 +48,7 @@ export default function SingleOrder({ visible, order = [] }) {
                                             <hr className="my-2 border-gray-200" />
                                             <div className="flex items-start justify-start flex-col">
                                                 <ProductVariantsDisplay
-                                                    variants={variants}
-                                                    selectedVariants={selectedVariants}
-                                                    showInfo={false}
+                                                    variants={item?.variant_info?.options}
                                                 />
                                             </div>
                                         </div>
