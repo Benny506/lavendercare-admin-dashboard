@@ -445,6 +445,8 @@ function AddProduct() {
                       onClick={() => {
                         const product_visibility = productInfo?.product_visibility ? false : true
 
+                        console.log(product_visibility)
+
                         if (product_visibility === true) {
                           if (productInfo?.product_variants_combinations?.length > 0) {
                             updateProductVisibility({
