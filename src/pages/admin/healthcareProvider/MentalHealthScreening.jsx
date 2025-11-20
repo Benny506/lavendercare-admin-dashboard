@@ -12,6 +12,9 @@ import { Select } from "../components/ui/Select";
 import TestInfoModal from "./auxiliary/TestInfoModal";
 import useApiReqs from "../../../hooks/useApiReqs";
 import PathHeader from "../components/PathHeader";
+import { BsCheck } from "react-icons/bs";
+import { MdOutlineCancel } from "react-icons/md";
+import FeedBackModal from "./auxiliary/FeedBackModal";
 
 
 function MentalHealthScreening() {
@@ -23,30 +26,43 @@ function MentalHealthScreening() {
 
   const mentalHealthScreenings = useSelector(state => getAdminState(state).mentalHealthScreenings)
 
+  const [feedBackForModal, setFeedBackForModal] = useState({ visible: false, hide: null, data: null })
   const [screenings, setScreenings] = useState([])
-  const [apiReqs, setApiReqs] = useState({ isLoading: false, data: null, errorMsg: null })
   const [riskFilter, setRiskFilter] = useState('all')
   const [searchFilter, setSearchFilter] = useState('')
   const [testInfoModal, setTestInfoModal] = useState({ visible: false, hide: null, data: null })
   const [canLoadMore, setCanLoadMore] = useState(true)
 
   useEffect(() => {
-    const loadedScreenings = (mentalHealthScreenings || [])
-    
-    if(loadedScreenings?.length > 0){
-      setScreenings(loadedScreenings)
-    
-    } else{
-      fetchTestResults({ 
-        callBack: ({ canLoadMore }) => {
-          setCanLoadMore(canLoadMore)
-        }
-      })
-    }
+    fetchTestResults({
+      callBack: ({ canLoadMore }) => {
+        setCanLoadMore(canLoadMore)
+      }
+    })
+  }, [])
+
+  useEffect(() => {
+    setScreenings(mentalHealthScreenings)
+
+    // const loadedScreenings = (mentalHealthScreenings || [])
+
+    // if(loadedScreenings?.length > 0){
+    //   setScreenings(loadedScreenings)
+
+    // } else{
+    //   fetchTestResults({ 
+    //     callBack: ({ canLoadMore }) => {
+    //       setCanLoadMore(canLoadMore)
+    //     }
+    //   })
+    // }
   }, [mentalHealthScreenings])
 
   const openTestInfoModal = (args) => setTestInfoModal({ visible: true, hide: hideTestInfoModal, data: args })
   const hideTestInfoModal = () => setTestInfoModal({ visible: true, hide: null, data: null })
+
+  const openFeedBackForModal = (f_for) => setFeedBackForModal({ visible: true, hide: hideFeedBackForModal, data: f_for })
+  const hideFeedBackForModal = () => setFeedBackForModal({ visible: false, hide: null, data: null })
 
   const filteredData = screenings?.filter(s => {
     const motherName = s?.user_profile?.name
@@ -65,7 +81,7 @@ function MentalHealthScreening() {
   return (
     <div className="pt-6 min-h-screen">
       {/* Breadcrumbs and title */}
-      <PathHeader 
+      <PathHeader
         paths={[
           { text: 'Health Providers' },
           { text: 'Mental Health Screening' },
@@ -123,14 +139,14 @@ function MentalHealthScreening() {
               <Select
                 options={['all', ...Object.keys(RISK_LEVEL_STYLES)].map(riskLevel => {
                   return {
-                    value: riskLevel, 
+                    value: riskLevel,
                     label: riskLevel
                   }
                 })}
                 value={riskFilter}
                 onChange={setRiskFilter}
                 placeholder="Filter by risk level"
-                searchable={true}          
+                searchable={true}
               />
             </div>
           </div>
@@ -149,6 +165,9 @@ function MentalHealthScreening() {
                   Score
                 </th>
                 <th className="py-2 sm:py-3 px-2 sm:px-4 text-left font-semibold text-gray-500 whitespace-nowrap">
+                  Feedback sent
+                </th>
+                <th className="py-2 sm:py-3 px-2 sm:px-4 text-left font-semibold text-gray-500 whitespace-nowrap">
                   Interpretation
                 </th>
                 <th className="py-2 sm:py-3 px-2 sm:px-4 text-left font-semibold text-gray-500 whitespace-nowrap">
@@ -156,7 +175,7 @@ function MentalHealthScreening() {
                 </th>
                 <th className="py-2 sm:py-3 px-2 sm:px-4 text-left font-semibold text-gray-500 whitespace-nowrap">
                   Max Risk % (Answer)
-                </th>                
+                </th>
                 <th className="py-2 sm:py-3 px-2 sm:px-4 text-left font-semibold text-gray-500 whitespace-nowrap">
                   Actions
                 </th>
@@ -165,23 +184,28 @@ function MentalHealthScreening() {
             <tbody>
               {
                 filteredData?.length > 0
-                ?
+                  ?
                   filteredData.map((s, idx) => {
 
                     const { answer } = s
-                    
+
                     const max_risk_percent = getMaxByKey({ arr: answer?.filter(ans => ans.alert_level == 'high' || ans?.alert_level == 'severe'), key: 'risk_level' })
 
-                    return(
+                    const feedBackSent = s?.test_feedback?.length > 0
+
+                    return (
                       <tr key={idx} className="border-t border-gray-100">
                         <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
-                          { s?.created_at ? isoToDateTime({ isoString: s?.created_at }) : 'Not set'}
+                          {s?.created_at ? isoToDateTime({ isoString: s?.created_at }) : 'Not set'}
                         </td>
                         <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
                           {s?.user_profile?.name}
                         </td>
                         <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
                           {s.score}
+                        </td>
+                        <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap text-center">
+                          {feedBackSent ? <BsCheck size={16} color="#703DCB" /> : <MdOutlineCancel size={16} color="red" />}
                         </td>
                         <td
                           className={`py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap font-semibold ${s.interpColor}`}
@@ -192,9 +216,31 @@ function MentalHealthScreening() {
                           {getRiskLevelBadge(s?.risk_level)}
                         </td>
                         <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
-                          { max_risk_percent?.risk_percent }%
-                        </td>                        
+                          {max_risk_percent?.risk_percent}%
+                        </td>
                         <td className="py-2 gap-2 flex items-cener sm:py-3 px-2 sm:px-4 whitespace-nowrap">
+                          <button
+                            className="bg-purple-600 cursor-pointer text-white px-4 py-1 rounded-full text-xs w-full sm:w-auto transition hover:bg-purple-700"
+                            onClick={() =>
+                              navigate(`/admin/mothers/mother-messages?mother_id=${s?.user_profile?.id}`, { state: { mother_id: s?.user_profile?.id } })
+                            }
+                          >
+                            Chat
+                          </button>
+                          {
+                            !feedBackSent
+                            &&
+                            <button
+                              className="cursor-pointer text-black px-4 py-1 rounded-full text-xs w-full sm:w-auto transition"
+                              onClick={() => openFeedBackForModal(s)}
+                              style={{
+                                border: '1px solid #703dcb'
+                              }}
+                            >
+                              Send feedback
+                            </button>
+                          }
+
                           <button
                             className="bg-purple-600 cursor-pointer text-white px-4 py-1 rounded-full text-xs w-full sm:w-auto transition hover:bg-purple-700"
                             onClick={() =>
@@ -203,17 +249,18 @@ function MentalHealthScreening() {
                           >
                             View Details
                           </button>
-                          
+
                           <button
                             className="bg-gray-600 cursor-pointer text-white px-4 py-1 rounded-full text-xs w-full sm:w-auto transition hover:bg-grey-700"
                             onClick={() => openTestInfoModal(s)}
                           >
                             Test info
-                          </button>                          
+                          </button>
                         </td>
                       </tr>
-                  )})
-                :
+                    )
+                  })
+                  :
                   <tr className="border-t border-gray-100">
                     <td colSpan={'6'} className="pt-5">
                       <ZeroItems zeroText={'No screening data found'} />
@@ -225,10 +272,14 @@ function MentalHealthScreening() {
         </div>
       </div>
 
-      <TestInfoModal 
+      <TestInfoModal
         onClose={testInfoModal?.hide}
         show={testInfoModal?.visible}
         data={testInfoModal?.data}
+      />
+
+      <FeedBackModal
+        modalProps={feedBackForModal}
       />
     </div>
   );

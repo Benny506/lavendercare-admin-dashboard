@@ -5,8 +5,9 @@ import { formatBookings, getAdminState, setAdminState } from "../redux/slices/ad
 import { appLoadStart, appLoadStop } from "../redux/slices/appLoadingSlice";
 import { toast } from "react-toastify";
 import { setUserDetails } from "../redux/slices/userDetailsSlice";
-import { getPublicImageUrl } from "../lib/requestApi";
+import { getPublicImageUrl, requestApi } from "../lib/requestApi";
 import { v4 as uuidv4 } from "uuid";
+import { sendNotifications } from "../lib/notifications";
 
 export default function useApiReqs() {
     const dispatch = useDispatch()
@@ -89,14 +90,16 @@ export default function useApiReqs() {
             dispatch(appLoadStart())
 
             const limit = 1000;
-            const from = (mentalHealthScreenings?.length || 0);
+            const from = 0
+            // const from = (mentalHealthScreenings?.length || 0);
             const to = from + limit - 1;
 
             const { data, error } = await supabase
                 .from('mental_health_test_answers')
                 .select(`
                     *,
-                    user_profile: user_profiles(*) 
+                    user_profile: user_profiles(*),
+                    test_feedback: test_feedback(*)
                 `)
                 .order('created_at', { ascending: false, nullsFirst: false })
                 .limit(limit)
@@ -116,7 +119,8 @@ export default function useApiReqs() {
                 return;
             }
 
-            dispatch(setAdminState({ mentalHealthScreenings: [...mentalHealthScreenings, ...data] }))
+            dispatch(setAdminState({ mentalHealthScreenings: data }))
+            // dispatch(setAdminState({ mentalHealthScreenings: [...mentalHealthScreenings, ...data] }))
 
             dispatch(appLoadStop())
 
@@ -126,6 +130,68 @@ export default function useApiReqs() {
             console.log(error)
             toast.error("Error loading test results")
             dispatch(appLoadStop())
+        }
+    }
+    const sendTestFeedBack = async ({ callBack = () => {}, requestInfo, user_id }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            await sendNotifications({
+                tokens: [requestInfo?.user_profile?.notification_token],
+                title: 'Mental-Health-Test-Feedback',
+                body: `We have recommendations for you`,
+                data: {}
+            })
+
+            const { result } = await requestApi({
+                url: 'https://tzsbbbxpdlupybfrgdbs.supabase.co/functions/v1/retrieve-user-email', 
+                method: 'POST',
+                data: {
+                    user_id
+                }
+            })
+
+            const email = result?.email
+
+            if(!email) throw new Error();
+
+            //use email to send mail. Create template!
+
+            const { data, error } = await supabase
+                .from('test_feedback')
+                .insert(requestInfo)
+                .select()
+                .single()
+
+            if(error){
+                console.log(error)
+                throw new Error();
+            }
+
+            const updatedScreens = (mentalHealthScreenings || [])?.map(sc => {
+                if(sc?.id === requestInfo?.test_id){
+                    return {
+                        ...sc,
+                        feedback_sent: true
+                    }
+                }
+
+                return sc
+            })
+
+            dispatch(setAdminState({ mentalHealthScreenings: updatedScreens }))
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({})
+
+            toast.success("Feedback sent to mother")
+            
+        } catch (error) {
+            console.log(error)
+            toast.error("Error sending test feed-back, try again later")
+            dispatch(appLoadStop())            
         }
     }
 
@@ -358,7 +424,7 @@ export default function useApiReqs() {
 
             dispatch(appLoadStop())
 
-            callBack && callBack({ canLoadMore: true })
+            callBack && callBack({ canLoadMore: true, products: data })
 
         } catch (error) {
             console.log(error)
@@ -436,7 +502,7 @@ export default function useApiReqs() {
             }
 
             const updatedProducts = (products || [])?.map(p => {
-                if(p?.id === product_id){
+                if (p?.id === product_id) {
                     const updatedVariantsCombinations = [data, ...(p?.product_variants_combinations || [])]
 
                     return {
@@ -950,7 +1016,11 @@ export default function useApiReqs() {
                 .from('orders')
                 .select(`
                     *,
-                    order_items ( * )
+                    order_items ( * ),
+                    user_profile: user_id ( 
+                        *,
+                        unique_phones ( * )
+                    )
                 `)
                 .order("created_at", { ascending: false })
 
@@ -971,6 +1041,75 @@ export default function useApiReqs() {
             dispatch(appLoadStop())
         }
     }
+    const confirmOrder = async ({ callBack = () => { }, requestBody }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { responseStatus, result, errorMsg } = await requestApi({
+                url: 'https://tzsbbbxpdlupybfrgdbs.supabase.co/functions/v1/create-order',
+                method: 'POST',
+                data: requestBody
+            })
+
+            if (errorMsg) {
+                dispatch(appLoadStop())
+                toast.error(errorMsg)
+                callBack && callBack({ errorMsg: errorMsg })
+                return
+            }
+
+            if (result) {
+                dispatch(appLoadStop())
+
+                callBack && callBack({ confirmedOrder: result })
+
+                toast.success("Order confirmed!")
+
+                return;
+            }
+
+            throw new Error()
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error confirming order. Try again later!")
+
+        } finally {
+            dispatch(appLoadStop())
+        }
+    }
+    const updateOrder = async ({ callBack = () => {}, update, order_id }) => {
+        try {
+            
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from('orders')
+                .update(update)
+                .eq("id", order_id)
+                .select()
+                .single()
+
+            if(error){
+                console.log(error)
+                throw new Error()
+            }
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ status, order_id })
+
+            toast.success("Order updated")
+            
+        } catch (error) {
+            console.log(error)
+            toast.error("Error updating order!")
+
+        } finally {
+            dispatch(appLoadStop())
+        }
+    }
 
 
 
@@ -986,6 +1125,7 @@ export default function useApiReqs() {
 
         //mental health screening
         fetchTestResults,
+        sendTestFeedBack,
 
 
 
@@ -1044,6 +1184,8 @@ export default function useApiReqs() {
 
 
         //orders
-        fetchOrders
+        fetchOrders,
+        confirmOrder,
+        updateOrder
     }
 }

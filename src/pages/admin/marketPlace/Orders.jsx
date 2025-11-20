@@ -176,7 +176,12 @@ export default function Orders() {
 
                                                 <tr>
                                                     <td colSpan="6" className="px-6 py-0">
-                                                        <SingleOrder visible={orderVisible} order={order} />
+                                                        <SingleOrder 
+                                                            visible={orderVisible} 
+                                                            order={order} 
+                                                            setOrders={setOrders} 
+                                                            orders={orders}
+                                                        />
                                                     </td>
                                                 </tr>
                                             </>

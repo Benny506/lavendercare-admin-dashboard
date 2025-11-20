@@ -92,6 +92,7 @@ function MotherMessages() {
 
         } catch (error) {
             console.log(error)
+            toast.info("Could not retrieve mother profile")
             navigate('/admin/mothers')
 
         } finally {

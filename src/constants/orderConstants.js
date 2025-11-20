@@ -17,3 +17,5 @@ export const getOrderStatusText = (status) => {
         default: return status;
     }
 };
+
+export const orderStatuses = ['shipped', 'in-transit', 'delivered']
