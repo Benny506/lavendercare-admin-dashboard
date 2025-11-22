@@ -15,7 +15,7 @@ import { BsTrash } from "react-icons/bs"
 import { v4 as uuidv4 } from 'uuid';
 import useApiReqs from "../../../hooks/useApiReqs"
 
-export default function AddVariantValueModal({ modalProps, product, setProduct }) {
+export default function AddVariantValueModal({ modalProps, values=[], setValues, types=[], setTypes }) {
     const dispatch = useDispatch()
 
     const { addVariantValue, deleteVariantValue } = useApiReqs()
@@ -33,10 +33,10 @@ export default function AddVariantValueModal({ modalProps, product, setProduct }
     }, [modalProps])
 
     useEffect(() => {
-        const variantValues = product?.product_variant_types?.filter(vType => vType?.id === variantTypeId)?.[0]?.product_variant_values
+        const variantValues = (values || [])?.filter(v => v?.variant_type_id === variantTypeId)
         setVariantValues(variantValues)
         setVariantValue('')
-    }, [variantTypeId, product])
+    }, [variantTypeId, types, values])
 
     const resetState = () => {
         setVariantTypeId('')
@@ -48,9 +48,7 @@ export default function AddVariantValueModal({ modalProps, product, setProduct }
 
     const { hide, visible } = modalProps
 
-    if (!product) return <></>
-
-    const { product_name } = product
+    if (!types || !values || !setValues || !setTypes) return <></>
 
     const handleAddVariantValue = () => {
 
@@ -58,23 +56,28 @@ export default function AddVariantValueModal({ modalProps, product, setProduct }
 
         addVariantValue({
             callBack: ({ newVariantValue }) => {
-                const updatedProductVariantTypes = product?.product_variant_types?.map((vT) => {
-                    if(vT?.id === variantTypeId){
 
-                        const updatedProductVariantValues = [...(vT?.product_variant_values || []), newVariantValue]
+                const type = (types || [])?.filter(t => t?.id === newVariantValue?.variant_type_id)?.[0]
+
+                const updatedTypes = (types || [])?.map(t => {
+                    if(t?.id === newVariantValue?.variant_type_id){
+                        const updatedValues = [{...newVariantValue, ...(type || {})}, ...(t?.values || [])]
 
                         return {
-                            ...vT,
-                            product_variant_values: updatedProductVariantValues
+                            ...t,
+                            values: updatedValues
                         }
-                    }  
+                    }
 
-                    return vT
+                    return t
                 })
-                setProduct({
-                    ...product,
-                    product_variant_types: updatedProductVariantTypes
-                })
+
+                
+                const updatedValues = [{...newVariantValue, ...(type || {})}, ...(values || [])]
+
+                setTypes(updatedTypes)
+                setValues(updatedValues)
+
                 setVariantValue('')
             },
             variant_type_id: variantTypeId,
@@ -82,7 +85,7 @@ export default function AddVariantValueModal({ modalProps, product, setProduct }
         })
     }
 
-    const isColor = product?.product_variant_types?.filter(vT => vT?.id === variantTypeId)?.[0]?.name === 'color'
+    const isColor = (types || [])?.filter(t => t?.id === variantTypeId)?.[0]?.name === 'color'
 
     return (
         <Modal
@@ -97,7 +100,7 @@ export default function AddVariantValueModal({ modalProps, product, setProduct }
 
             <div className="flex items-center justify-between border-b border-gray-200 mb-5 py-3">
                 <h2 className="text-lg font-semibold text-gray-800">
-                    “{product_name}” variant values
+                    All variant values
                 </h2>
             </div>
 
@@ -119,11 +122,11 @@ export default function AddVariantValueModal({ modalProps, product, setProduct }
                                 required
                                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                             >
-                                <option value="">-- What kind of variant is this? --</option>
-                                {product?.product_variant_types?.map((v, i) => {
+                                <option value="">-- What type of variant is this? --</option>
+                                {(types || [])?.map((t, i) => {
                                     return (
-                                        <option key={i} value={v?.id}>
-                                            {v?.name}
+                                        <option key={i} value={t?.id}>
+                                            {t?.name}
                                         </option>
                                     )
                                 })}
@@ -190,31 +193,33 @@ export default function AddVariantValueModal({ modalProps, product, setProduct }
                             {variantValues?.map((v, i) => {
                                 const { id, value, variant_type_id } = v;
 
-                                const name = product?.product_variant_types?.filter(type => type?.id === variant_type_id)?.[0]?.name
+                                const name = (types || [])?.filter(type => type?.id === variant_type_id)?.[0]?.name
 
                                 const handleDeleteVariantValue = () => {
                                     deleteVariantValue({
                                         callBack: ({ deleted_value_id }) => {
-                                            const updatedProductVariantTypes = (product?.product_variant_types || [])?.map(vT => {
-                                                if(vT?.id === variant_type_id){
-                                                    console.log(variant_type_id)
-                                                    const updatedProductVariantValues = (vT?.product_variant_values || [])?.filter(vV => vV?.id !== deleted_value_id)
+
+                                            const updatedTypes = (types || [])?.map(t => {
+                                                const values = t?.values || []
+
+                                                const value_ids_in_t = values?.map(v => v?.id)
+
+                                                if(value_ids_in_t?.includes(deleted_value_id)){
+                                                    const updatedValues = values?.filter(v => v?.id != deleted_value_id)
 
                                                     return {
-                                                        ...vT,
-                                                        product_variant_values: updatedProductVariantValues
+                                                        ...t,
+                                                        values: updatedValues
                                                     }
                                                 }
 
-                                                return vT
+                                                return t
                                             })
 
-                                            const updatedProduct = {
-                                                ...product,
-                                                product_variant_types: updatedProductVariantTypes
-                                            }
+                                            const updatedValues = (values || [])?.filter(v => v?.id !== deleted_value_id)
 
-                                            setProduct(updatedProduct)
+                                            setTypes(updatedTypes)
+                                            setValues(updatedValues)
                                         },
                                         value_id: id
                                     })

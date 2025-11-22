@@ -4,41 +4,39 @@ import ZeroItems from "../components/ZeroItems";
 import useApiReqs from "../../../hooks/useApiReqs";
 import { toast } from "react-toastify";
 import { MdDelete } from "react-icons/md";
+import { formatNumberWithCommas } from "../../../lib/utils";
 
-export default function AddVariantTypeModal({ modalProps, product, setProduct }) {
+export default function AddVariantTypeModal({ modalProps, types=[], setTypes }) {
 
     const { addVariantType, deleteVariantType } = useApiReqs()
 
-    const [variantName, setVariantName] = useState('')
+    const [typeName, setTypeName] = useState('')
 
-    if (!modalProps || !product || !setProduct) return <></>
+    if (!modalProps || !types || !setTypes) return <></>
 
     const { visible, hide } = modalProps
-    const { product_variant_types } = product
 
     const onHide = () => {
-        setVariantName('')
+        setTypeName('')
         hide && hide()
     }
 
     const handleAddVariant = () => {
 
-        const name = variantName?.trim().toLowerCase()
+        const name = typeName?.trim().toLowerCase()
 
-        if (product_variant_types?.includes(name)) {
-            return toast.info("Variant name already exists!")
-        }
+        if(!name) return toast.info("Enter a type name!");
+
+        const _types = types?.map(t => t?.name?.toLowerCase())
+
+        if(_types?.includes(name)) return toast.info("Type name already exists!");
 
         addVariantType({
-            callBack: ({ newVariant }) => {
-                const updatedVariantTypes = [...product_variant_types, newVariant]
-                setProduct({
-                    ...product,
-                    product_variant_types: updatedVariantTypes
-                })
-                setVariantName('')
+            callBack: ({ newVariantType }) => {
+                const updatedTypes = [{...newVariantType, values: []}, ...(types || [])]
+                setTypes(updatedTypes)
+                setTypeName('')
             },
-            product_id: product?.id,
             name
         })
     }
@@ -50,7 +48,7 @@ export default function AddVariantTypeModal({ modalProps, product, setProduct })
         >
             <div className="flex items-center justify-between border-b border-gray-200 mb-5 py-3">
                 <h2 className="text-lg font-semibold text-gray-800">
-                    "{product?.product_name}" variant types
+                    All variant types
                 </h2>
             </div>
 
@@ -59,8 +57,8 @@ export default function AddVariantTypeModal({ modalProps, product, setProduct })
                 <input
                     type="text"
                     placeholder="..."
-                    value={variantName}
-                    onChange={e => setVariantName(e.target.value)}
+                    value={typeName}
+                    onChange={e => setTypeName(e.target.value)}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
             </div>
@@ -79,16 +77,17 @@ export default function AddVariantTypeModal({ modalProps, product, setProduct })
             <div className="mb-7" />
 
             <h2 className="text-md font-semibold text-gray-800 mb-4">
-                Existing variants
+                Existing types
             </h2>
 
             {
-                product_variant_types?.length > 0
+                types?.length > 0
                     ?
                     <table className="w-full border-collapse rounded-lg overflow-hidden">
                         <thead className="bg-gray-100">
                             <tr>
-                                <th className="text-left py-3 px-4 font-semibold text-gray-700">Variant type</th>
+                                <th className="text-left py-3 px-4 font-semibold text-gray-700">Type name</th>
+                                <th className="text-left py-3 px-4 font-semibold text-gray-700">Number of values</th>
                                 <th className="text-left py-3 px-4 font-semibold text-gray-700">Values</th>
                                 <th className="text-left py-3 px-4 font-semibold text-gray-700">Actions</th>
                             </tr>
@@ -96,23 +95,22 @@ export default function AddVariantTypeModal({ modalProps, product, setProduct })
 
                         <tbody>
                             {
-                                product_variant_types?.map((variant_type, i) => {
-                                    const { name, product_variant_values, id } = variant_type
+                                types?.map((variant_type, i) => {
+                                    const { name, id, values } = variant_type
+                                    
+                                    const valuesCount = values?.length || 0
 
-                                    const values = (product_variant_values || [])?.map(vV => vV?.value)?.join(", ")
+                                    const valuesText = (values || [])?.map(v => v?.value)
+
+                                    const valuesTextGrouped = valuesText?.join(", ");
 
                                     const handleDeleteVariantType = () => {
-                                        if(product_variant_values?.length === 0){
+                                        if(valuesCount === 0){
                                             return deleteVariantType({
                                                 callBack: ({ deleted_type_id }) => {
-                                                    const updatedProductVariantTypes = (product?.product_variant_types || [])?.filter(vT => vT?.id !== deleted_type_id)
+                                                    const updatedTypes = (types || [])?.filter(t => t?.id !== deleted_type_id)
 
-                                                    const updatedProduct = {
-                                                        ...product,
-                                                        product_variant_types: updatedProductVariantTypes
-                                                    }
-
-                                                    setProduct(updatedProduct)
+                                                    setTypes(updatedTypes)
                                                 },
                                                 type_id: id
                                             })
@@ -124,7 +122,8 @@ export default function AddVariantTypeModal({ modalProps, product, setProduct })
                                     return (
                                         <tr key={i} className="border-b hover:bg-gray-50 transition">
                                             <td className="py-3 px-4">{name}</td>
-                                            <td className="py-3 px-4">{values}</td>
+                                            <td className="py-3 px-4">{formatNumberWithCommas(valuesCount)}</td>
+                                            <td className="py-3 px-4">{valuesTextGrouped}</td>
                                             <td className="py-3 px-4 text-center">
                                                 <MdDelete onClick={handleDeleteVariantType} color="red" size={20} className="cursor-pointer" />
                                             </td>                                            

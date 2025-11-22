@@ -6,7 +6,7 @@ import { useDispatch } from "react-redux";
 import { appLoadStart, appLoadStop } from "../../../redux/slices/appLoadingSlice";
 import { toast } from "react-toastify";
 import supabase from "../../../database/dbInit";
-import { getPublicUrl } from "../../../lib/requestApi";
+import { getPublicImageUrl, getPublicUrl } from "../../../lib/requestApi";
 
 function BlogDetail() {
   const dispatch = useDispatch()
@@ -24,14 +24,8 @@ function BlogDetail() {
     if (!article) {
       navigate('/admin/content/blog')
 
-    } else {
-      setApiReqs({
-        isLoading: true,
-        errorMsg: null,
-        data: {
-          type: 'getUrl'
-        }
-      })
+    } else {  
+      getUrl()
     }
   }, [])
 
@@ -47,18 +41,14 @@ function BlogDetail() {
       if (type === 'deleteArticle') {
         deleteArticle()
       }
-
-      if (type === 'getUrl') {
-        getUrl()
-      }
     }
   }, [apiReqs])
 
-  const getUrl = async () => {
+  const getUrl = () => {
     try {
 
-      const { publicUrl: url } = await getPublicUrl({ filePath: article?.url, bucket_name: 'articles' })
-      const { publicUrl: cover_img } = await getPublicUrl({ filePath: article?.cover_img, bucket_name: 'articles' })
+      const url = getPublicImageUrl({ path: article?.url, bucket_name: 'articles' })
+      const cover_img = getPublicImageUrl({ path: article?.cover_img, bucket_name: 'articles' }) 
 
       if (!url || !cover_img) throw new Error();
 
@@ -151,7 +141,7 @@ function BlogDetail() {
               Download
             </a>
           }
-          <button onClick={() => navigate('/admin/content/new-blog', { state: { article } })} className="bg-gray-500 text-white px-4 py-2 rounded-full self-end">
+          <button onClick={() => navigate('/admin/content/edit-blog', { state: { article: { ...article, url: files?.url, cover_img: files?.cover_img } } })} className="bg-gray-500 text-white px-4 py-2 rounded-full self-end">
             Edit
           </button>
           <button onClick={initiateArticleDeletion} className="bg-red-500 text-white px-4 py-2 rounded-full self-end">

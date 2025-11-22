@@ -26,7 +26,7 @@ const ProductCardSmall = ({ product, showDelete = true, onDelete }) => {
   };
 
   return (
-    <div className="relative w-40 bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-500 ease-in-out">
+    <div className="relative w-full bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-500 ease-in-out">
       
       {/* DELETE BUTTON */}
       {showDelete && (
@@ -42,7 +42,7 @@ const ProductCardSmall = ({ product, showDelete = true, onDelete }) => {
         <img
           src={product_images[currentImage]}
           alt={product_name}
-          className="w-full h-32 object-cover transition-transform duration-500 ease-in-out transform hover:scale-105"
+          className="w-full h-50 object-cover transition-transform duration-500 ease-in-out transform hover:scale-105"
         />
 
         {product_images.length > 1 && (

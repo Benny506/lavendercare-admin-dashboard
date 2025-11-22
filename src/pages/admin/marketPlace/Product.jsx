@@ -13,6 +13,8 @@ import Pagination from "../components/Pagination";
 import { usePagination } from "../../../hooks/usePagination";
 import ZeroItems from "../components/ZeroItems";
 import { FaEdit } from "react-icons/fa";
+import { BsCheck } from "react-icons/bs";
+import { MdOutlineCancel } from "react-icons/md";
 
 function Product() {
   const dispatch = useDispatch()
@@ -23,7 +25,7 @@ function Product() {
 
   const products = useSelector(state => getAdminState(state).products)
 
-  const [apiReqs, setApiReqs] = useState({ isLoading: false, errorMsg: null, data: null })
+  const [searchFilter, setSearchFilter] = useState('')
   const [canLoadMore, setCanLoadMore] = useState(true)
   const [currentPage, setCurrentPage] = useState(0)
   const [pageListIndex, setPageListIndex] = useState(0)
@@ -43,11 +45,20 @@ function Product() {
     })
   }
 
-  const filteredData = products
+  const filteredData = (products || [])?.filter(p => {
+    const { product_name } = p
+
+    const byName = 
+      searchFilter?.toLowerCase().includes(product_name?.toLowerCase())
+      ||
+      product_name?.toLowerCase().includes(searchFilter?.toLowerCase())
+
+    return byName
+  })
 
   const { pageItems, totalPages, pageList, totalPageListIndex } = usePagination({
     arr: filteredData,
-    maxShow: 4,
+    maxShow: 7,
     index: currentPage,
     maxPage: 5,
     pageListIndex
@@ -113,8 +124,10 @@ function Product() {
           <div className="flex gap-2 w-full md:w-auto">
             <input
               type="text"
-              placeholder="Search doctor or mother"
+              placeholder="Search by name"
               className="w-full md:w-64 border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-(--primary-200)"
+              value={searchFilter}
+              onChange={e => setSearchFilter(e.target.value)}
             />
             {/* <select className="border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700">
               <option>Filter by: All</option>
@@ -132,7 +145,7 @@ function Product() {
                 <th className="py-2 px-2 text-left font-medium">
                   Product Name
                 </th>
-                {/* <th className="py-2 px-2 text-left font-medium">SKU</th> */}
+                <th className="py-2 px-2 text-left font-medium">Visibility</th>
                 <th className="py-2 px-2 text-left font-medium">Category</th>
                 {/* <th className="py-2 px-2 text-left font-medium">Variants</th> */}
                 {/* <th className="py-2 px-2 text-left font-medium">Stock</th> */}
@@ -142,9 +155,9 @@ function Product() {
             </thead>
             <tbody>
               {
-                filteredData?.length > 0
+                pageItems?.length > 0
                   ?
-                  filteredData.map((p, idx) => {
+                  pageItems.map((p, idx) => {                    
 
                     return (
                       <tr
@@ -152,7 +165,7 @@ function Product() {
                         className="border-b last:border-b-0 hover:bg-gray-50"
                       >
                         <td className="py-2 px-2">{p.product_name}</td>
-                        {/* <td className="py-2 px-2">{p.sku}</td> */}
+                        <td className="py-2 px-2">{p?.product_visibility ? <BsCheck size={16} color="#703DCB" /> : <MdOutlineCancel size={16} color="red" />}</td>
                         <td className="py-2 px-2 flex gap-2 flex-wrap">
                           {
                             p?.categories?.map((cat, i) => (

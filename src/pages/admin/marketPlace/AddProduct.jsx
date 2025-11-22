@@ -23,6 +23,18 @@ import ProductImage from './ProductImage';
 import { v4 as uuidv4 } from 'uuid';
 
 
+
+
+
+//HIDING A PRODUCT IS NOT WORKING
+//EDIT PRODUCT VARIANT ADDITION FLOW
+//UPDATE WHAT CATEGORIES ARE VISIBLE FOR BOOKINGS (APP)!
+
+
+
+
+
+
 const validationSchema = yup.object().shape({
   product_name: yup.string().required("Product name is required"),
   product_description: yup.string().required("Product description is required"),
@@ -180,17 +192,17 @@ function AddProduct() {
         throw new Error()
       }
 
-      if (product_id) {
-        const updatedProduct = {
-          ...data,
-          image_urls: (data?.product_images || [])?.map(imgPath => getPublicImageUrl({ path: imgPath, bucket_name: 'admin_products' }))
-        }
+      const product = {
+        ...data,
+        image_urls: (data?.product_images || [])?.map(imgPath => getPublicImageUrl({ path: imgPath, bucket_name: 'admin_products' }))
+      }
 
+      if (product_id) {
         const updatedProducts = (products || [])?.map(p => {
-          if(p?.id === product_id){
+          if (p?.id === product_id) {
             return {
               ...p,
-              ...updatedProduct              
+              ...product
             }
           }
 
@@ -200,12 +212,20 @@ function AddProduct() {
         dispatch(setAdminState({
           products: updatedProducts
         }))
+
+      } else {
+        const updatedProducts = [product, ...(products || [])]
+        dispatch(setAdminState({
+          products: updatedProducts
+        }))
       }
 
       setApiReqs({ isLoading: false, errorMsg: null, data: null })
       toast.success(product_id ? 'Product updated' : 'Product created')
 
-      navigate('/admin/marketplace/manage-product')
+      if (!product_id) {
+        navigate('/admin/marketplace/manage-product/product-variants', { state: { product_id: product?.id } })
+      }
 
       return;
 
@@ -436,35 +456,36 @@ function AddProduct() {
             </div>
             <div className="w-full md:w-64 flex flex-col gap-4">
               <div className="bg-gray-50 rounded-lg p-4 flex flex-col gap-2">
-                <span className="font-semibold mb-2">Publish</span>
+                <span className="font-semibold mb-0">{product_id ? 'Publish' : 'Variants setup'}</span>
                 <div className="flex gap-2 mb-2">
                   {
                     product_id
                     &&
                     <button
                       onClick={() => {
-                        const product_visibility = productInfo?.product_visibility ? false : true
+                        const new_product_visbility = productInfo?.product_visibility ? false : true
 
-                        console.log(product_visibility)
-
-                        if (product_visibility === true) {
+                        if (new_product_visbility === true || new_product_visbility === false) {
                           if (productInfo?.product_variants_combinations?.length > 0) {
                             updateProductVisibility({
                               callback: ({ }) => {
                                 const updatedProductInfo = {
                                   ...(productInfo || {}),
-                                  product_visibility
+                                  product_visibility: new_product_visbility
                                 }
 
                                 setProductInfo(updatedProductInfo)
                               },
                               product_id: productInfo?.id,
-                              product_visibility: product_visibility
+                              product_visibility: new_product_visbility
                             })
 
                           } else {
                             toast.info("You need to setup variants for this product first before you can make it visible")
                           }
+
+                        } else {
+                          return toast.error(`Can't seem to mark this product as visible or not at the moment! Try again later.`)
                         }
                       }}
                       className={`${productInfo?.product_visibility ? 'text-gray-700' : 'bg-[#703dcb] text-white'} border cursor-pointer border-gray-300 rounded-lg px-3 py-1`}
@@ -484,16 +505,14 @@ function AddProduct() {
                   }}
                   className="bg-(--primary-500) cursor-pointer text-white rounded-lg px-4 py-2 font-semibold transition"
                 >
-                  Publish
+                  {product_id ? 'Publish' : 'Next'}
                 </button>
                 {
                   product_id
                   &&
                   <button
-                    // disabled={!(isValid && dirty)}
                     onClick={() => navigate("/admin/marketplace/manage-product/product-variants", { state: { product_id } })}
                     style={{
-                      // opacity: !(isValid && dirty) ? 0.5 : 1
                       border: '1px solid purple',
                       color: 'purple'
                     }}

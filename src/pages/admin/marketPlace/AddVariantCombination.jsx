@@ -9,46 +9,49 @@ import useApiReqs from "../../../hooks/useApiReqs"
 import { ColorCircle } from "../components/ColorPicker"
 
 
-export default function AddVariantCombination({ modalProps, product, setProduct }) {
+export default function AddVariantCombination({ modalProps, product, setProduct, types, values }) {
 
     const { addVariantsCombination } = useApiReqs()
 
     const [options, setOptions] = useState({})
-    const [variantType, setVariantType] = useState('')
+    const [variantTypeId, setVariantTypeId] = useState('')
     const [variantValue, setVariantValue] = useState('')
 
     useEffect(() => {
         setVariantValue('')
-    }, [variantType])
+    }, [variantTypeId])
 
-    if (!modalProps || !product || !setProduct) return <></>
+    if (!modalProps || !product || !setProduct || !types || !values) return <></>
 
     const { hide, visible } = modalProps
-
-    const variantTypes = (product?.product_variant_types || [])?.map(vT => vT?.name)
+    
     const variantValues =
-        variantType
+        variantTypeId
             ?
-            (product?.product_variant_types || [])?.filter(vT => vT?.name === variantType)?.flatMap(vT => vT?.product_variant_values)
+            (values || [])?.filter(v => v?.variant_type_id === variantTypeId)
             :
             []
 
     const onHide = () => {
         hide && hide()
-        setVariantType('')
+        setVariantTypeId('')
         setVariantValue('')
         setOptions({})
     }
 
     const handleAddOption = () => {
-        if (!variantType || !variantValue) return toast.info("Select a variant type and value!");
+        if (!variantTypeId || !variantValue) return toast.info("Select a variant type and value!");
 
         const optionsClone = { ...options }
 
-        optionsClone[variantType] = variantValue
+        const typeName = (types || [])?.filter(t => t?.id === variantTypeId)?.[0]?.name
+
+        if(!typeName) return toast.error("Can't seem to add variant combination at the moment! Try again later");
+
+        optionsClone[typeName] = variantValue
 
         setOptions(optionsClone)
-        setVariantType('')
+        setVariantTypeId('')
         setVariantValue('')
     }
 
@@ -171,21 +174,24 @@ export default function AddVariantCombination({ modalProps, product, setProduct 
                                 <label className="text-gray-700 font-medium">Type</label>
                                 <select
                                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    value={variantType}
-                                    onChange={e => setVariantType(e.target.value)}
+                                    value={variantTypeId}
+                                    onChange={e => setVariantTypeId(e.target.value)}
                                 >
                                     <option value={''}>---Variant type ?</option>
                                     {
-                                        variantTypes?.map((vT, i) => {
+                                        (types || [])?.map((t, i) => {
+
+                                            const { id, name } = t
+
                                             return (
-                                                <option value={vT} key={i}>{vT}</option>
+                                                <option value={id} key={i}>{name}</option>
                                             )
                                         })
                                     }
                                 </select>
                             </div>
                             {
-                                variantType
+                                variantTypeId
                                 &&
                                 <div className="flex flex-col space-y-2 w-1/2 px-1">
                                     <label className="text-gray-700 font-medium">Value</label>
@@ -199,9 +205,6 @@ export default function AddVariantCombination({ modalProps, product, setProduct 
                                             variantValues?.map((vV, i) => {
 
                                                 const { value } = vV
-
-                                                const variantTypeId = product?.product_variant_types?.filter(vT => vT?.name === variantType)?.[0]?.id
-                                                const isColor = product?.product_variant_types?.filter(vT => vT?.id === variantTypeId)?.[0]?.name === 'color'                                                
 
                                                 return (
                                                     <option value={value} key={i}>
@@ -255,10 +258,10 @@ export default function AddVariantCombination({ modalProps, product, setProduct 
 
                                                 if (!opt) return;
 
-                                                const variantType = optKey
+                                                const variantTypeName = optKey
                                                 const variantValue = opt
 
-                                                const isColor = optKey === 'color' ? true : false
+                                                const isColor = variantTypeName === 'color' ? true : false
 
                                                 const handleRemoveOption = () => {
                                                     const optionsClone = {...options}
@@ -269,7 +272,7 @@ export default function AddVariantCombination({ modalProps, product, setProduct 
 
                                                 return (
                                                     <tr key={i} className="border-b hover:bg-gray-50 transition">
-                                                        <td className="py-3 px-4">{variantType}</td>
+                                                        <td className="py-3 px-4">{variantTypeName}</td>
                                                         <td className="py-3 px-4">
                                                             {
                                                                 isColor

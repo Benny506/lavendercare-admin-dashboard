@@ -8,6 +8,7 @@ import { setUserDetails } from "../redux/slices/userDetailsSlice";
 import { getPublicImageUrl, requestApi } from "../lib/requestApi";
 import { v4 as uuidv4 } from "uuid";
 import { sendNotifications } from "../lib/notifications";
+import { sendEmail } from "../lib/email";
 
 export default function useApiReqs() {
     const dispatch = useDispatch()
@@ -99,7 +100,7 @@ export default function useApiReqs() {
                 .select(`
                     *,
                     user_profile: user_profiles(*),
-                    test_feedback: test_feedback(*)
+                    test_feedback: in_app_notifications(*)
                 `)
                 .order('created_at', { ascending: false, nullsFirst: false })
                 .limit(limit)
@@ -132,7 +133,7 @@ export default function useApiReqs() {
             dispatch(appLoadStop())
         }
     }
-    const sendTestFeedBack = async ({ callBack = () => {}, requestInfo, user_id }) => {
+    const sendTestFeedBack = async ({ callBack = () => { }, requestInfo, user_id }) => {
         try {
 
             dispatch(appLoadStart())
@@ -145,7 +146,7 @@ export default function useApiReqs() {
             })
 
             const { result } = await requestApi({
-                url: 'https://tzsbbbxpdlupybfrgdbs.supabase.co/functions/v1/retrieve-user-email', 
+                url: 'https://tzsbbbxpdlupybfrgdbs.supabase.co/functions/v1/retrieve-user-email',
                 method: 'POST',
                 data: {
                     user_id
@@ -154,23 +155,35 @@ export default function useApiReqs() {
 
             const email = result?.email
 
-            if(!email) throw new Error();
+            if (!email) throw new Error();
 
-            //use email to send mail. Create template!
+            await sendEmail({
+                // from_email: ''
+                to_email: email,
+                subject: 'Care-Coordinator feedback',
+                data: {
+                    "title": "Mental-Health-Test-Review",
+                    "message": "We have reviewed your recent mental health tests. And from our evaluations, we have recommended the following to you. Click the link below to open the app and view more information",
+                    "total_products": requestInfo?.product_ids?.length || 0,
+                    "total_services": requestInfo?.service_ids?.length || 0,
+                    "total_providers": requestInfo?.provider_ids?.length || 0,
+                },
+                template_id: 'x2p03470q3kgzdrn'
+            })
 
             const { data, error } = await supabase
-                .from('test_feedback')
+                .from('in_app_notifications')
                 .insert(requestInfo)
                 .select()
                 .single()
 
-            if(error){
+            if (error) {
                 console.log(error)
                 throw new Error();
             }
 
             const updatedScreens = (mentalHealthScreenings || [])?.map(sc => {
-                if(sc?.id === requestInfo?.test_id){
+                if (sc?.id === requestInfo?.test_id) {
                     return {
                         ...sc,
                         feedback_sent: true
@@ -184,14 +197,14 @@ export default function useApiReqs() {
 
             dispatch(appLoadStop())
 
-            callBack && callBack({})
+            callBack && callBack({ newFeedBack: data })
 
             toast.success("Feedback sent to mother")
-            
+
         } catch (error) {
             console.log(error)
             toast.error("Error sending test feed-back, try again later")
-            dispatch(appLoadStop())            
+            dispatch(appLoadStop())
         }
     }
 
@@ -254,6 +267,33 @@ export default function useApiReqs() {
 
 
     //vendors
+    const fetchServices = async ({ callBack = () => { } }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from("services")
+                .select(`
+                    *,
+                    vendor_profile: vendor_id ( * )
+                `)
+
+            if (error) {
+                console.log(error)
+                throw new Error()
+            }
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ services: data })
+
+        } catch (error) {
+            console.log(error)
+            dispatch(appLoadStop())
+            toast.error("Error retrieving services")
+        }
+    }
     const fetchVendorServices = async ({ callBack = () => { }, vendor_id }) => {
         try {
 
@@ -396,8 +436,7 @@ export default function useApiReqs() {
             const { data, error } = await supabase
                 .from('products')
                 .select(`
-                    *,
-                    product_variant_types ( * )
+                    *
                 `)
                 .order("created_at", { ascending: false, nullsFirst: false })
                 .limit(limit)
@@ -443,10 +482,6 @@ export default function useApiReqs() {
                 .from('products')
                 .select(`
                     *,
-                    product_variant_types ( 
-                        *,
-                        product_variant_values ( * )
-                    ),
                     product_variants_combinations ( * )
                 `)
                 .single()
@@ -475,6 +510,69 @@ export default function useApiReqs() {
             toast.error("Error fetching single product")
             dispatch(appLoadStop())
             callBack && callBack({ product: null })
+        }
+    }
+    const fetchAllVariantTypesAndValues = async ({ callBack = () => { } }) => {
+        try {
+
+            function groupValuesByType(types, values) {
+                const typeMap = {};
+
+                // Initialize groups using the types array
+                types.forEach(type => {
+                    typeMap[type.id] = {
+                        ...type,
+                        values: []
+                    };
+                });
+
+                // Attach values to the matching type
+                values.forEach(val => {
+                    const typeId = val.variant_type_id;
+                    if (typeMap[typeId]) {
+                        typeMap[typeId].values.push(val);
+                    }
+                });
+
+                return Object.values(typeMap);
+            }
+
+            dispatch(appLoadStart())
+
+            const { data: values, error: valuesError } = await supabase
+                .from("product_variant_values")
+                .select(`
+                    *,
+                    type: variant_type_id ( * )     
+                `)
+                .order("created_at", { ascending: false })
+
+            const { data: types, error: typesError } = await supabase
+                .from("product_variant_types")
+                .select(`*`)
+                .order("created_at", { ascending: false })
+
+            if (valuesError || typesError) {
+                console.log(valuesError, "valuesError")
+                console.log(typesError, "typesError")
+
+                throw new Error()
+            }
+
+            const groupedTypes = groupValuesByType(types, values)
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({
+                types: groupedTypes, 
+                values
+            })
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error fetching variant type and value")
+            dispatch(appLoadStop())
+            callBack && callBack({ values: null, types: null })
         }
     }
     const addVariantsCombination = async ({ callBack = () => { }, product_id, price_value, price_currency, stock, options }) => {
@@ -530,19 +628,16 @@ export default function useApiReqs() {
             dispatch(appLoadStop())
         }
     }
-    const addVariantType = async ({ callBack = () => { }, product_id, name }) => {
+    const addVariantType = async ({ callBack = () => { }, name }) => {
         try {
 
-            if (!product_id || !name) throw new Error();
+            if (!name) throw new Error();
 
             dispatch(appLoadStart())
 
             const { data, error } = await supabase
                 .from("product_variant_types")
-                .insert({
-                    name,
-                    product_id
-                })
+                .insert({ name })
                 .select()
                 .single()
 
@@ -557,7 +652,7 @@ export default function useApiReqs() {
 
             dispatch(appLoadStop())
 
-            callBack && callBack({ newVariant: data })
+            callBack && callBack({ newVariantType: data })
 
             toast.success("Variant type added")
 
@@ -1001,6 +1096,30 @@ export default function useApiReqs() {
             dispatch(appLoadStop())
         }
     }
+    const fetchProviders = async ({ callBack = () => { }, }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from("provider_profiles")
+                .select("*")
+
+            if (error) {
+                console.log(error)
+                throw new Error()
+            }
+
+            callBack && callBack({ providers: data })
+
+            dispatch(appLoadStop())
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error fetching providers")
+            dispatch(appLoadStop())
+        }
+    }
 
 
 
@@ -1079,15 +1198,79 @@ export default function useApiReqs() {
             dispatch(appLoadStop())
         }
     }
-    const updateOrder = async ({ callBack = () => {}, update, order_id }) => {
+    const updateOrder = async ({ callBack = () => { }, update, order_id }) => {
         try {
-            
+
             dispatch(appLoadStart())
 
             const { data, error } = await supabase
                 .from('orders')
                 .update(update)
                 .eq("id", order_id)
+                .select()
+                .single()
+
+            if (error) {
+                console.log(error)
+                throw new Error()
+            }
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ status, order_id })
+
+            toast.success("Order updated")
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error updating order!")
+
+        } finally {
+            dispatch(appLoadStop())
+        }
+    }
+
+
+
+
+
+    //blogs
+    const fetchBlogCategories = async ({ callBack = () => {} }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from("blog_categories")
+                .select("*")
+
+            if(error){
+                console.log(error)
+                throw new Error()
+            }
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ categories: data })
+            
+        } catch (error) {
+            console.log(error)
+            toast.error("Error retrieving blog categories!")
+
+        } finally {
+            dispatch(appLoadStop())
+        }
+    }
+    const addBlogCategory = async ({ callBack = () => {}, name }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from('blog_categories')
+                .insert({
+                    name
+                })
                 .select()
                 .single()
 
@@ -1098,13 +1281,42 @@ export default function useApiReqs() {
 
             dispatch(appLoadStop())
 
-            callBack && callBack({ status, order_id })
+            callBack && callBack({ newCategory: data })
 
-            toast.success("Order updated")
+            toast.success("Blog category added!")
             
         } catch (error) {
             console.log(error)
-            toast.error("Error updating order!")
+            toast.error("Error adding blog category!")
+
+        } finally {
+            dispatch(appLoadStop())
+        }
+    }
+    const deleteBlogCategory = async ({ callBack = () => {}, category_id }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from("blog_categories")
+                .delete()
+                .eq("id", category_id)
+
+            if(error){
+                console.log(error)
+                throw new Error()
+            }
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ deleted_category_id: category_id })
+
+            toast.success("Blog category deleted")
+            
+        } catch (error) {
+            console.log(error)
+            toast.error("Error deleting blog category!")
 
         } finally {
             dispatch(appLoadStop())
@@ -1149,12 +1361,14 @@ export default function useApiReqs() {
         fetchProviderSpecialties,
         addProviderSpecialty,
         deleteProviderSpecialty,
+        fetchProviders,
 
 
 
 
 
         //vendors
+        fetchServices,
         fetchVendorServices,
         fetchVendorServiceCategories,
         deleteVendorServiceCategory,
@@ -1178,6 +1392,7 @@ export default function useApiReqs() {
         addVariantValue,
         deleteVariantValue,
         addVariantsCombination,
+        fetchAllVariantTypesAndValues,
 
 
 
@@ -1186,6 +1401,15 @@ export default function useApiReqs() {
         //orders
         fetchOrders,
         confirmOrder,
-        updateOrder
+        updateOrder,
+
+
+
+
+
+        //blgs
+        fetchBlogCategories,
+        addBlogCategory,
+        deleteBlogCategory
     }
 }

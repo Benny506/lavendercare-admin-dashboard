@@ -91,7 +91,7 @@ function Blog() {
       <PathHeader
         paths={[
           { text: 'Content' },
-          { text: 'Blog <anagement' }
+          { text: 'Blog Management' }
         ]}
       />
 
@@ -116,7 +116,7 @@ function Blog() {
               value={searchFilter}
               onChange={e => setSearchFilter(e?.target?.value)}
               type="text"
-              placeholder="Search doctor or mother"
+              placeholder="Search by name"
               className="border border-gray-200 rounded-lg px-3 py-2 w-full sm:w-64 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>

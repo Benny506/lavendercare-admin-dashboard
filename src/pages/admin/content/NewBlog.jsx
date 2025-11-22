@@ -13,6 +13,8 @@ import { appLoadStart, appLoadStop } from "../../../redux/slices/appLoadingSlice
 import supabase from "../../../database/dbInit";
 import ProfileImg from "../components/ProfileImg";
 import { v4 as uuidv4 } from 'uuid';
+import BlogCategoryMdal from "./auxiliary/BlogCategoryModal";
+import useApiReqs from "../../../hooks/useApiReqs";
 
 const MAX_FILE_SIZE_IMAGE = 2 * 1024 * 1024
 const MAX_FILE_SIZE_PDF = 10 * 1024 * 1024
@@ -22,15 +24,15 @@ function validateFile(file, type) {
         return { valid: false, error: "You must select a file" };
     }
 
-    const allowedTypes = 
+    const allowedTypes =
         type === 'cover_img'
-        ?
+            ?
             [
                 "image/png",
                 "image/jpeg",
                 "image/jpg",
             ]
-        :
+            :
             [
                 "application/pdf",
             ]
@@ -65,22 +67,37 @@ function NewBlog() {
         title: '', category: '', url: '', brief: '', cover_img: ''
     }
 
+    const { fetchBlogCategories } = useApiReqs()
+
     const articleFileRef = useRef(null)
     const coverImgRef = useRef(null)
 
     const [apiReqs, setApiReqs] = useState({ isLoading: false, errorMsg: null, data: null })
     const [urlInput, setUrlInput] = useState({
-        file: null, preview: initialState?.url
+        file: null, 
+        preview: initialState?.url
     })
     const [coverImgInput, setCoverImgInput] = useState({
-        file: null, preview: initialState?.cover_img
+        file: null, 
+        preview: initialState?.cover_img
     })
+
+    const [blogCategoriesModal, setBlogCategoriesModal] = useState({ visible: false, hide: null })
+    const [blogCategories, setBlogoCategories] = useState([])
+
+    useEffect(() => {
+        fetchBlogCategories({ 
+            callBack: ({ categories }) => {
+                setBlogoCategories(categories)
+            }
+        })
+    }, [])
 
     useEffect(() => {
         const { isLoading, data } = apiReqs
 
-        if (isLoading) dispatch(appLoadStart());
-        else dispatch(appLoadStop());
+        // if (isLoading) dispatch(appLoadStart());
+        // else dispatch(appLoadStop());
 
         if (isLoading && data) {
             const { type, requestInfo } = data
@@ -95,6 +112,8 @@ function NewBlog() {
         try {
 
             let error = null
+
+            dispatch(appLoadStart())
 
             if (state?.article) {
                 const { error: updateError } = await supabase
@@ -124,11 +143,15 @@ function NewBlog() {
         } catch (error) {
             console.warn(error)
             return createArticleError({ errorMsg: 'Something went wrong! Try again.' })
+        
+        } finally{
+            dispatch(appLoadStop())
         }
     }
     const createArticleError = ({ errorMsg }) => {
         setApiReqs({ isLoading: false, errorMsg, data: null })
         toast.error(errorMsg)
+        dispatch(appLoadStop())
 
         return
     }
@@ -138,19 +161,19 @@ function NewBlog() {
 
             const { url, cover_img } = requestBody
 
-            if(!url || !cover_img) throw new Error();
+            if (!url || !cover_img) throw new Error();
 
             const assets = [{ file: url, ext: 'pdf' }, { file: cover_img, ext: 'png' }]
             const paths = []
 
-            for(let i = 0; i < assets.length; i++){
+            for (let i = 0; i < assets.length; i++) {
                 const { file, ext } = assets[i]
 
                 const id = uuidv4()
 
                 const { filePath } = await uploadAsset({ file, id, bucket_name: 'articles', ext })
 
-                if(!filePath) throw new Error();
+                if (!filePath) throw new Error();
 
                 paths.push(filePath)
             }
@@ -180,6 +203,9 @@ function NewBlog() {
         })
     }
 
+    const openBlogCategoriesModal = () => setBlogCategoriesModal({ visible: true, hide: hideBlogCategoriesModal })
+    const hideBlogCategoriesModal = () => setBlogCategoriesModal({ visible: false, hide: null })
+
     return (
         <div className="pt-6 w-full min-h-screen ">
             <PathHeader
@@ -194,12 +220,19 @@ function NewBlog() {
             />
 
             {/* create community title */}
-            <div className="mb-4 flex items-center gap-1">
+            <div className="mb-4 flex items-center gap-1 flex-wrap justify-between w-full">
                 <div
                     className="text-lg sm:text-xl font-bold"
                 >
                     Create Article
                 </div>
+
+                <button
+                    className="bg-(--primary-500) cursor-pointer text-white rounded-lg px-4 py-2 font-semibold transition"
+                    onClick={openBlogCategoriesModal}
+                >
+                    Categories
+                </button>
             </div>
 
             {/* community body wrapper */}
@@ -281,8 +314,15 @@ function NewBlog() {
                                     name="category"
                                 >
                                     <option value="" selected disabled>Select category</option>
-                                    <option value="informative">Informative</option>
-                                    <option value="education">Education</option>
+                                    {
+                                        (blogCategories || [])?.map((bCat, i) => {
+                                            const { name } = bCat
+
+                                            return (
+                                                <option value={name} key={i}>{name}</option>
+                                            )
+                                        })
+                                    }
                                 </select>
 
                                 <ErrorMessage name="category">
@@ -297,10 +337,10 @@ function NewBlog() {
 
                                 {coverImgInput?.preview && (
                                     <>
-                                        <img 
+                                        <img
                                             src={coverImgInput?.preview}
                                             className="rounded-lg mb-2 max-w-4/5"
-                                            style={{                                                
+                                            style={{
                                                 maxHeight: '800px'
                                             }}
                                             alt="article-cover-img"
@@ -454,7 +494,7 @@ function NewBlog() {
                                         Upload file
                                     </p>
                                 </div>
-                            </div>                            
+                            </div>
                             <div className="flex gap-2 mt-6 justify-end">
                                 <button
                                     onClick={handleSubmit}
@@ -465,13 +505,19 @@ function NewBlog() {
                                         opacity: !(isValid && dirty) || !(urlInput?.preview) ? 0.5 : 1
                                     }}
                                 >
-                                    { state?.article ? 'Edit' : 'Create'} Article                                
+                                    {state?.article ? 'Edit' : 'Create'} Article
                                 </button>
                             </div>
                         </div>
                     )}
                 </Formik>
             </div>
+
+            <BlogCategoryMdal
+                modalProps={blogCategoriesModal}
+                categories={blogCategories}
+                setCategories={setBlogoCategories}
+            />
         </div>
     );
 }

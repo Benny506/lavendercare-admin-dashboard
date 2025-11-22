@@ -15,12 +15,14 @@ export default function VariantCombinations() {
 
     const navigate = useNavigate()
 
-    const { fetchSingleProduct } = useApiReqs()
+    const { fetchSingleProduct, fetchAllVariantTypesAndValues } = useApiReqs()
 
     const state = useLocation().state
     const product_id = state?.product_id
 
     const [product, setProduct] = useState(null)
+    const [types, setTypes] = useState([])
+    const [values, setValues] = useState([])
     const [addVariantValueModal, setAddVariantValueModal] = useState({ visible: false, hide: null })
     const [addVariantTypeModal, setAddVariantTypeModal] = useState({ visible: false, hide: null })
     const [addVariantCombination, setAddVariantCombination] = useState({ visible: false, hide: null })
@@ -32,6 +34,15 @@ export default function VariantCombinations() {
             return;
 
         } else {
+            fetchAllVariantTypesAndValues({
+                callBack: ({ values, types }) => {
+                    if(values && types){
+                        setTypes(types)
+                        setValues(values)
+                    }
+                }
+            })
+
             fetchSingleProduct({
                 callBack: ({ product }) => {
                     if (product) {
@@ -58,7 +69,7 @@ export default function VariantCombinations() {
 
     if (!product) return <></>
 
-    const { product_variant_types, product_variants_combinations } = product
+    const { product_variants_combinations } = product
 
     return (
         <div className="w-full py-6">
@@ -151,20 +162,24 @@ export default function VariantCombinations() {
                 modalProps={addVariantValueModal}
                 setApiReqs={setApiReqs}
                 apiReqs={apiReqs}
-                product={product}
-                setProduct={setProduct}
+                types={types}
+                setTypes={setTypes}
+                values={values}
+                setValues={setValues}                  
             />
 
             <AddVariantTypeModal
                 modalProps={addVariantTypeModal}
-                product={product}
-                setProduct={setProduct}
+                types={types}
+                setTypes={setTypes}
             />
 
             <AddVariantCombination
                 modalProps={addVariantCombination}
                 product={product}
-                setProduct={setProduct}
+                setProduct={setProduct}     
+                types={types}
+                values={values}         
             />
         </div >
     )
