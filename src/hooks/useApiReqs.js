@@ -22,6 +22,7 @@ export default function useApiReqs() {
     const providerSpecialties = useSelector(state => getAdminState(state).providerSpecialties)
     const mentalHealthScreenings = useSelector(state => getAdminState(state).mentalHealthScreenings)
     const vendorServiceCategories = useSelector(state => getAdminState(state).vendorServiceCategories)
+    const vendorServices = useSelector(state => getAdminState(state).vendorServices)
 
 
 
@@ -301,7 +302,10 @@ export default function useApiReqs() {
 
             const { data, error } = await supabase
                 .from('services')
-                .select('*')
+                .select(`
+                    *,
+                    types: service_types ( * )
+                `)
                 .eq("vendor_id", vendor_id)
 
             if (error) {
@@ -416,6 +420,222 @@ export default function useApiReqs() {
             console.log(error)
             toast.error("Error deleting vendor service category")
             dispatch(appLoadStop())
+        }
+    }
+    const deleteServiceType = async ({ callBack = () => { }, type_id, service_id }) => {
+        try {
+
+            if (!type_id || !service_id) throw new Error();
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from("service_types")
+                .delete()
+                .eq("id", type_id)
+
+            if (error) {
+                console.log(error)
+                throw new Error()
+            }
+
+            const updatedVendorServices = vendorServices?.map(service => {
+                if(service?.id === service_id){
+
+                    const types = service?.types || []
+
+                    const updatedTypes = types?.filter(t => t?.id !== type_id)
+
+                    return {
+                        ...service,
+                        types: updatedTypes
+                    }
+                }
+
+                return service
+            })
+
+            dispatch(setAdminState({ vendorServices: updatedVendorServices }))
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ deleted_type_id: type_id })
+
+            toast.success("Session info saved")
+
+        } catch (error) {
+            console.log(error)
+            apiReqError({ errorMsg: 'Something went wrong! Try again' })
+        }
+    }
+    const updateServiceType = async ({ callBack = () => { }, type_id, update }) => {
+        try {
+
+            if (!update || !type_id) throw new Error();
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from("service_types")
+                .update(update)
+                .eq("id", type_id)
+                .select()
+                .single()
+
+            if (error) {
+                console.log(error)
+                if (error.message?.toLowerCase().includes("duplicate key")) return apiReqError({ errorMsg: 'Session with this duration already exists for this service' });
+                throw new Error()
+            }
+
+            const updatedVendorServices = vendorServices?.map(service => {
+                if(service?.id === data?.service_id){
+                    const types = service?.types || []
+
+                    const updatedTypes = types?.map(t => {
+                        if(t?.id === type_id){
+                            return data
+                        }
+
+                        return t
+                    })
+
+                    return {
+                        ...service,
+                        types:updatedTypes
+                    }
+                }
+
+                return service
+            })
+
+            dispatch(setAdminState({ vendorServices: updatedVendorServices }))
+
+            dispatch(appLoadStop())
+
+            callBack({ updatedServiceType: data })
+
+            toast.success("Session info saved")
+
+        } catch (error) {
+            console.log(error)
+            apiReqError({ errorMsg: 'Something went wrong! Try again' })
+        }
+    }
+    const insertServiceType = async ({ callBack = () => {}, requestInfo }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from("service_types")
+                .insert(requestInfo)
+                .select()
+                .single()
+
+            if (error) {
+                console.log(error)
+                if (error.message?.toLowerCase().includes("duplicate key")) return apiReqError({ errorMsg: 'Session with this duration already exists for this service' });
+                throw new Error()
+            }
+
+            const updatedVendorServices = vendorServices?.map(service => {
+                if(service?.id === data?.service_id){
+                    const types = service?.types || []
+
+                    const updatedTypes = [data, ...types]
+
+                    return {
+                        ...service,
+                        types: updatedTypes
+                    }
+                }   
+
+                return service
+            })
+
+            dispatch(setAdminState({ vendorServices: updatedVendorServices }))
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ newServiceType: data })
+
+            toast.success("Session info saved")
+
+        } catch (error) {
+            console.log(error)
+            apiReqError({ errorMsg: 'Something went wrong! Try again' })
+        }
+    }
+    const updateService = async ({ callBack = () => {}, update, service_id }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from('services')
+                .update(update)
+                .eq('id', service_id)
+                .select()
+                .single()
+
+            if(error){
+                console.log(error)
+                throw new Error()
+            }
+
+            const updatedServices = vendorServices?.map(service => {
+                if(service?.id === service_id){
+                    return {
+                        ...service,
+                        ...data
+                    }
+                }
+
+                return service
+            })
+
+            dispatch(setAdminState({ vendorServices: updatedServices }))
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ updatedService: data })
+
+            toast.success("Service updated")
+            
+        } catch (error) {
+            console.log(error)
+            apiReqError({ errorMsg: 'Something went wrong! Try again' })            
+        }
+    }
+    const fetchSingleService = async ({ callBack = () => {}, service_id }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from("services")
+                .select(`
+                    *,
+                    types: service_types ( * )    
+                `)
+                .single()
+                .eq("id", service_id)
+
+            if(error){
+                console.log(error)
+                throw new Error()
+            }
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ service: data })
+            
+            
+        } catch (error) {
+            console.log(error)
+            callBack && callBack({ service: null })
+            apiReqError({ errorMsg: 'Something went wrong! Try again' }) 
         }
     }
 
@@ -564,7 +784,7 @@ export default function useApiReqs() {
             dispatch(appLoadStop())
 
             callBack && callBack({
-                types: groupedTypes, 
+                types: groupedTypes,
                 values
             })
 
@@ -597,6 +817,9 @@ export default function useApiReqs() {
                     dispatch(appLoadStop())
                     return toast.error("Variants combination already exists for this product")
                 }
+
+                console.log(error)
+                throw new Error()
             }
 
             const updatedProducts = (products || [])?.map(p => {
@@ -1235,7 +1458,7 @@ export default function useApiReqs() {
 
 
     //blogs
-    const fetchBlogCategories = async ({ callBack = () => {} }) => {
+    const fetchBlogCategories = async ({ callBack = () => { } }) => {
         try {
 
             dispatch(appLoadStart())
@@ -1244,7 +1467,7 @@ export default function useApiReqs() {
                 .from("blog_categories")
                 .select("*")
 
-            if(error){
+            if (error) {
                 console.log(error)
                 throw new Error()
             }
@@ -1252,7 +1475,7 @@ export default function useApiReqs() {
             dispatch(appLoadStop())
 
             callBack && callBack({ categories: data })
-            
+
         } catch (error) {
             console.log(error)
             toast.error("Error retrieving blog categories!")
@@ -1261,7 +1484,7 @@ export default function useApiReqs() {
             dispatch(appLoadStop())
         }
     }
-    const addBlogCategory = async ({ callBack = () => {}, name }) => {
+    const addBlogCategory = async ({ callBack = () => { }, name }) => {
         try {
 
             dispatch(appLoadStart())
@@ -1274,7 +1497,7 @@ export default function useApiReqs() {
                 .select()
                 .single()
 
-            if(error){
+            if (error) {
                 console.log(error)
                 throw new Error()
             }
@@ -1284,7 +1507,7 @@ export default function useApiReqs() {
             callBack && callBack({ newCategory: data })
 
             toast.success("Blog category added!")
-            
+
         } catch (error) {
             console.log(error)
             toast.error("Error adding blog category!")
@@ -1293,7 +1516,7 @@ export default function useApiReqs() {
             dispatch(appLoadStop())
         }
     }
-    const deleteBlogCategory = async ({ callBack = () => {}, category_id }) => {
+    const deleteBlogCategory = async ({ callBack = () => { }, category_id }) => {
         try {
 
             dispatch(appLoadStart())
@@ -1303,7 +1526,7 @@ export default function useApiReqs() {
                 .delete()
                 .eq("id", category_id)
 
-            if(error){
+            if (error) {
                 console.log(error)
                 throw new Error()
             }
@@ -1313,7 +1536,7 @@ export default function useApiReqs() {
             callBack && callBack({ deleted_category_id: category_id })
 
             toast.success("Blog category deleted")
-            
+
         } catch (error) {
             console.log(error)
             toast.error("Error deleting blog category!")
@@ -1321,6 +1544,15 @@ export default function useApiReqs() {
         } finally {
             dispatch(appLoadStop())
         }
+    }
+
+
+
+
+
+    const apiReqError = ({ errorMsg }) => {
+        toast.error(errorMsg)
+        dispatch(appLoadStop())
     }
 
 
@@ -1373,6 +1605,11 @@ export default function useApiReqs() {
         fetchVendorServiceCategories,
         deleteVendorServiceCategory,
         addVendorServiceCategory,
+        updateServiceType, 
+        insertServiceType, 
+        deleteServiceType,
+        updateService,
+        fetchSingleService,
 
 
 

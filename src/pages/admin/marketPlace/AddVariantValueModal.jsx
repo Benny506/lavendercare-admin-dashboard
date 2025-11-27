@@ -61,7 +61,7 @@ export default function AddVariantValueModal({ modalProps, values=[], setValues,
 
                 const updatedTypes = (types || [])?.map(t => {
                     if(t?.id === newVariantValue?.variant_type_id){
-                        const updatedValues = [{...newVariantValue, ...(type || {})}, ...(t?.values || [])]
+                        const updatedValues = [{...newVariantValue, type}, ...(t?.values || [])]
 
                         return {
                             ...t,
@@ -73,7 +73,7 @@ export default function AddVariantValueModal({ modalProps, values=[], setValues,
                 })
 
                 
-                const updatedValues = [{...newVariantValue, ...(type || {})}, ...(values || [])]
+                const updatedValues = [{...newVariantValue, type}, ...(values || [])]
 
                 setTypes(updatedTypes)
                 setValues(updatedValues)

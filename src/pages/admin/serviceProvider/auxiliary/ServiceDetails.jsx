@@ -6,8 +6,14 @@ import { formatNumberWithCommas, getHourFromHHMM, secondsToLabel, timeToAMPM_Fro
 import { getServiceStatusColor, getServiceStatusFeedBack } from "../../../../lib/utils_Jsx";
 import PathHeader from "../../components/PathHeader";
 import Badge from "../../components/ui/Badge";
-import { BsChevronLeft } from "react-icons/bs";
+import { BsChevronLeft, BsPlus, BsTrash } from "react-icons/bs";
 import { GoDash } from "react-icons/go";
+import ZeroItems from "../../components/ZeroItems";
+import { FaEdit } from "react-icons/fa";
+import useApiReqs from "../../../../hooks/useApiReqs";
+import ServiceType from "./ServiceType";
+import AddServiceModal from "./AddServiceModal";
+import SetServiceHours from "./SetServiceHours";
 
 export default function ServiceDetails() {
     const dispatch = useDispatch()
@@ -16,10 +22,15 @@ export default function ServiceDetails() {
 
     const { state } = useLocation()
 
-    const service = state?.service
+    const { updateServiceType, deleteServiceType, insertServiceType, updateService, fetchSingleService } = useApiReqs()
+
+    const service_id = state?.service?.id
     const vendor = state?.vendor
 
+    const [serviceTypeModal, setServiceTypeModal] = useState({ visible: false, hide: null })
     const [apiReqs, setApiReqs] = useState({ isLoading: false, errorMsg: null, data: null })
+    const [service, setService] = useState(null)
+    const [editServiceModal, setEditServiceModal] = useState({ step: null })
     const [days, setDays] = useState({
         monday: [],
         tuesday: [],
@@ -31,11 +42,31 @@ export default function ServiceDetails() {
     })
 
     useEffect(() => {
-        if (!service || !vendor) {
-            navigate('/admin/service-provider/single-vendor')
-            toast.info("Vendor & Service information could not be retrieved")
+        if (!service_id || !vendor) {
+            goBack()
+
+        } else {
+            fetchSingleService({
+                callBack: ({ service }) => {
+                    if (service) {
+                        setService(service)
+
+                    } else {
+                        goBack()
+                    }
+                },
+                service_id
+            })
         }
     }, [])
+
+    const goBack = () => {
+        navigate('/admin/service-provider/single-vendor')
+        toast.info("Vendor & Service information could not be retrieved")
+    }
+
+    const openServiceTypeModal = ({ info }) => setServiceTypeModal({ visible: true, hide: hideServiceTypeModal, info })
+    const hideServiceTypeModal = () => setServiceTypeModal({ visible: false, hide: null })
 
     if (!service || !vendor) return <></>
 
@@ -79,7 +110,12 @@ export default function ServiceDetails() {
 
                 {/* Availability Section */}
                 <div className="bg-white rounded-lg p-4 shadow mb-6">
-                    <h3 className="text-xl font-bold text-grey-700 mb-3">Availability</h3>
+                    <div className="flex items-center justify-between mb-5">
+                        <h3 className="text-xl font-bold text-grey-700">Availability</h3>
+                        <button onClick={() => setEditServiceModal({ step: 'availability' })} className="text-purple-500 flex items-center gap-1 cursor-pointer">
+                            <FaEdit size={15} color="purple" /> <span>Edit</span>
+                        </button>
+                    </div>
 
                     <div className='space-y-4 flex flex-col items-start justify-start w-full font-semibold text-sm'>
                         {Object.keys(days).map((day, index) => {
@@ -127,25 +163,96 @@ export default function ServiceDetails() {
                     </div>
                 </div>
 
-                {/* Pricing Section */}
+                {/* Types Section */}
                 <div className="bg-white rounded-lg p-4 shadow mb-6">
-                    <h3 className="text-xl font-bold text-grey-700 mb-3">Pricing</h3>
-
-                    <div className="flex item-ceter justify-between bg-grey-100 rounded-2xl p-4">
-                        <div className="flex flex-wrap items-center gap-5">
-                            <span>Base price: <strong> {formatNumberWithCommas(base_price)} </strong></span>
-                            <div>|</div>
-                            <span>Base duration: <strong> {secondsToLabel({ seconds: base_duration })} </strong></span>
-                            <div>|</div>                            
-                            <span>Currency: <strong> {currency} </strong></span>
-                        </div>
+                    <div className="flex items-center justify-between mb-3 gap-4 flex-wrap">
+                        <h3 className="text-xl font-bold text-grey-700">Session Types</h3>
+                        <button onClick={() => openServiceTypeModal({ info: null })} className="text-purple-500 flex items-center gap-1 cursor-pointer">
+                            <BsPlus size={15} color="purple" /> <span>Add</span>
+                        </button>
                     </div>
+
+                    {
+                        service?.types?.length > 0
+                            ?
+                            <div className="flex items-center justify-between flex-wrap">
+                                {
+                                    service?.types?.map((t, i) => {
+                                        return (
+                                            <div
+                                                key={i}
+                                                className="w-1/2 px-2"
+                                            >
+                                                <div className="bg-gray rounded-2xl mb-4">
+                                                    <div className="p-4">
+                                                        <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
+                                                            <h3 className="m-0 p-0 font-bold">Name</h3>
+                                                            <p className="text-gray-900 m-0 p-0">{t?.type_name}</p>
+                                                        </div>
+
+                                                        <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
+                                                            <h3 className="m-0 p-0 font-bold">Duration</h3>
+                                                            <p className="text-gray-900 m-0 p-0">{secondsToLabel({ seconds: t?.duration })}</p>
+                                                        </div>
+
+                                                        <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
+                                                            <h3 className="m-0 p-0 font-bold">Price</h3>
+                                                            <p className="text-gray-900 m-0 p-0">{t?.currency} {formatNumberWithCommas(t?.price)}</p>
+                                                        </div>
+
+                                                    </div>
+
+                                                    <hr />
+
+                                                    <div className="flex items-center justify-between mt-4 gap-2">
+                                                        <button onClick={() => openServiceTypeModal({ info: t })} variant="ghost" className="text-purple-500 flex items-center gap-1 cursor-pointer">
+                                                            <FaEdit size={15} /><span>Edit</span>
+                                                        </button>
+                                                        <button onClick={
+                                                            () =>
+                                                                deleteServiceType({
+                                                                    callBack: ({ deleted_type_id }) => {
+                                                                        if (!deleted_type_id) return
+
+                                                                        const updatedService = {
+                                                                            ...service,
+                                                                            types: (service?.types || [])?.filter(t => t?.id !== deleted_type_id)
+                                                                        }
+
+                                                                        setService(updatedService)
+                                                                    },
+                                                                    type_id: t?.id,
+                                                                    service_id: service?.id
+                                                                })
+                                                        }
+                                                            className="text-red-500 flex items-center gap-1 cursor-pointer"
+                                                        >
+                                                            <BsTrash size={15} /><span>Delete</span>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )
+                                    })
+                                }
+                            </div>
+                            :
+                            <div className="flex items-center justify-center">
+                                <ZeroItems
+                                    zeroText={'No session types added'}
+                                />
+                            </div>
+                    }
                 </div>
 
                 {/* Details Section */}
                 <div className="bg-white rounded-lg p-4 shadow mb-6">
                     <div className="flex justify-between mb-2 items-center">
                         <h3 className="text-xl font-bold text-grey-700 mb-3">Details</h3>
+
+                        <button onClick={() => setEditServiceModal({ step: 'add' })} className="text-purple-500 flex items-center gap-1 cursor-pointer">
+                            <FaEdit size={15} color="purple" /> <span>Edit</span>
+                        </button>
                     </div>
 
                     <ul className="list-disc list-inside text-gray-600 flex flex-col gap-2 item-ceter justify-between bg-grey-100 rounded-2xl p-4">
@@ -154,13 +261,13 @@ export default function ServiceDetails() {
                         </li>
                         <li>
                             Country: {country}
-                        </li>   
+                        </li>
                         <li>
                             State: {service?.state}
-                        </li> 
+                        </li>
                         <li>
                             City: {city}
-                        </li>                                                                    
+                        </li>
                         <li>
                             Location: {location}
                         </li>
@@ -239,6 +346,98 @@ export default function ServiceDetails() {
 
             </div> */}
             </div>
+
+            <ServiceType
+                info={serviceTypeModal?.info}
+                isOpen={serviceTypeModal?.visible}
+                hide={serviceTypeModal?.hide}
+                handleContinueBtnClick={({ requestInfo, info }) => {
+                    if (info?.id) {
+                        return updateServiceType({
+                            callBack: ({ updatedServiceType }) => {
+                                if (!updatedServiceType) return;
+
+                                const updatedService = {
+                                    ...(service || {}),
+                                    types: (service?.types || [])?.map(t => {
+                                        if (t?.id === updatedServiceType?.id) {
+                                            return updatedServiceType
+                                        }
+
+                                        return t
+                                    })
+                                }
+
+                                setService(updatedService)
+                                hideServiceTypeModal()
+                            },
+                            type_id: info?.id,
+                            update: requestInfo
+                        })
+                    }
+
+                    insertServiceType({
+                        callBack: ({ newServiceType }) => {
+                            if (!newServiceType) return;
+
+                            const updatedService = {
+                                ...(service || {}),
+                                types: [newServiceType, ...(service?.types || [])]
+                            }
+
+                            setService(updatedService)
+                            hideServiceTypeModal()
+                        },
+                        requestInfo: {
+                            ...requestInfo,
+                            service_id: service?.id
+                        }
+                    })
+                }}
+            />
+
+            <AddServiceModal
+                info={service || {}}
+                isOpen={editServiceModal.step == 'add'}
+                hide={() => setEditServiceModal({ step: null })}
+                goBackBtnFunc={() => setEditServiceModal({ step: null })}
+                continueBtnFunc={(update) => {
+                    updateService({
+                        callBack: ({ updatedService }) => {
+                            if (updatedService) {
+                                setService(updatedService)
+                            }
+
+                            setEditServiceModal({ step: null })
+                        },
+                        update,
+                        service_id: service?.id,
+                    })
+                }}
+                setApiReqs={setApiReqs}
+            />
+
+            <SetServiceHours
+                info={service?.availability}
+                isOpen={editServiceModal.step == 'availability'}
+                hide={() => setEditServiceModal({ step: null })}
+                goBackBtnFunc={() => setEditServiceModal({ step: null })}
+                continueBtnFunc={(availability) => {
+                    updateService({
+                        callBack: ({ updatedService }) => {
+                            if (updatedService) {
+                                setService(updatedService)
+                            }
+
+                            setEditServiceModal({ step: null })
+                        },
+                        update: {
+                            availability
+                        },
+                        service_id: service?.id,
+                    })
+                }}
+            />
         </div>
     );
 }

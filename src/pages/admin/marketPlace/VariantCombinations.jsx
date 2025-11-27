@@ -26,7 +26,6 @@ export default function VariantCombinations() {
     const [addVariantValueModal, setAddVariantValueModal] = useState({ visible: false, hide: null })
     const [addVariantTypeModal, setAddVariantTypeModal] = useState({ visible: false, hide: null })
     const [addVariantCombination, setAddVariantCombination] = useState({ visible: false, hide: null })
-    const [apiReqs, setApiReqs] = useState({ isLoading: false, errorMsg: null, data: null })
 
     useEffect(() => {
         if (!product_id) {
@@ -160,8 +159,6 @@ export default function VariantCombinations() {
 
             <AddVariantValueModal
                 modalProps={addVariantValueModal}
-                setApiReqs={setApiReqs}
-                apiReqs={apiReqs}
                 types={types}
                 setTypes={setTypes}
                 values={values}

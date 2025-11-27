@@ -93,7 +93,10 @@ function ServiceProvider() {
 
       const { data, error } = await supabase
         .from('services')
-        .select('*')
+        .select(`
+          *,
+          types: service_types ( * )
+        `)
         .order('created_at', { ascending: true, nullsFirst: false })
         .limit(limit)
         .range(from, to);
