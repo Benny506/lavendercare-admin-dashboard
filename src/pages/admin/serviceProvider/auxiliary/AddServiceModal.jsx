@@ -88,9 +88,9 @@ export default function AddServiceModal({
 
                                 <div className="space-y-6">
                                     <div>
-                                        <label className="block text-sm font-medium text-grey-600 mb-1">Service Name {info?.service_name && 'Cannot change service name after creation'}</label>
+                                        <label className="block text-sm font-medium text-grey-600 mb-1">Service Name</label>
                                         <input
-                                            disabled={info?.service_name ? true : false}
+                                            // disabled={info?.service_name ? true : false}
                                             name="service_name"
                                             value={values.service_name}
                                             onChange={handleChange}

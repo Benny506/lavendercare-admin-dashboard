@@ -8,6 +8,29 @@ import Modal from '../../components/ui/Modal';
 import { timeToAMPM_FromHour } from '../../../../lib/utils';
 
 
+function reorderDays(obj) {
+    const order = [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday",
+    ];
+
+    const sortedObj = {};
+
+    order.forEach(day => {
+        if (obj.hasOwnProperty(day)) {
+            sortedObj[day] = obj[day];
+        }
+    });
+
+    return sortedObj;
+}
+
+
 const SetServiceHours = ({
     info = {
         monday: { opening: '', closing: '' },
@@ -50,6 +73,8 @@ const SetServiceHours = ({
         continueBtnFunc(days)
     }
 
+    const reorderedDays = reorderDays(days)
+
     return (
         <>
             {isOpen && (
@@ -62,17 +87,17 @@ const SetServiceHours = ({
                         Availability
                     </h2>
 
-                    <div className='border border-gray-100 rounded-md lg:flex block w-full'>
-                        <div className='border-r border-gray-100 py-4 pb-2 px-2  space-y-4 flex flex-row flex-wrap lg:flex-col items-center lg:w-[20%] w-full lg:mb-0 mb-4 font-semibold text-sm'>
-                            {Object.keys(days).map((day, index) => {
+                    <div className='border border-gray-100 rounded-md flex w-full'>
+                        <div className='border-r border-gray-100 py-4 pb-2 px-2  space-y-4 flex flex-wrap flex-col items-center lg:mb-0 mb-4 font-semibold text-sm'>
+                            {Object.keys(reorderedDays).map((day, index) => {
 
                                 const active = day === selectedDay ? true : false
 
                                 const handleDayClick = () => setSelectedDay(day)
 
                                 return (
-                                    <div key={day} onClick={handleDayClick} className={`lg:w-full w-1/2 text-center py-3 ${active ? "text-gray-50 bg-purple-500" : "cursor-pointer hover:bg-gray-100"} p-2 rounded-lg`}>
-                                        <p>{day}</p>
+                                    <div key={day} onClick={handleDayClick} className={`w-full text-center py-3 ${active ? "text-gray-50 bg-purple-500" : "cursor-pointer hover:bg-gray-100"} p-2 rounded-lg`}>
+                                        <p className='capitalize'>{day}</p>
                                     </div>
                                 )
                             }
@@ -118,7 +143,7 @@ const SetServiceHours = ({
                                 }}
                             >
                                 {({ handleBlur, handleChange, handleSubmit, isValid, dirty, values }) => (
-                                    <div className='m-7 flex flex-col items-start justify-center px-2 gap-4'>
+                                    <div className='py-7 flex flex-col items-start justify-center px-4 gap-4'>
                                         <div className=''>
                                             {
                                                 days[selectedDay]?.opening
@@ -175,11 +200,11 @@ const SetServiceHours = ({
                         </div>
                     </div>
 
-                    <div className={`flex justify-center gap-3 mt-10`}>
+                    <div className={`flex justify-center w-full gap-3 mt-10`}>
                         {goBackBtnFunc && (
                             <button
                                 onClick={goBackBtnFunc}
-                                className={`w-1/3 cursor-pointer px-4 py-2 bg-gray-200 text-gray-600 rounded-4xl`}
+                                className={`w-1/2 cursor-pointer px-4 py-2 bg-gray-200 text-gray-600 rounded-4xl`}
                             >
                                 Go back
                             </button>
@@ -187,7 +212,7 @@ const SetServiceHours = ({
                         {continueBtnFunc && (
                             <button
                                 onClick={onContinue}
-                                className={`cursor-pointer w-1/3 px-4 py-2 bg-purple-700 text-white rounded-4xl`}
+                                className={`cursor-pointer w-1/2 px-4 py-2 bg-purple-700 text-white rounded-4xl`}
                             >
                                 Continue
                             </button>
