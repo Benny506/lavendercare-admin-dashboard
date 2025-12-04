@@ -306,12 +306,12 @@ function AddProduct() {
           <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col md:flex-row gap-8">
             <div className="flex-1 space-y-4">
               <div>
-                <label className="block font-semibold mb-1">Product Name {'('}Cannot be changed{')'} </label>
+                <label className="block font-semibold mb-1">Product Name</label>
                 <input
                   className="w-full border border-gray-200 rounded-lg px-3 py-2"
                   placeholder="Enter Product name"
                   type='text'
-                  disabled={productInfo?.product_name ? true : false}
+                  // disabled={productInfo?.product_name ? true : false}
                   name='product_name'
                   value={values.product_name}
                   onChange={handleChange}
