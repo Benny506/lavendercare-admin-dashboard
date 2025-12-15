@@ -18,7 +18,7 @@ import { formatNumberWithCommas } from '../../../lib/utils';
 import ProductVariants from './AddVariantValueModal';
 import { getAdminState, setAdminState } from '../../../redux/slices/adminState';
 import useApiReqs from '../../../hooks/useApiReqs';
-import { BsTrash } from 'react-icons/bs';
+import { BsBox2, BsCheck2Square, BsTrash } from 'react-icons/bs';
 import ProductImage from './ProductImage';
 import { v4 as uuidv4 } from 'uuid';
 

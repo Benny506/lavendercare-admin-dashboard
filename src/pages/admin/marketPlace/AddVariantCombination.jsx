@@ -4,9 +4,13 @@ import { ErrorMessage, Formik } from "formik"
 import * as yup from 'yup'
 import ErrorMsg1 from "../components/ErrorMsg1"
 import { toast } from "react-toastify"
-import { MdDelete } from "react-icons/md"
+import { MdCheckBoxOutlineBlank, MdDelete } from "react-icons/md"
 import useApiReqs from "../../../hooks/useApiReqs"
 import { ColorCircle } from "../components/ColorPicker"
+import { BsCheck2Square } from "react-icons/bs"
+
+
+const virtualProductsTypeMap = ['pdf', 'image', 'video']
 
 
 export default function AddVariantCombination({ modalProps, product, setProduct, types, values }) {
@@ -16,6 +20,9 @@ export default function AddVariantCombination({ modalProps, product, setProduct,
     const [options, setOptions] = useState({})
     const [variantTypeId, setVariantTypeId] = useState('')
     const [variantValue, setVariantValue] = useState('')
+    const [isVirtual, setIsVirtual] = useState(false)
+    const [virtualMap, setVirtualMap] = useState(null)
+    const [virtualType, setVirtualType] = useState(null)
 
     useEffect(() => {
         setVariantValue('')
@@ -24,7 +31,7 @@ export default function AddVariantCombination({ modalProps, product, setProduct,
     if (!modalProps || !product || !setProduct || !types || !values) return <></>
 
     const { hide, visible } = modalProps
-    
+
     const variantValues =
         variantTypeId
             ?
@@ -46,7 +53,7 @@ export default function AddVariantCombination({ modalProps, product, setProduct,
 
         const typeName = (types || [])?.filter(t => t?.id === variantTypeId)?.[0]?.name
 
-        if(!typeName) return toast.error("Can't seem to add variant combination at the moment! Try again later");
+        if (!typeName) return toast.error("Can't seem to add variant combination at the moment! Try again later");
 
         optionsClone[typeName] = variantValue
 
@@ -87,7 +94,7 @@ export default function AddVariantCombination({ modalProps, product, setProduct,
                     price_currency: '', price_value: '', stock: ''
                 }}
                 onSubmit={(values, { resetForm }) => {
-                    if(optionsArray?.length > 0){
+                    if (optionsArray?.length > 0) {
                         addVariantsCombination({
                             callBack: ({ newVariantCombo }) => {
                                 const updatedProductVariantCombo = [newVariantCombo, ...(product?.product_variants_combinations || [])]
@@ -103,8 +110,8 @@ export default function AddVariantCombination({ modalProps, product, setProduct,
                             product_id: product?.id,
                             options
                         })
-                        
-                    } else{
+
+                    } else {
                         return toast.info("Add variants")
                     }
 
@@ -113,6 +120,20 @@ export default function AddVariantCombination({ modalProps, product, setProduct,
             >
                 {({ values, handleBlur, handleChange, handleSubmit, isValid, dirty }) => (
                     <div>
+                        <div onClick={() => setIsVirtual(prev => !prev)} className='flex items-center gap-2 cursor-pointer'>
+                            {
+                                isVirtual
+                                    ?
+                                    <BsCheck2Square color='#703DCB' size={24} />
+                                    :
+                                    <MdCheckBoxOutlineBlank color='#777' size={24} />
+                            }
+
+                            <p className='m-0 p-0'>
+                                Click here if this product is a virtual product
+                            </p>
+                        </div>
+
                         <div className="mb-10">
                             <div className="flex items-center justify-between">
                                 <div className="flex flex-col space-y-2 w-1/2 px-1">
@@ -208,7 +229,7 @@ export default function AddVariantCombination({ modalProps, product, setProduct,
 
                                                 return (
                                                     <option value={value} key={i}>
-                                                        { 
+                                                        {
                                                             // isColor
                                                             // ?
                                                             //     <span 
@@ -264,7 +285,7 @@ export default function AddVariantCombination({ modalProps, product, setProduct,
                                                 const isColor = variantTypeName === 'color' ? true : false
 
                                                 const handleRemoveOption = () => {
-                                                    const optionsClone = {...options}
+                                                    const optionsClone = { ...options }
                                                     delete optionsClone?.[optKey]
 
                                                     setOptions(optionsClone)
@@ -276,9 +297,9 @@ export default function AddVariantCombination({ modalProps, product, setProduct,
                                                         <td className="py-3 px-4">
                                                             {
                                                                 isColor
-                                                                ?
+                                                                    ?
                                                                     <ColorCircle color={variantValue} />
-                                                                :
+                                                                    :
                                                                     variantValue
                                                             }
                                                         </td>

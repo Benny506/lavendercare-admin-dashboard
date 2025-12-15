@@ -15,6 +15,7 @@ import ProfileImg from "../components/ProfileImg";
 import { v4 as uuidv4 } from 'uuid';
 import BlogCategoryMdal from "./auxiliary/BlogCategoryModal";
 import useApiReqs from "../../../hooks/useApiReqs";
+import { allUsertypes } from "../../../constants/constants";
 
 const MAX_FILE_SIZE_IMAGE = 2 * 1024 * 1024
 const MAX_FILE_SIZE_PDF = 10 * 1024 * 1024
@@ -64,7 +65,8 @@ function NewBlog() {
 
     const { state } = useLocation()
     const initialState = state?.article || {
-        title: '', category: '', url: '', brief: '', cover_img: ''
+        title: '', category: '', url: '', brief: '', cover_img: '',
+        usertypes: []
     }
 
     const { fetchBlogCategories } = useApiReqs()
@@ -84,6 +86,7 @@ function NewBlog() {
 
     const [blogCategoriesModal, setBlogCategoriesModal] = useState({ visible: false, hide: null })
     const [blogCategories, setBlogoCategories] = useState([])
+    const [usertypes, setUsertypes] = useState(initialState?.usertypes)
 
     useEffect(() => {
         fetchBlogCategories({ 
@@ -238,6 +241,7 @@ function NewBlog() {
             {/* community body wrapper */}
             <div className="bg-white rounded-xl mb-8 p-4 2xl:w-6xl 2xl:mx-auto">
                 <Formik
+                    enableReinitialize
                     validationSchema={yup.object().shape({
                         title: yup.string().required("Title is required"),
                         brief: yup.string().required("Brief is required"),
@@ -249,12 +253,15 @@ function NewBlog() {
                         category: initialState?.category,
                     }}
                     onSubmit={(values, { resetForm }) => {
+                        if(usertypes?.length <= 0) return toast.info("Select at least 1 usertype!")
+
                         setApiReqs({ isLoading: true, errorMsg: null })
 
                         // resetForm()
 
                         const requestBody = {
                             ...values,
+                            usertypes,
                             url: urlInput?.file,
                             cover_img: coverImgInput?.file
                         }
@@ -303,6 +310,7 @@ function NewBlog() {
                                     {errorMsg => <ErrorMsg1 errorMsg={errorMsg} />}
                                 </ErrorMessage>
                             </div>
+
                             <div>
                                 <label className="block text-sm font-medium mb-1">Category</label>
                                 <select
@@ -329,6 +337,45 @@ function NewBlog() {
                                     {errorMsg => <ErrorMsg1 errorMsg={errorMsg} />}
                                 </ErrorMessage>
                             </div>
+
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Usertypes</label>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    {
+                                        allUsertypes?.map((uType, i) => {
+                                            const { title, value } = uType
+                                            
+                                            const isActive = usertypes?.includes(value)
+                                            
+                                            const handleUsertypeClick = () => {
+                                                if(isActive){
+                                                    if(usertypes?.length === 1) return toast.info("Must be for at least 1 usertype");
+
+                                                    setUsertypes(usertypes?.filter(uT => uT !== value))
+                                                
+                                                } else{
+                                                    setUsertypes([...usertypes, value])
+                                                }
+                                            }
+
+                                            return (
+                                                <div
+                                                    key={i}
+                                                    style={{
+                                                        backgroundColor: isActive ? '#703DCB' : '#ddd',
+                                                        color: isActive ? '#FFF' : '#000',
+                                                        fontSize: '13px'
+                                                    }}
+                                                    className="px-3 py-2 rounded-lg clickable cursor-pointer"
+                                                    onClick={handleUsertypeClick}
+                                                >
+                                                    { title }
+                                                </div>
+                                            )
+                                        })
+                                    }
+                                </div>
+                            </div>                            
 
                             <div>
                                 <label className="block text-sm font-medium mb-1">
@@ -498,11 +545,11 @@ function NewBlog() {
                             <div className="flex gap-2 mt-6 justify-end">
                                 <button
                                     onClick={handleSubmit}
-                                    disabled={!(isValid && dirty) || !(urlInput?.preview) ? true : false}
+                                    disabled={!(urlInput?.preview) ? true : false}
                                     type="submit"
                                     className="py-2 px-4 rounded-lg bg-(--primary-500) text-white font-medium text-xs sm:text-sm"
                                     style={{
-                                        opacity: !(isValid && dirty) || !(urlInput?.preview) ? 0.5 : 1
+                                        opacity: !(urlInput?.preview) ? 0.5 : 1
                                     }}
                                 >
                                     {state?.article ? 'Edit' : 'Create'} Article
