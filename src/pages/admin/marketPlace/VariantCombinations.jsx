@@ -7,9 +7,12 @@ import ZeroItems from "../components/ZeroItems";
 import AddVariantValueModal from './AddVariantValueModal'
 import AddVariantTypeModal from "./AddVariantTypeModal";
 import AddVariantCombination from "./AddVariantCombination";
-import { MdDelete } from "react-icons/md";
+import { MdDelete, MdOutlineCancel } from "react-icons/md";
 import { formatNumberWithCommas } from "../../../lib/utils";
 import { ProductVariantsDisplay } from "./ProductsVariantsDisplay";
+import AddVirtualCombination from "./AddVirtualCombination";
+import { FaEdit } from "react-icons/fa";
+import { BsCheck } from "react-icons/bs";
 
 export default function VariantCombinations() {
 
@@ -26,6 +29,7 @@ export default function VariantCombinations() {
     const [addVariantValueModal, setAddVariantValueModal] = useState({ visible: false, hide: null })
     const [addVariantTypeModal, setAddVariantTypeModal] = useState({ visible: false, hide: null })
     const [addVariantCombination, setAddVariantCombination] = useState({ visible: false, hide: null })
+    const [addVirtualCombination, setAddVirtualCombination] = useState({ visible: false, hide: null })
 
     useEffect(() => {
         if (!product_id) {
@@ -35,7 +39,7 @@ export default function VariantCombinations() {
         } else {
             fetchAllVariantTypesAndValues({
                 callBack: ({ values, types }) => {
-                    if(values && types){
+                    if (values && types) {
                         setTypes(types)
                         setValues(values)
                     }
@@ -63,8 +67,11 @@ export default function VariantCombinations() {
     const openAddVariantTypeModal = () => setAddVariantTypeModal({ visible: true, hide: hideAddVariantTypeModal })
     const hideAddVariantTypeModal = () => setAddVariantTypeModal({ visible: false, hide: null })
 
-    const openAddVariantCombination = () => setAddVariantCombination({ visible: true, hide: hideAddVariantCombination })
+    const openAddVariantCombination = ({ vCombo = null }) => setAddVariantCombination({ visible: true, hide: hideAddVariantCombination, vCombo })
     const hideAddVariantCombination = () => setAddVariantCombination({ visible: false, hide: null })
+
+    const openAddVirtualCombination = ({ vCombo = null }) => setAddVirtualCombination({ visible: true, hide: hideAddVirtualCombination, vCombo })
+    const hideAddVirtualCombination = () => setAddVirtualCombination({ visible: false, hide: null })
 
     if (!product) return <></>
 
@@ -99,9 +106,15 @@ export default function VariantCombinations() {
                     </button>
                     <button
                         className="bg-(--primary-500) cursor-pointer text-white rounded-lg px-4 py-2 font-semibold transition"
-                        onClick={openAddVariantCombination}
+                        onClick={() => openAddVariantCombination({})}
                     >
                         Add Combination
+                    </button>
+                    <button
+                        className="bg-(--primary-500) cursor-pointer text-white rounded-lg px-4 py-2 font-semibold transition"
+                        onClick={() => openAddVirtualCombination({})}
+                    >
+                        Add Virtual Combination
                     </button>
                 </div>
             </div>
@@ -116,6 +129,7 @@ export default function VariantCombinations() {
                             <thead className="bg-gray-100">
                                 <tr>
                                     <th className="text-left py-3 px-4 font-semibold text-gray-700">Types</th>
+                                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Is Virtual ?</th>
                                     <th className="text-left py-3 px-4 font-semibold text-gray-700">Stock</th>
                                     <th className="text-left py-3 px-4 font-semibold text-gray-700">Price</th>
                                     <th className="text-left py-3 px-4 font-semibold text-gray-700">Actions</th>
@@ -124,25 +138,28 @@ export default function VariantCombinations() {
                             <tbody>
                                 {
                                     product_variants_combinations?.map((vCombo, i) => {
-                                        const { stock, price_currency, price_value, options } = vCombo
-
-                                        const handleDeleteCombo = () => {
-                                            //should delete but this is what user's add to cart so well, proceed with caution!
-                                        }
+                                        const { stock, price_currency, price_value, options, is_virtual } = vCombo
 
                                         return (
                                             <tr key={i} className="border-b hover:bg-gray-50 transition">
                                                 <td className="py-3 px-4">
                                                     <div className="flex flex-col space-y-1">
-                                                        <ProductVariantsDisplay 
+                                                        <ProductVariantsDisplay
                                                             variants={options}
                                                         />
                                                     </div>
                                                 </td>
+                                                <td className="py-2 px-2">{is_virtual ? <BsCheck size={16} color="#703DCB" /> : <MdOutlineCancel size={16} color="red" />}</td>
                                                 <td className="py-3 px-4">{formatNumberWithCommas(stock)}</td>
                                                 <td className="py-3 px-4">{price_currency} {formatNumberWithCommas(price_value)}</td>
                                                 <td className="py-3 px-4 text-center">
-                                                    <MdDelete onClick={handleDeleteCombo} color="red" size={20} className="cursor-pointer" />
+                                                    <div className="flex items-center gap-2">
+                                                        <FaEdit
+                                                            size={20}
+                                                            onClick={() => is_virtual ? openAddVirtualCombination({ vCombo }) : openAddVariantCombination({ vCombo })}
+                                                            color="#737373"
+                                                        />                                                        
+                                                    </div>
                                                 </td>
                                             </tr>
                                         )
@@ -162,7 +179,7 @@ export default function VariantCombinations() {
                 types={types}
                 setTypes={setTypes}
                 values={values}
-                setValues={setValues}                  
+                setValues={setValues}
             />
 
             <AddVariantTypeModal
@@ -174,9 +191,15 @@ export default function VariantCombinations() {
             <AddVariantCombination
                 modalProps={addVariantCombination}
                 product={product}
-                setProduct={setProduct}     
+                setProduct={setProduct}
                 types={types}
-                values={values}         
+                values={values}
+            />
+
+            <AddVirtualCombination
+                modalProps={addVirtualCombination}
+                product={product}
+                setProduct={setProduct}
             />
         </div >
     )

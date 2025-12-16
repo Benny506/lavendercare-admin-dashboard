@@ -795,7 +795,7 @@ export default function useApiReqs() {
             callBack && callBack({ values: null, types: null })
         }
     }
-    const addVariantsCombination = async ({ callBack = () => { }, product_id, price_value, price_currency, stock, options }) => {
+    const addVariantsCombination = async ({ callBack = () => { }, product_id, price_value, price_currency, stock, options, virtual_files = null, is_virtual = false }) => {
         try {
 
             dispatch(appLoadStart())
@@ -807,7 +807,9 @@ export default function useApiReqs() {
                     price_value,
                     price_currency,
                     stock,
-                    options
+                    options,
+                    virtual_files,
+                    is_virtual
                 })
                 .select()
                 .single()
@@ -848,6 +850,35 @@ export default function useApiReqs() {
         } catch (error) {
             console.log(error)
             toast.error("Error adding variant combination")
+            dispatch(appLoadStop())
+        }
+    }
+    const updateVarantCombinaton = async ({ callBack = () => {}, combo_id, update }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from("product_variants_combinations")
+                .update(update)
+                .eq("id", combo_id)
+                .select()
+                .single()
+
+            if(error){
+                console.log(error)
+                throw new Error()
+            }
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ updatedVCombo: data })
+
+            toast.success("Variant updated")
+            
+        } catch (error) {
+            console.log(error)
+            toast.error("Error updating variant combination")
             dispatch(appLoadStop())
         }
     }
@@ -1629,6 +1660,7 @@ export default function useApiReqs() {
         addVariantValue,
         deleteVariantValue,
         addVariantsCombination,
+        updateVarantCombinaton,
         fetchAllVariantTypesAndValues,
 
 

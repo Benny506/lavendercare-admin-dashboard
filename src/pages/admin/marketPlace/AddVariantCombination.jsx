@@ -10,27 +10,27 @@ import { ColorCircle } from "../components/ColorPicker"
 import { BsCheck2Square } from "react-icons/bs"
 
 
-const virtualProductsTypeMap = ['pdf', 'image', 'video']
-
-
 export default function AddVariantCombination({ modalProps, product, setProduct, types, values }) {
 
-    const { addVariantsCombination } = useApiReqs()
+    const { addVariantsCombination, updateVarantCombinaton } = useApiReqs()
 
     const [options, setOptions] = useState({})
     const [variantTypeId, setVariantTypeId] = useState('')
     const [variantValue, setVariantValue] = useState('')
-    const [isVirtual, setIsVirtual] = useState(false)
-    const [virtualMap, setVirtualMap] = useState(null)
-    const [virtualType, setVirtualType] = useState(null)
 
     useEffect(() => {
         setVariantValue('')
     }, [variantTypeId])
 
+    useEffect(() => {
+        if (modalProps?.vCombo) {
+            setOptions(vCombo?.options)
+        }
+    }, [modalProps])
+
     if (!modalProps || !product || !setProduct || !types || !values) return <></>
 
-    const { hide, visible } = modalProps
+    const { hide, visible, vCombo } = modalProps
 
     const variantValues =
         variantTypeId
@@ -76,6 +76,7 @@ export default function AddVariantCombination({ modalProps, product, setProduct,
             </div>
 
             <Formik
+                enableReinitialize
                 validationSchema={yup.object().shape({
                     stock: yup
                         .number('Stock must be a number')
@@ -91,25 +92,56 @@ export default function AddVariantCombination({ modalProps, product, setProduct,
                         .required('Price is required'),
                 })}
                 initialValues={{
-                    price_currency: '', price_value: '', stock: ''
+                    price_currency: vCombo?.price_currency || '',
+                    price_value: vCombo?.price_value || '',
+                    stock: vCombo?.stock || ''
                 }}
                 onSubmit={(values, { resetForm }) => {
                     if (optionsArray?.length > 0) {
-                        addVariantsCombination({
-                            callBack: ({ newVariantCombo }) => {
-                                const updatedProductVariantCombo = [newVariantCombo, ...(product?.product_variants_combinations || [])]
-                                setProduct({
-                                    ...product,
-                                    product_variants_combinations: updatedProductVariantCombo
-                                })
-                                hide && hide()
-                            },
-                            price_value: values.price_value,
-                            stock: values.stock,
-                            price_currency: values.price_currency,
-                            product_id: product?.id,
-                            options
-                        })
+                        if (vCombo) {
+                            const update = {
+                                ...values,
+                                options
+                            }
+                            updateVarantCombinaton({
+                                callBack: ({ updatedVCombo }) => {
+                                    const updatedProductVariantCombo = (product?.product_variants_combinations || [])?.map(vCombo => {
+                                        if(vCombo?.id === updatedVCombo?.id){
+                                            return {
+                                                ...vCombo,
+                                                ...updatedVCombo
+                                            }
+                                        }
+
+                                        return vCombo
+                                    })
+                                    setProduct({
+                                        ...product,
+                                        product_variants_combinations: updatedProductVariantCombo
+                                    })
+                                    hide && hide()
+                                },
+                                update,
+                                combo_id: vCombo?.id
+                            })
+
+                        } else {
+                            addVariantsCombination({
+                                callBack: ({ newVariantCombo }) => {
+                                    const updatedProductVariantCombo = [newVariantCombo, ...(product?.product_variants_combinations || [])]
+                                    setProduct({
+                                        ...product,
+                                        product_variants_combinations: updatedProductVariantCombo
+                                    })
+                                    hide && hide()
+                                },
+                                price_value: values.price_value,
+                                stock: values.stock,
+                                price_currency: values.price_currency,
+                                product_id: product?.id,
+                                options
+                            })
+                        }
 
                     } else {
                         return toast.info("Add variants")
@@ -120,20 +152,6 @@ export default function AddVariantCombination({ modalProps, product, setProduct,
             >
                 {({ values, handleBlur, handleChange, handleSubmit, isValid, dirty }) => (
                     <div>
-                        <div onClick={() => setIsVirtual(prev => !prev)} className='flex items-center gap-2 cursor-pointer'>
-                            {
-                                isVirtual
-                                    ?
-                                    <BsCheck2Square color='#703DCB' size={24} />
-                                    :
-                                    <MdCheckBoxOutlineBlank color='#777' size={24} />
-                            }
-
-                            <p className='m-0 p-0'>
-                                Click here if this product is a virtual product
-                            </p>
-                        </div>
-
                         <div className="mb-10">
                             <div className="flex items-center justify-between">
                                 <div className="flex flex-col space-y-2 w-1/2 px-1">

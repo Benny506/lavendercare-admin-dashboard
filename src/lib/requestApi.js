@@ -256,7 +256,10 @@ export async function uploadAsset({ file, id, bucket_name, ext }) {
       body: file,
     });
 
-    if (!uploadRes.ok) throw new Error("Upload failed");
+    if (!uploadRes.ok) {
+      console.log(uploadRes)
+      throw new Error("Upload failed");
+    }
 
     return {
       filePath,
