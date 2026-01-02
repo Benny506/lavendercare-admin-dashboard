@@ -11,14 +11,14 @@ const Table = ({
 }) => {
 
     return (
-        <div className={`${styles.wrapper || "overflow-x-auto"}`}>
-            <table className={`${styles.table || "w-full border-collapse"}`}>
-                <thead className={`${styles.thead || ""}`}>
-                    <tr className={`${styles.headerRow || "bg-gray-100 text-left text-gray-600 text-sm"}`}>
+        <div className="bg-white shadow-sm rounded-xl shadow overflow-x-auto">
+            <table className={`min-w-full divide-y divide-gray-200 text-xs sm:text-sm`}>
+                <thead className="bg-gray-50">
+                    <tr>
                         {columns.map((col, index) => (
                             <th
                                 key={index}
-                                className={`${styles.headerCell || "p-3 font-semibold"} ${col.className || ""}`}
+                                className="px-6 py-4 text-left text-sm font-semibold text-gray-700"
                                 style={{ width: col.width || "auto" }}
                             >
                                 {col.label}
@@ -34,12 +34,12 @@ const Table = ({
                     </tr>
                 </thead>
 
-                <tbody className={`${styles.tbody || ""}`}>
+                <tbody className="bg-white divide-y divide-gray-200">
                     {data.length > 0 ? (
                         data.map((row, rowIndex) => (
                             <tr
                                 key={rowIndex}
-                                className={`${styles.row || "border-b hover:bg-gray-50 text-sm"}`}
+                                className="hover:bg-gray-50"
                             >
                                 {columns.map((col, colIndex) => (
                                     <td

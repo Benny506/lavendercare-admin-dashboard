@@ -52,7 +52,7 @@ function CreateCommunity() {
   const [ruleInput, setRuleInput] = useState('')
   const [apiReqs, setApiReqs] = useState({ isLoading: false, errorMsg: null, data: null })
   const [profileImgPreview, setProfileImgPreview] = useState({
-    file: null, preview: initialState?.profile_img
+    file: null, preview: null
   })
 
   useEffect(() => {
@@ -75,15 +75,15 @@ function CreateCommunity() {
 
       let error = null
 
-      if(state?.community){
+      if (state?.community) {
         const { error: updateError } = await supabase
           .from('community')
           .update(requestInfo)
           .eq('id', state?.community?.id)
 
         error = updateError
-      
-      } else{
+
+      } else {
         const { error: createError } = await supabase
           .from("community")
           .insert(requestInfo)
@@ -159,7 +159,7 @@ function CreateCommunity() {
           profile_img
         }
       }
-    })    
+    })
   }
 
   return (
@@ -168,9 +168,9 @@ function CreateCommunity() {
         paths={[
           { text: 'Communities' },
           state?.community
-          ?
+            ?
             { text: `Edit community: ${state?.community?.name}` }
-          :
+            :
             { text: 'Create community' },
         ]}
       />
@@ -194,10 +194,10 @@ function CreateCommunity() {
             group_type: yup.string().required("Group type is required"),
           })}
           initialValues={{
-            name: initialState?.name, 
-            slug: initialState?.slug, 
-            about: initialState?.about, 
-            visibility: 'public', 
+            name: initialState?.name,
+            slug: initialState?.slug,
+            about: initialState?.about,
+            visibility: 'public',
             group_type: initialState?.group_type,
           }}
           onSubmit={(values, { resetForm }) => {
@@ -210,8 +210,8 @@ function CreateCommunity() {
               rules
             }
 
-            if(profileImgPreview?.file){
-                return uploadFiles({ files: [profileImgPreview?.file], requestBody })
+            if (profileImgPreview?.file) {
+              return uploadFiles({ files: [profileImgPreview?.file], requestBody })
             }
 
             initiateCreate({ requestBody })
@@ -316,27 +316,31 @@ function CreateCommunity() {
                   {errorMsg => <ErrorMsg1 errorMsg={errorMsg} />}
                 </ErrorMessage>
               </div>
-              <div>
+              <div className="">
                 <label className="block text-sm font-medium mb-1">
                   Cover Image
                 </label>
                 {
-                  (profileImgPreview?.preview)
+                  (profileImgPreview?.preview || initialState.profile_img)
                   &&
-                    <div style={{
-                      position: 'relative'
-                    }}>
-                      <img 
-                          src={profileImgPreview?.preview}
-                          width={'175px'} height={'135px'}
-                      /> 
+                  <div style={{
+                    position: 'relative'
+                  }}>
+                    <img
+                      src={profileImgPreview?.preview || initialState.profile_img}
+                      width={'175px'} height={'135px'}
+                    />
 
-                      <div onClick={() => setProfileImgPreview({ file: null, preview: null })} className="cursor-pointer absolute -bottom-1 -left-1 w-6 h-6 bg-red-600 rounded-full flex items-center justify-center">                                            
-                          <MdCancel className="w-4 h-4 text-white" />
-                      </div>                                             
-                    </div>
-                }              
-                <div onClick={() => coverImgFileInput?.current?.click()} className="flex flex-col items-center gap-2 border border-dotted border-gray-200 cursor-pointer rounded-lg p-4">
+                    {
+                      profileImgPreview?.preview
+                      &&
+                      <div onClick={() => setProfileImgPreview({ file: null, preview: null })} className="cursor-pointer absolute -bottom-1 -left-1 w-6 h-6 bg-red-600 rounded-full flex items-center justify-center">
+                        <MdCancel className="w-4 h-4 text-white" />
+                      </div>
+                    }
+                  </div>
+                }
+                <div onClick={() => coverImgFileInput?.current?.click()} className="mt-3 flex flex-col items-center gap-2 border border-dotted border-gray-200 cursor-pointer rounded-lg p-4">
                   <span className="text-xs text-gray-400">
                     <svg
                       width="48"
@@ -431,35 +435,36 @@ function CreateCommunity() {
                 >
                   Add
                 </button>
-                {
-                  rules?.length > 0
-                  &&
-                  <div className="lg:max-w-[40vw] max-w-[100vw] mt-5">
-                    <p className="text-lg text-[#4D4D4D] mb-4">
-                      Added rules:
-                    </p>
+                <div className="space-y-2 mt-3">
+                  {rules?.map((r, i) => {
+                    const handleRemoveRule = () =>
+                      setRules((prev) => prev.filter((rule) => rule !== r));
 
-                    {
-                      rules?.map((r, i) => {
+                    return (
+                      <div
+                        key={i}
+                        className="group relative flex items-start gap-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3"
+                      >
+                        {/* Accent */}
+                        <span className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full bg-[#703dcb]" />
 
-                        const handleRemoveRule = () => setRules(rules?.filter(rule => r !== rule))
+                        {/* Rule text */}
+                        <p className="text-sm text-gray-800 leading-relaxed pr-8">
+                          {r}
+                        </p>
 
-                        return (
-                          <div
-                            key={i}
-                            className="flex items-start justify-between gap-7 mb-3"
-                          >
-                            <p className="text-sm font-medium text-gray-800">
-                              {r}
-                            </p>
+                        {/* Remove */}
+                        <button
+                          onClick={handleRemoveRule}
+                          className="absolute right-3 top-3 transition text-gray-400 hover:text-red-500"
+                        >
+                          <MdCancel size={18} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
 
-                            <MdCancel onClick={handleRemoveRule} size={17.5} color="#000" className="cursor-pointer" />
-                          </div>
-                        )
-                      })
-                    }
-                  </div>
-                }
               </div>
               <div className="flex gap-2 mt-6 justify-end">
                 <button

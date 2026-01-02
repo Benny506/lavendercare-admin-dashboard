@@ -10,6 +10,8 @@ import { getOrderStatusColor } from '../../../constants/orderConstants';
 import useApiReqs from '../../../hooks/useApiReqs';
 import PathHeader from '../components/PathHeader';
 import { FaEdit } from 'react-icons/fa';
+import { usePagination } from '../../../hooks/usePagination';
+import Pagination from '../components/Pagination';
 
 export default function Orders() {
     const navigate = useNavigate();
@@ -18,6 +20,8 @@ export default function Orders() {
     const [statusFilter, setStatusFilter] = useState('All');
     const [orders, setOrders] = useState([]);
     const [visibleOrderId, setVisibleOrderId] = useState('');
+    const [currentPage, setCurrentPage] = useState(0)
+    const [pageListIndex, setPageListIndex] = useState(0)
 
     useEffect(() => {
         fetchOrders({
@@ -29,6 +33,36 @@ export default function Orders() {
         statusFilter === 'All'
             ? orders
             : orders.filter((order) => order.status === statusFilter);
+
+    const { pageItems, totalPages, pageList, totalPageListIndex } = usePagination({
+        arr: filteredOrders,
+        maxShow: 7,
+        index: currentPage,
+        maxPage: 5,
+        pageListIndex
+    });
+
+    const incrementPageListIndex = () => {
+        if (pageListIndex === totalPageListIndex) {
+            setPageListIndex(0)
+
+        } else {
+            setPageListIndex(prev => prev + 1)
+        }
+
+        return
+    }
+
+    const decrementPageListIndex = () => {
+        if (pageListIndex == 0) {
+            setPageListIndex(totalPageListIndex)
+
+        } else {
+            setPageListIndex(prev => prev - 1)
+        }
+
+        return
+    }
 
     return (
         <div className="w-full py-6">
@@ -89,18 +123,18 @@ export default function Orders() {
                     </div>
 
                     {/* Orders Table */}
-                    {filteredOrders.length <= 0 ? (
+                    {pageItems.length <= 0 ? (
                         <ZeroItems zeroText="No orders found" />
                     ) : (
-                        <div className="bg-white shadow-sm rounded-xl border overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
+                        <div className="bg-white shadow-sm rounded-xl shadow overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200 text-xs sm:text-sm">
                                 <thead className="bg-gray-50">
                                     <tr>
                                         {['Order ID', 'Date', 'Items', 'Total', 'Status', 'Actions'].map(
                                             (header) => (
                                                 <th
                                                     key={header}
-                                                    className="px-6 py-3 text-left text-sm font-semibold text-gray-700"
+                                                    className="px-6 py-4 text-left text-sm font-semibold text-gray-700"
                                                 >
                                                     {header}
                                                 </th>
@@ -109,14 +143,14 @@ export default function Orders() {
                                     </tr>
                                 </thead>
 
-                                <tbody className="divide-y divide-gray-100">
-                                    {filteredOrders.map((order) => {
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {pageItems.map((order) => {
                                         const orderVisible = order.id === visibleOrderId;
                                         const statusColor = getOrderStatusColor(order.status);
 
                                         return (
                                             <>
-                                                <tr key={order.id} className="hover:bg-gray-50 transition">
+                                                <tr key={order.id} className="">
                                                     <td className="px-6 py-4 font-semibold text-[#703DCB]">
                                                         {order.id}
                                                     </td>
@@ -176,10 +210,10 @@ export default function Orders() {
 
                                                 <tr>
                                                     <td colSpan="6" className="px-6 py-0">
-                                                        <SingleOrder 
-                                                            visible={orderVisible} 
-                                                            order={order} 
-                                                            setOrders={setOrders} 
+                                                        <SingleOrder
+                                                            visible={orderVisible}
+                                                            order={order}
+                                                            setOrders={setOrders}
                                                             orders={orders}
                                                         />
                                                     </td>
@@ -189,11 +223,24 @@ export default function Orders() {
                                     })}
                                 </tbody>
                             </table>
+
+                            <Pagination
+                                currentPage={currentPage}
+                                pageItems={pageItems}
+                                pageListIndex={pageListIndex}
+                                pageList={pageList}
+                                totalPageListIndex={totalPageListIndex}
+                                decrementPageListIndex={decrementPageListIndex}
+                                incrementPageListIndex={incrementPageListIndex}
+                                setCurrentPage={setCurrentPage}
+                            />
+
+                            <div className="pb-2" />
                         </div>
                     )}
 
                     <p className="text-sm text-gray-500">
-                        Showing {filteredOrders.length} of {orders.length} orders
+                        Showing {pageItems.length} of {orders.length} orders
                     </p>
                 </div>
             </div>

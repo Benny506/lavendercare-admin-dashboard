@@ -125,34 +125,34 @@ export default function VariantCombinations() {
                 {
                     product_variants_combinations?.length > 0
                         ?
-                        <table className="w-full border-collapse rounded-lg overflow-hidden mb-10">
-                            <thead className="bg-gray-100">
+                        <table className="min-w-full divide-y divide-gray-200 text-xs sm:text-sm">
+                            <thead className="bg-gray-50">
                                 <tr>
-                                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Types</th>
-                                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Is Virtual ?</th>
-                                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Stock</th>
-                                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Price</th>
-                                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Actions</th>
+                                    <th className="text-left py-4 px-3 font-semibold text-gray-700">Types</th>
+                                    <th className="text-left py-4 px-3 font-semibold text-gray-700">Is Virtual ?</th>
+                                    <th className="text-left py-4 px-3 font-semibold text-gray-700">Stock</th>
+                                    <th className="text-left py-4 px-3 font-semibold text-gray-700">Price</th>
+                                    <th className="text-left py-4 px-3 font-semibold text-gray-700">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody className="bg-white divide-y divide-gray-200">
                                 {
                                     product_variants_combinations?.map((vCombo, i) => {
                                         const { stock, price_currency, price_value, options, is_virtual } = vCombo
 
                                         return (
-                                            <tr key={i} className="border-b hover:bg-gray-50 transition">
-                                                <td className="py-3 px-4">
+                                            <tr key={i} className="">
+                                                <td className="py-4 px-3">
                                                     <div className="flex flex-col space-y-1">
                                                         <ProductVariantsDisplay
                                                             variants={options}
                                                         />
                                                     </div>
                                                 </td>
-                                                <td className="py-2 px-2">{is_virtual ? <BsCheck size={16} color="#703DCB" /> : <MdOutlineCancel size={16} color="red" />}</td>
-                                                <td className="py-3 px-4">{formatNumberWithCommas(stock)}</td>
-                                                <td className="py-3 px-4">{price_currency} {formatNumberWithCommas(price_value)}</td>
-                                                <td className="py-3 px-4 text-center">
+                                                <td className="py-4 px-3">{is_virtual ? <BsCheck size={16} color="#703DCB" /> : <MdOutlineCancel size={16} color="red" />}</td>
+                                                <td className="py-4 px-3">{formatNumberWithCommas(stock)}</td>
+                                                <td className="py-4 px-3">{price_currency} {formatNumberWithCommas(price_value)}</td>
+                                                <td className="py-4 px-3 text-center">
                                                     <div className="flex items-center gap-2">
                                                         <FaEdit
                                                             size={20}

@@ -9,6 +9,9 @@ import ZeroItems from "../components/ZeroItems";
 import supabase from "../../../database/dbInit";
 import ProfileImg from "../components/ProfileImg";
 import { sendNotifications } from "../../../lib/notifications";
+import { usePagination } from "../../../hooks/usePagination";
+import Pagination from "../components/Pagination";
+import { getPublicImageUrl } from "../../../lib/requestApi";
 
 function Communities() {
   const dispatch = useDispatch()
@@ -23,6 +26,8 @@ function Communities() {
   const [communities, setCommunities] = useState([])
   const [memberRequests, setMemberRequests] = useState([])
   const [searchFilter, setSearchFilter] = useState('')
+  const [currentPage, setCurrentPage] = useState(0)
+  const [pageListIndex, setPageListIndex] = useState(0)
 
   useEffect(() => {
     setApiReqs({
@@ -308,6 +313,36 @@ function Communities() {
     return matchesSearch;
   })
 
+  const { pageItems, totalPages, pageList, totalPageListIndex } = usePagination({
+    arr: filtered,
+    maxShow: 7,
+    index: currentPage,
+    maxPage: 5,
+    pageListIndex
+  });
+
+  const incrementPageListIndex = () => {
+    if (pageListIndex === totalPageListIndex) {
+      setPageListIndex(0)
+
+    } else {
+      setPageListIndex(prev => prev + 1)
+    }
+
+    return
+  }
+
+  const decrementPageListIndex = () => {
+    if (pageListIndex == 0) {
+      setPageListIndex(totalPageListIndex)
+
+    } else {
+      setPageListIndex(prev => prev - 1)
+    }
+
+    return
+  }
+
   return (
     <div className="pt-6 w-full min-h-screen">
       {/* Breadcrumb */}
@@ -374,6 +409,9 @@ function Communities() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-3 sm:px-6 py-3 text-left font-medium text-gray-500">
+                  Profile
+                </th>
+                <th className="px-3 sm:px-6 py-3 text-left font-medium text-gray-500">
                   Community Name
                 </th>
                 <th className="px-3 sm:px-6 py-3 text-left font-medium text-gray-500">
@@ -393,79 +431,86 @@ function Communities() {
 
             <tbody className="bg-white divide-y divide-gray-200">
               {
-                filtered?.length > 0
+                pageItems?.length > 0
                   ?
-                  filtered.map((community, idx) => (
-                    <tr key={idx}>
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                        {community.name}
-                        <div className="text-xs text-gray-400">
-                          {community.about}
-                        </div>
-                      </td>
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${community.visibility === "public"
-                            ? "bg-green-100 text-green-600"
-                            : "bg-purple-100 text-purple-600"
-                            }`}
-                        >
-                          {community.visibility}
-                        </span>
-                      </td>
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                        {community.members?.length}
-                      </td>
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                        {community.requests?.length}
-                      </td>
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap flex gap-2 items-center">
-                        <button
-                          className="text-primary cursor-pointer"
-                          onClick={(e) => handleDrawer(community, e)}
-                        >
-                          <svg
-                            width="25"
-                            height="24"
-                            viewBox="0 0 25 24"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
+                  pageItems.map((community, idx) => {
+
+                    const profile_img = community?.profile_img ? getPublicImageUrl({ path: community?.profile_img, bucket_name: 'user_profiles' }) : null
+
+                    return (
+                      <tr key={idx}>
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                          <ProfileImg 
+                            profile_img={profile_img}
+                            name={community?.name}
+                          />
+                        </td>                        
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                          {community.name}
+                        </td>
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${community.visibility === "public"
+                              ? "bg-green-100 text-green-600"
+                              : "bg-purple-100 text-purple-600"
+                              }`}
                           >
-                            <g clip-path="url(#clip0_1976_86059)">
-                              <path
-                                d="M6.06218 12.2322C6.00662 12.0826 6.00662 11.9179 6.06218 11.7682C6.60331 10.4561 7.52185 9.33427 8.70136 8.54484C9.88086 7.75541 11.2682 7.33398 12.6875 7.33398C14.1068 7.33398 15.4942 7.75541 16.6737 8.54484C17.8532 9.33427 18.7717 10.4561 19.3128 11.7682C19.3684 11.9179 19.3684 12.0826 19.3128 12.2322C18.7717 13.5443 17.8532 14.6662 16.6737 15.4556C15.4942 16.2451 14.1068 16.6665 12.6875 16.6665C11.2682 16.6665 9.88086 16.2451 8.70136 15.4556C7.52185 14.6662 6.60331 13.5443 6.06218 12.2322Z"
-                                stroke="#6F3DCB"
-                                stroke-width="2"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                              />
-                              <path
-                                d="M12.6875 14C13.7921 14 14.6875 13.1046 14.6875 12C14.6875 10.8954 13.7921 10 12.6875 10C11.5829 10 10.6875 10.8954 10.6875 12C10.6875 13.1046 11.5829 14 12.6875 14Z"
-                                stroke="#6F3DCB"
-                                stroke-width="2"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                              />
-                            </g>
-                            <defs>
-                              <clipPath id="clip0_1976_86059">
-                                <rect
-                                  width="16"
-                                  height="16"
-                                  fill="white"
-                                  transform="translate(4.6875 4)"
+                            {community.visibility}
+                          </span>
+                        </td>
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                          {community.members?.length}
+                        </td>
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                          {community.requests?.length}
+                        </td>
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap flex gap-2 items-center">
+                          <button
+                            className="text-primary cursor-pointer"
+                            onClick={(e) => handleDrawer(community, e)}
+                          >
+                            <svg
+                              width="25"
+                              height="24"
+                              viewBox="0 0 25 24"
+                              fill="none"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <g clip-path="url(#clip0_1976_86059)">
+                                <path
+                                  d="M6.06218 12.2322C6.00662 12.0826 6.00662 11.9179 6.06218 11.7682C6.60331 10.4561 7.52185 9.33427 8.70136 8.54484C9.88086 7.75541 11.2682 7.33398 12.6875 7.33398C14.1068 7.33398 15.4942 7.75541 16.6737 8.54484C17.8532 9.33427 18.7717 10.4561 19.3128 11.7682C19.3684 11.9179 19.3684 12.0826 19.3128 12.2322C18.7717 13.5443 17.8532 14.6662 16.6737 15.4556C15.4942 16.2451 14.1068 16.6665 12.6875 16.6665C11.2682 16.6665 9.88086 16.2451 8.70136 15.4556C7.52185 14.6662 6.60331 13.5443 6.06218 12.2322Z"
+                                  stroke="#6F3DCB"
+                                  stroke-width="2"
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
                                 />
-                              </clipPath>
-                            </defs>
-                          </svg>
-                        </button>
-                        <button 
-                          onClick={() => navigate('/admin/communities/chat', { state: { community } })}
-                          className="cursor-pointer text-white border bg-[#703dcb] rounded px-3 py-1 text-xs"
-                        >
-                          Enter chat
-                        </button>
-                        {/* <button
+                                <path
+                                  d="M12.6875 14C13.7921 14 14.6875 13.1046 14.6875 12C14.6875 10.8954 13.7921 10 12.6875 10C11.5829 10 10.6875 10.8954 10.6875 12C10.6875 13.1046 11.5829 14 12.6875 14Z"
+                                  stroke="#6F3DCB"
+                                  stroke-width="2"
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                />
+                              </g>
+                              <defs>
+                                <clipPath id="clip0_1976_86059">
+                                  <rect
+                                    width="16"
+                                    height="16"
+                                    fill="white"
+                                    transform="translate(4.6875 4)"
+                                  />
+                                </clipPath>
+                              </defs>
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => navigate('/admin/communities/chat', { state: { community } })}
+                            className="cursor-pointer text-white border bg-[#703dcb] rounded px-3 py-1 text-xs"
+                          >
+                            Enter chat
+                          </button>
+                          {/* <button
                           className="text-red-500"
                           onClick={(e) => handleDelete(community, e)}
                         >
@@ -513,9 +558,10 @@ function Communities() {
                             />
                           </svg>
                         </button> */}
-                      </td>
-                    </tr>
-                  ))
+                        </td>
+                      </tr>
+                    )
+                  })
                   :
                   <tr className="">
                     <td colSpan={'6'} className="py-5">
@@ -527,6 +573,19 @@ function Communities() {
               }
             </tbody>
           </table>
+
+          <Pagination
+            currentPage={currentPage}
+            pageItems={pageItems}
+            pageListIndex={pageListIndex}
+            pageList={pageList}
+            totalPageListIndex={totalPageListIndex}
+            decrementPageListIndex={decrementPageListIndex}
+            incrementPageListIndex={incrementPageListIndex}
+            setCurrentPage={setCurrentPage}
+          />
+
+          <div className="pb-2" />
         </div>
       )}
 
@@ -590,7 +649,7 @@ function Communities() {
                       <button className="text-gray-500 border border-gray-300 rounded px-3 py-1 text-xs">
                         Edit
                       </button>
-                      <button 
+                      <button
                         onClick={() => navigate('/admin/communities/chat', { state: { community } })}
                         className="cursor-pointer text-white border bg-[#703dcb] rounded px-3 py-1 text-xs"
                       >
