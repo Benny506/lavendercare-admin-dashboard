@@ -1,5 +1,5 @@
 // USERS
-export const userTypes = ['mother', 'provider', 'vendor']
+export const userTypes = ['mother', 'provider']
 
 
 

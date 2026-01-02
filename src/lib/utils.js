@@ -61,18 +61,31 @@ export function formatSlot(slot, userZone = "local") {
 }
 
 export function secondsToLabel({ seconds }) {
-  const mins = Math.floor(seconds / 60);
-  const hours = Math.floor(mins / 60);
-  const remainingMins = mins % 60;
+  if (!seconds || seconds <= 0) return "0 mins";
 
-  if (hours > 0 && remainingMins > 0) {
-    return `${hours} hour${hours > 1 ? 's' : ''} ${remainingMins} min${remainingMins > 1 ? 's' : ''}`;
-  } else if (hours > 0) {
-    return `${hours} hour${hours > 1 ? 's' : ''}`;
-  } else {
-    return `${remainingMins} min${remainingMins > 1 ? 's' : ''}`;
+  const totalMins = Math.floor(seconds / 60);
+
+  const days = Math.floor(totalMins / (60 * 24));
+  const hours = Math.floor((totalMins % (60 * 24)) / 60);
+  const mins = totalMins % 60;
+
+  const parts = [];
+
+  if (days > 0) {
+    parts.push(`${days} day${days > 1 ? "s" : ""}`);
   }
+
+  if (hours > 0) {
+    parts.push(`${hours} hour${hours > 1 ? "s" : ""}`);
+  }
+
+  if (mins > 0 || parts.length === 0) {
+    parts.push(`${mins} min${mins > 1 ? "s" : ""}`);
+  }
+
+  return parts.join(" ");
 }
+
 
 export function getAppointmentStatus({ status, start_time, duration_secs }) {
   const now = DateTime.now();
@@ -188,14 +201,6 @@ export function formatDate1({ dateISO }) {
   }
 }
 
-export function timeToAMPM_FromHour({ hour }) {
-  const date = new Date();
-  date.setHours(hour, 0, 0, 0); // hour:00:00
-  const hours = date.getHours();
-  const suffix = hours >= 12 ? 'PM' : 'AM';
-  return `${hours.toString().padStart(2, '0')}:00 ${suffix}`;
-}
-
 export const formatTimeToHHMMSS = ({ secs }) => {
   const h = Math.floor(secs / 3600);
   const m = Math.floor((secs % 3600) / 60);
@@ -254,4 +259,21 @@ export function splitSeconds(seconds) {
   const minutes = Math.floor((total % 3600) / 60);
 
   return { hour, minutes };
+}
+
+export function timeToAMPM_FromHour({ hour }) {
+  const date = new Date();
+  date.setHours(hour, 0, 0, 0); // hour:00:00
+  const hours = date.getHours();
+  const suffix = hours >= 12 ? 'PM' : 'AM';
+  return `${hours.toString().padStart(2, '0')}:00 ${suffix}`;
+}
+
+export function extractHour_FromHHMM({ hourString }) {
+  return parseInt(hourString.split(":")[0], 10);
+}
+
+export function hourNumberToHHMM(hour) {
+  if (hour === null || hour === undefined) return "";
+  return `${String(hour).padStart(2, "0")}:00`;
 }

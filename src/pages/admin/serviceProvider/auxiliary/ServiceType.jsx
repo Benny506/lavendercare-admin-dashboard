@@ -26,17 +26,17 @@ const ServiceType = ({
                     validationSchema={
                         yup.object().shape({
                             // pricing_type: yup.string().required('Pricing type is required'),
+                            is_virtual: yup
+                                .boolean()
+                                .required("Please specify if this service is virtual"),
                             currency: yup.string().required("Currency is required"),
                             type_name: yup.string().required("Type name is required"),
                             price: yup.string().matches(/^[0-9]+$/, "Only numbers are allowed").required("Price is required"),
                             duration_hour: yup
-                                .string()
-                                .matches(/^[0-9]+$/, "Only numbers are allowed")
-                                .max(24, "Hour cannot exceed 24"),
+                                .number(),
 
                             duration_minutes: yup
-                                .string()
-                                .matches(/^[0-9]+$/, "Only numbers are allowed")
+                                .number()
                                 .max(59, "Minutes cannot exceed 59"),
                         })
                     }
@@ -45,7 +45,8 @@ const ServiceType = ({
                         price: info?.price,
                         type_name: info?.type_name,
                         duration_hour: splitSeconds(info?.duration)?.hour,
-                        duration_minutes: splitSeconds(info?.duration)?.minutes
+                        duration_minutes: splitSeconds(info?.duration)?.minutes,
+                        is_virtual: info?.is_virtual || false
                     }}
                     onSubmit={(values, { resetForm }) => {
                         const hourSecs = (values.duration_hour ? (Number(values.duration_hour) * 60 * 60) : 0)
@@ -61,7 +62,8 @@ const ServiceType = ({
                             currency: values.currency,
                             price: values.price,
                             duration,
-                            type_name: values.type_name
+                            type_name: values.type_name,
+                            is_virtual: values?.is_virtual
                         }
 
                         handleContinueBtnClick({
@@ -72,12 +74,12 @@ const ServiceType = ({
                         // resetForm()
                     }}
                 >
-                    {({ handleBlur, handleChange, handleSubmit, values }) => (
+                    {({ handleBlur, handleChange, handleSubmit, values, setFieldValue }) => (
                         <Modal
                             isOpen={true}
                             onClose={hide}
                         >
-                            <h2 className={`text-lg font-semibold text-center text-grey-800`}>
+                            <h2 className={`text-lg font-semibold text-center text-grey-800 mb-5`}>
                                 Set session type
                             </h2>
 
@@ -99,6 +101,22 @@ const ServiceType = ({
                                         { errorMsg => <ErrorMsg1 errorMsg={errorMsg} /> }
                                     </ErrorMessage>
                                 </div> */}
+
+                                <div className="flex items-center space-x-2">
+                                    <input
+                                        type="checkbox"
+                                        name="is_virtual"
+                                        checked={values.is_virtual || false}
+                                        onChange={e => {
+                                            setFieldValue("is_virtual", e.target.checked)
+                                        }}
+                                        className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                                    />
+                                    <label className="text-sm font-medium">This is a virtual service</label>
+                                    <ErrorMessage name="is_virtual">
+                                        {errorMsg => <ErrorMsg1 className="mb-7" errorMsg={errorMsg} />}
+                                    </ErrorMessage>
+                                </div>                                
 
                                 <div className="">
                                     <label className="block text-sm font-medium">Session-type name</label>
@@ -195,7 +213,7 @@ const ServiceType = ({
                                     className={`cursor-pointer px-4 py-2 bg-purple-600 text-white rounded-4xl`}
                                 >
                                     Save
-                                </button>                                
+                                </button>
                             </div>
                         </Modal>
                     )}

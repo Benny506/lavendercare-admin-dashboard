@@ -279,4 +279,8 @@ export const getPublicImageUrl = ({ path, bucket_name }) =>
     ?
     path
     :
-    `https://tzsbbbxpdlupybfrgdbs.supabase.co/storage/v1/object/public/${bucket_name}/${path}`;
+    !path
+      ?
+      ''
+      :
+      `https://tzsbbbxpdlupybfrgdbs.supabase.co/storage/v1/object/public/${bucket_name}/${path}`;

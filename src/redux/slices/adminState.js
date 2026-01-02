@@ -28,7 +28,7 @@ const adminState = createSlice({
         vendors: [],
         providers: [],
         providerSpecialties: [],
-        vendorServices: [],
+        services: [],
         vendorServiceCategories: [],
         mentalHealthScreenings: [],
         highRiskAlerts: [],
@@ -66,8 +66,8 @@ const adminState = createSlice({
                 })
             }   
             
-            if(action?.payload?.vendorServices){
-                state.vendorServices = action?.payload?.vendorServices
+            if(action?.payload?.services){
+                state.services = action?.payload?.services
             }
 
             if(action?.payload?.mentalHealthScreenings){

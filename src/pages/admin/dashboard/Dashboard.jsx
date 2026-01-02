@@ -17,7 +17,7 @@ function Dashboard() {
 
   const [info, setInfo] = useState({
     totalProviders: 0,
-    totalVendors: 0,
+    totalServices: 0,
     totalMothers: 0,
     pendingProvidersCount: 0,
     pendingServicesCount: 0
@@ -37,13 +37,13 @@ function Dashboard() {
   useEffect(() => {
     const { isLoading, data } = apiReqs
 
-    if(isLoading) dispatch(appLoadStart());
+    if (isLoading) dispatch(appLoadStart());
     else dispatch(appLoadStop());
 
-    if(isLoading && data){
+    if (isLoading && data) {
       const { type } = data
 
-      if(type == 'initialize'){
+      if (type == 'initialize') {
         initialize()
       }
     }
@@ -62,55 +62,56 @@ function Dashboard() {
         .select("*", { count: "exact", head: true })
 
       const { count: totalProviders, error: totalProvidersError } = await supabase
-        .from("provider_profiles")
-        .select("*", { count: "exact", head: true })        
+        .from("providers")
+        .select("*", { count: "exact", head: true })
 
-      const { count: totalVendors, error: totalVendorsError } = await supabase
-        .from("provider_profiles")
-        .select("*", { count: "exact", head: true })       
-        
+      const { count: totalServices, error: totalServicesError } = await supabase
+        .from("services")
+        .select("*", { count: "exact", head: true })
+
       const { count: pendingProviders, error: pendingProvidersError } = await supabase
-        .from("provider_profiles")
-        .select("*", { count: "exact", head: true })               
-        .eq('credentials_approved', false)
+        .from("providers")
+        .select("id", { count: "exact", head: true })
+        .neq("status", "approved");
+
 
       const { count: pendingServices, error: pendingServicesError } = await supabase
-        .from("vendor_services")
-        .select("*", { count: "exact", head: true })               
-        .eq('status', 'rejected')  
-        
-      if(totalMothersError || totalProvidersError || totalVendorsError || pendingProvidersError || pendingServicesError){
+        .from("services")
+        .select("*", { count: "exact", head: true })
+        .eq('status', 'rejected')
+
+      if (totalMothersError || totalProvidersError || totalServicesError || pendingProvidersError || pendingServicesError) {
         console.log("T_mothers_error", totalMothersError)
         console.log("T_providers_error", totalProvidersError)
-        console.log("T_vendors_error", totalVendorsError)
+        console.log("T_vendors_error", totalServicesError)
         console.log("T_pendingProviders_error", pendingProvidersError)
         console.log("T_pendingServices_error", pendingServicesError)
       }
 
       setInfo({
         totalProviders: totalProviders ?? 0,
-        totalVendors: totalVendors ?? 0,
+        totalServices: totalServices ?? 0,
         totalMothers: totalMothers ?? 0,
         pendingProvidersCount: pendingProviders ?? 0,
-        pendingServicesCount: pendingServices ?? 0        
+        pendingServicesCount: pendingServices ?? 0
       })
-      
+
     } catch (error) {
       console.log(error)
       return toast.error("Error retrieving dashboard information")
-    
-    } finally{
+
+    } finally {
       setApiReqs({ isLoading: false, data: null, errorMsg: null })
     }
   }
 
-  const { totalMothers, totalProviders, totalVendors, pendingProvidersCount, pendingServicesCount } = info
+  const { totalMothers, totalProviders, totalServices, pendingProvidersCount, pendingServicesCount } = info
 
   return (
     <div className="pt-6 w-full">
       <h3 className="text-[24px] font-[800] pt-[24px]">Welcome back, {profile?.username}</h3>
 
-      <PathHeader 
+      <PathHeader
         paths={[
           { text: 'Dashboard' }
         ]}
@@ -150,7 +151,7 @@ function Dashboard() {
               </svg>
 
               <h2 className="text-[40px] font-[800]">
-                { formatNumberWithCommas(totalMothers) }
+                {formatNumberWithCommas(totalMothers)}
               </h2>
             </div>
           </div>
@@ -174,13 +175,13 @@ function Dashboard() {
               </svg>
 
               <h2 className="text-[40px] font-[1000]">
-                { formatNumberWithCommas(totalProviders) }
+                {formatNumberWithCommas(totalProviders)}
               </h2>
             </div>
           </div>
 
           <div className="bg-white w-full rounded-lg p-2 lg:p-4">
-            <p className="text-(--gray-500)">Total Vendors Onboarded</p>
+            <p className="text-(--gray-500)">Total Services</p>
 
             <div className="flex items-center  gap-2">
               <svg
@@ -203,7 +204,7 @@ function Dashboard() {
               </svg>
 
               <h2 className="text-[40px] font-[800]">
-                { formatNumberWithCommas(totalVendors) }
+                {formatNumberWithCommas(totalServices)}
               </h2>
             </div>
           </div>
@@ -252,27 +253,27 @@ function Dashboard() {
                 { title: 'content', iconColor: '#CB30E0', count: 0 },
                 { title: 'tickets', iconColor: '#FF383C', count: 0 },
               ]
-              .map((s, i) => {
-                const { title, iconColor, count } = s
+                .map((s, i) => {
+                  const { title, iconColor, count } = s
 
-                return(
-                  <div 
-                    key={i}
-                    className="bg-[#d3d3d3]/50 w-full min-h-[80px] rounded-lg px-3 py-2 flex flex-col items-start justify-between gap-5"
-                  >
-                    <div className="flex items-center gap-1">
-                      <GoDotFill size={20} color={iconColor} />
-                      <p>
-                        { title }
-                      </p>              
+                  return (
+                    <div
+                      key={i}
+                      className="bg-[#d3d3d3]/50 w-full min-h-[80px] rounded-lg px-3 py-2 flex flex-col items-start justify-between gap-5"
+                    >
+                      <div className="flex items-center gap-1">
+                        <GoDotFill size={20} color={iconColor} />
+                        <p>
+                          {title}
+                        </p>
+                      </div>
+
+                      <p className="text-black text-lg font-regular mx-1">
+                        {count}
+                      </p>
                     </div>
-
-                    <p className="text-black text-lg font-regular mx-1">
-                      { count }
-                    </p>
-                  </div>
-                )
-              })
+                  )
+                })
             }
           </div>
         </div>

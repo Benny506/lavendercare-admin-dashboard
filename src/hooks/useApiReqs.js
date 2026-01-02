@@ -9,6 +9,7 @@ import { getPublicImageUrl, requestApi } from "../lib/requestApi";
 import { v4 as uuidv4 } from "uuid";
 import { sendNotifications } from "../lib/notifications";
 import { sendEmail } from "../lib/email";
+import { groupBy } from "../lib/utils";
 
 export default function useApiReqs() {
     const dispatch = useDispatch()
@@ -22,7 +23,7 @@ export default function useApiReqs() {
     const providerSpecialties = useSelector(state => getAdminState(state).providerSpecialties)
     const mentalHealthScreenings = useSelector(state => getAdminState(state).mentalHealthScreenings)
     const vendorServiceCategories = useSelector(state => getAdminState(state).vendorServiceCategories)
-    const vendorServices = useSelector(state => getAdminState(state).vendorServices)
+    const services = useSelector(state => getAdminState(state).services)
 
 
 
@@ -208,6 +209,111 @@ export default function useApiReqs() {
             dispatch(appLoadStop())
         }
     }
+    const fetchAssignedProviders = async ({ callBack = () => { } }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from("assigned_providers")
+                .select("*")
+
+            if (error) {
+                console.log(error)
+                throw new Error()
+            }
+
+            const grouped = Object.values(
+                data.reduce((acc, { provider_id, mother_id, ...rest }) => {
+                    if (!acc[provider_id]) {
+                        acc[provider_id] = {
+                            provider_id,
+                            items: []
+                        }
+                    }
+
+                    acc[provider_id].items.push({
+                        ...rest,
+                        mother_id
+                    })
+
+                    return acc
+                }, {})
+            )
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ assignedProviders: grouped })
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error loading assigned providers")
+            dispatch(appLoadStop())
+        }
+    }
+    const fetchProviderAssignments = async ({ callBack = () => {}, provider_id }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from("assigned_providers")
+                .select(`
+                    *,
+                    user_profile: user_profiles (*)
+                `)
+                .eq("provider_id", provider_id)
+
+            if(error){
+                console.log(error)
+                throw new Error()
+            }
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ providerAssignments: data })
+            
+        } catch (error) {
+            console.log(error)
+            toast.error("Error loading provider assignments")
+            dispatch(appLoadStop())            
+        }
+    }
+    const assignProvider = async ({ callBack = () => {}, provider_id, mother_id }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from("assigned_providers")
+                .insert({
+                    provider_id,
+                    mother_id
+                })
+                .select()
+                .single()
+
+            if(error){
+                console.log(error)
+                if(error.message.includes("duplicate key")) {
+                    toast.info("Provider already assigned to this mother")
+                    dispatch(appLoadStop())
+
+                    return
+                }
+                throw new Error()
+            }
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ newAssignment: data })
+            
+        } catch (error) {
+            console.log(error)
+            toast.error("Error assigning provider")
+            dispatch(appLoadStop())            
+        }
+    }
 
 
 
@@ -226,10 +332,9 @@ export default function useApiReqs() {
                 .from('all_bookings')
                 .select(`
                     *,
-                    provider_profile: provider_profiles(*),
-                    vendor_profile: vendor_profiles(*),
-                    user_profile: user_profiles(*),
-                    service_info: services(*)
+                    provider: providers( * ),
+                    user_profile: user_profiles( * ),
+                    service_info: services( * )
                 `)
                 .order("created_at", { ascending: false, nullsFirst: false })
                 .limit(limit)
@@ -263,6 +368,81 @@ export default function useApiReqs() {
             dispatch(appLoadStop())
         }
     }
+    const fetchProviderBookings = async ({ callBack = () => { }, provider_id }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from('all_bookings')
+                .select(`
+                    *,
+                    provider: providers( * ),
+                    user_profile: user_profiles( * ),
+                    service_info: services( * )
+                `)
+                .order("created_at", { ascending: false, nullsFirst: false })
+                .eq("provider_id", provider_id)
+
+            if (error) {
+                console.log(error)
+                throw new Error()
+            }
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ bookings: data })
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error fetching provider bookings")
+            dispatch(appLoadStop())
+        }
+    }
+
+
+
+
+
+    //mothers
+    const fetchSingleMother = async ({ callBack = () => { }, mother_id }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from("user_profiles")
+                .select(`
+                    *,
+                    bookings: all_bookings (
+                        *,
+                        provider: providers( * ),
+                        service_info: services( * )                        
+                    ),
+                    assignedProviders: assigned_providers (
+                        *,
+                        providerInfo: providers ( * )
+                    )
+                `)
+                .eq("id", mother_id)
+                .single()
+
+            if (error) {
+                console.log(error)
+                throw new Error()
+            }
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ mother: data })
+
+        } catch (error) {
+            console.log(error)
+            callBack && callBack({ mother: null })
+            toast.error("Error loading single mother")
+            dispatch(appLoadStop())
+        }
+    }
 
 
 
@@ -277,7 +457,8 @@ export default function useApiReqs() {
                 .from("services")
                 .select(`
                     *,
-                    vendor_profile: vendor_id ( * )
+                    provider: providers ( * )
+                    types: service_types ( * )                    
                 `)
 
             if (error) {
@@ -286,6 +467,8 @@ export default function useApiReqs() {
             }
 
             dispatch(appLoadStop())
+
+            dispatch(setAdminState({ services: data }))
 
             callBack && callBack({ services: data })
 
@@ -306,7 +489,7 @@ export default function useApiReqs() {
                     *,
                     types: service_types ( * )
                 `)
-                .eq("vendor_id", vendor_id)
+                .eq("provider_id", vendor_id)
 
             if (error) {
                 console.log(error)
@@ -314,7 +497,7 @@ export default function useApiReqs() {
             }
 
             callBack({
-                vendorServices: data
+                services: data
             })
 
             return;
@@ -439,8 +622,8 @@ export default function useApiReqs() {
                 throw new Error()
             }
 
-            const updatedVendorServices = vendorServices?.map(service => {
-                if(service?.id === service_id){
+            const updatedVendorServices = services?.map(service => {
+                if (service?.id === service_id) {
 
                     const types = service?.types || []
 
@@ -455,7 +638,7 @@ export default function useApiReqs() {
                 return service
             })
 
-            dispatch(setAdminState({ vendorServices: updatedVendorServices }))
+            dispatch(setAdminState({ services: updatedVendorServices }))
 
             dispatch(appLoadStop())
 
@@ -488,12 +671,12 @@ export default function useApiReqs() {
                 throw new Error()
             }
 
-            const updatedVendorServices = vendorServices?.map(service => {
-                if(service?.id === data?.service_id){
+            const updatedVendorServices = services?.map(service => {
+                if (service?.id === data?.service_id) {
                     const types = service?.types || []
 
                     const updatedTypes = types?.map(t => {
-                        if(t?.id === type_id){
+                        if (t?.id === type_id) {
                             return data
                         }
 
@@ -502,14 +685,14 @@ export default function useApiReqs() {
 
                     return {
                         ...service,
-                        types:updatedTypes
+                        types: updatedTypes
                     }
                 }
 
                 return service
             })
 
-            dispatch(setAdminState({ vendorServices: updatedVendorServices }))
+            dispatch(setAdminState({ services: updatedVendorServices }))
 
             dispatch(appLoadStop())
 
@@ -522,7 +705,7 @@ export default function useApiReqs() {
             apiReqError({ errorMsg: 'Something went wrong! Try again' })
         }
     }
-    const insertServiceType = async ({ callBack = () => {}, requestInfo }) => {
+    const insertServiceType = async ({ callBack = () => { }, requestInfo }) => {
         try {
 
             dispatch(appLoadStart())
@@ -539,8 +722,8 @@ export default function useApiReqs() {
                 throw new Error()
             }
 
-            const updatedVendorServices = vendorServices?.map(service => {
-                if(service?.id === data?.service_id){
+            const updatedVendorServices = services?.map(service => {
+                if (service?.id === data?.service_id) {
                     const types = service?.types || []
 
                     const updatedTypes = [data, ...types]
@@ -549,12 +732,12 @@ export default function useApiReqs() {
                         ...service,
                         types: updatedTypes
                     }
-                }   
+                }
 
                 return service
             })
 
-            dispatch(setAdminState({ vendorServices: updatedVendorServices }))
+            dispatch(setAdminState({ services: updatedVendorServices }))
 
             dispatch(appLoadStop())
 
@@ -567,7 +750,7 @@ export default function useApiReqs() {
             apiReqError({ errorMsg: 'Something went wrong! Try again' })
         }
     }
-    const updateService = async ({ callBack = () => {}, update, service_id }) => {
+    const updateService = async ({ callBack = () => { }, update, service_id }) => {
         try {
 
             dispatch(appLoadStart())
@@ -579,13 +762,13 @@ export default function useApiReqs() {
                 .select()
                 .single()
 
-            if(error){
+            if (error) {
                 console.log(error)
                 throw new Error()
             }
 
-            const updatedServices = vendorServices?.map(service => {
-                if(service?.id === service_id){
+            const updatedServices = services?.map(service => {
+                if (service?.id === service_id) {
                     return {
                         ...service,
                         ...data
@@ -595,20 +778,20 @@ export default function useApiReqs() {
                 return service
             })
 
-            dispatch(setAdminState({ vendorServices: updatedServices }))
+            dispatch(setAdminState({ services: updatedServices }))
 
             dispatch(appLoadStop())
 
             callBack && callBack({ updatedService: data })
 
             toast.success("Service updated")
-            
+
         } catch (error) {
             console.log(error)
-            apiReqError({ errorMsg: 'Something went wrong! Try again' })            
+            apiReqError({ errorMsg: 'Something went wrong! Try again' })
         }
     }
-    const fetchSingleService = async ({ callBack = () => {}, service_id }) => {
+    const fetchSingleService = async ({ callBack = () => { }, service_id }) => {
         try {
 
             dispatch(appLoadStart())
@@ -622,7 +805,7 @@ export default function useApiReqs() {
                 .single()
                 .eq("id", service_id)
 
-            if(error){
+            if (error) {
                 console.log(error)
                 throw new Error()
             }
@@ -630,12 +813,89 @@ export default function useApiReqs() {
             dispatch(appLoadStop())
 
             callBack && callBack({ service: data })
-            
-            
+
+
         } catch (error) {
             console.log(error)
             callBack && callBack({ service: null })
-            apiReqError({ errorMsg: 'Something went wrong! Try again' }) 
+            apiReqError({ errorMsg: 'Something went wrong! Try again' })
+        }
+    }
+    const getServiceCategories = async ({ callBack = () => { } }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from("vendor_service_categories")
+                .select("*");
+
+            if (error) {
+                console.log(error)
+                throw new Error()
+            }
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ serviceCategories: data })
+
+        } catch (error) {
+            console.log(error)
+            return apiReqError({ errorMsg: 'Error loading services categories' })
+        }
+    }
+    const addService = async ({ callBack = () => { }, serviceInfo, serviceTypes = [], provider }) => {
+        try {
+
+            const provider_id = provider?.id
+
+            if (serviceTypes?.length === 0) throw new Error()
+
+            dispatch(appLoadStart())
+
+            const { data: newService, error: newServiceError } = await supabase
+                .from("services")
+                .insert({
+                    ...serviceInfo,
+                    provider_id
+                })
+                .select()
+                .single()
+
+            if (newServiceError) {
+                console.log("newServiceError", newServiceError)
+                throw new Error()
+            }
+
+            const { data: newServiceTypes, error: newServiceTypesError } = await supabase
+                .from("service_types")
+                .insert(serviceTypes?.map(sType => {
+                    return {
+                        ...sType,
+                        service_id: newService?.id
+                    }
+                }))
+                .select()
+
+            if (newServiceTypesError) {
+                await supabase.from("services").delete().eq("id", newService?.id)
+                console.log("newServiceTypesError", newServiceTypesError)
+                throw new Error()
+            }
+
+            const updatedServices = [{ ...newService, types: newServiceTypes, provider }, ...(services || [])]
+
+            dispatch(setAdminState({ services: updatedServices }))
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({})
+
+            toast.success("Service created")
+
+        } catch (error) {
+            console.log(error)
+            return apiReqsError({ errorMsg: 'Error adding service' })
         }
     }
 
@@ -853,7 +1113,7 @@ export default function useApiReqs() {
             dispatch(appLoadStop())
         }
     }
-    const updateVarantCombinaton = async ({ callBack = () => {}, combo_id, update }) => {
+    const updateVarantCombinaton = async ({ callBack = () => { }, combo_id, update }) => {
         try {
 
             dispatch(appLoadStart())
@@ -865,7 +1125,7 @@ export default function useApiReqs() {
                 .select()
                 .single()
 
-            if(error){
+            if (error) {
                 console.log(error)
                 throw new Error()
             }
@@ -875,7 +1135,7 @@ export default function useApiReqs() {
             callBack && callBack({ updatedVCombo: data })
 
             toast.success("Variant updated")
-            
+
         } catch (error) {
             console.log(error)
             toast.error("Error updating variant combination")
@@ -1356,8 +1616,11 @@ export default function useApiReqs() {
             dispatch(appLoadStart())
 
             const { data, error } = await supabase
-                .from("provider_profiles")
-                .select("*")
+                .from("providers")
+                .select(`
+                    *,
+                    license: providers_licenses ( * )    
+                `)
 
             if (error) {
                 console.log(error)
@@ -1371,6 +1634,36 @@ export default function useApiReqs() {
         } catch (error) {
             console.log(error)
             toast.error("Error fetching providers")
+            dispatch(appLoadStop())
+        }
+    }
+    const fetchSingleProvider = async ({ callBack = () => { }, provider_id }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from("providers")
+                .select(`
+                    *,
+                    license: providers_licenses ( * )    
+                `)
+                .single()
+                .eq("id", provider_id)
+
+            if (error) {
+                console.log(error)
+                throw new Error()
+            }
+
+            callBack && callBack({ provider: data })
+
+            dispatch(appLoadStop())
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error fetching single provider")
+            callBack && callBack({ provider: null })
             dispatch(appLoadStop())
         }
     }
@@ -1601,6 +1894,9 @@ export default function useApiReqs() {
         //mental health screening
         fetchTestResults,
         sendTestFeedBack,
+        fetchAssignedProviders,
+        fetchProviderAssignments,
+        assignProvider,
 
 
 
@@ -1608,13 +1904,14 @@ export default function useApiReqs() {
 
         //bookings
         fetchBookings,
+        fetchProviderBookings,
 
 
 
 
 
         //mothers
-        // fetchMotherBookings,
+        fetchSingleMother,
 
 
 
@@ -1625,22 +1922,25 @@ export default function useApiReqs() {
         addProviderSpecialty,
         deleteProviderSpecialty,
         fetchProviders,
+        fetchSingleProvider,
 
 
 
 
 
-        //vendors
+        //services
         fetchServices,
         fetchVendorServices,
         fetchVendorServiceCategories,
         deleteVendorServiceCategory,
         addVendorServiceCategory,
-        updateServiceType, 
-        insertServiceType, 
+        updateServiceType,
+        insertServiceType,
         deleteServiceType,
         updateService,
         fetchSingleService,
+        getServiceCategories,
+        addService,
 
 
 

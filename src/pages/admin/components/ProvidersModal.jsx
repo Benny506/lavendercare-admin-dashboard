@@ -4,6 +4,8 @@ import Modal from "./ui/Modal"
 import ZeroItems from "./ZeroItems"
 import ProductCard from "./ui/ProductCard"
 import ProviderCard from "./ui/ProviderCard"
+import { useSelector } from "react-redux"
+import { getAdminDetails } from "../../../database/dbInit"
 
 export default function ProvidersModal({ modalProps, onProviderSelected = () => { }, selectedProvidersIds=[] }) {
 
@@ -40,7 +42,7 @@ export default function ProvidersModal({ modalProps, onProviderSelected = () => 
         }
 
         return p
-    })?.filter(p => p?.credentials_approved === true)
+    })?.filter(p => p?.license?.status === 'approved')
 
     return (
         <Modal
@@ -62,7 +64,7 @@ export default function ProvidersModal({ modalProps, onProviderSelected = () => 
                                 return (
                                     <div
                                         key={i}
-                                        className="lg:w-1/3 w-full px-0 mb-7"
+                                        className="lg:w-1/3 md:w-1/2 w-full px-0 mb-7"
                                     >
                                         <ProviderCard
                                             provider={p}

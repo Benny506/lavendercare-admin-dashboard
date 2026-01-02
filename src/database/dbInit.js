@@ -57,7 +57,7 @@ export async function getAdminDetails({ id }){
       .from("admins")
       .select('*')
       .eq('id', id) 
-      .single();     
+      .single();
 
     if(
         profileError
@@ -67,7 +67,7 @@ export async function getAdminDetails({ id }){
       console.log("Profile error", profileError)
       console.log("All users error", allUsersError)
 
-      return { error: "Error getting admon profile", data: null };
+      return { error: "Error getting admin profile", data: null };
     }
 
     const { users: mothers, providers, vendors } = allusers

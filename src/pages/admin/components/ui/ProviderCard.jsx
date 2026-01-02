@@ -6,14 +6,14 @@ const ProviderCard = ({ provider, handleSelectProvider = () => {} }) => {
 if (!provider) return <></>;
 
 const {
-    provider_name,
+    username,
     provider_bio,
     provider_specialties,
     isSelected,
     profile_img,
     professional_title,
     years_of_experience,
-    avg_rating,
+    rating,
 } = provider;
 
 const imageUrl = profile_img
@@ -26,7 +26,7 @@ return (
             {imageUrl ? (
                 <img
                     src={imageUrl}
-                    alt={provider_name}
+                    alt={username}
                     className="w-full h-full object-cover transition-transform duration-500 ease-in-out transform hover:scale-105"
                 />
             ) : (
@@ -35,14 +35,14 @@ return (
         </div>
 
         <div className="p-4">
-            <h2 className="text-lg font-semibold text-gray-800">{provider_name}</h2>
+            <h2 className="text-lg font-semibold text-gray-800">{username}</h2>
 
             <div className="flex flex-wrap items-center text-sm text-gray-500 mt-1 gap-2">
                 {professional_title && <span>{professional_title}</span>}
                 {years_of_experience !== undefined && <span>{years_of_experience} yrs exp</span>}
-                {avg_rating !== undefined && (
+                {rating !== undefined && (
                     <span className="flex items-center gap-1">
-                        <FaStar className="text-yellow-400" /> {avg_rating.toFixed(1)}
+                        <FaStar className="text-yellow-400" /> {rating.toFixed(1)}
                     </span>
                 )}
             </div>

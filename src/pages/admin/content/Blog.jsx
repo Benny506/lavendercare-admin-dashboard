@@ -7,6 +7,8 @@ import supabase from "../../../database/dbInit";
 import PathHeader from "../components/PathHeader";
 import { formatDate1 } from "../../../lib/utils";
 import ZeroItems from "../components/ZeroItems";
+import Pagination from "../components/Pagination";
+import { usePagination } from "../../../hooks/usePagination";
 
 function Blog() {
   const dispatch = useDispatch()
@@ -16,6 +18,8 @@ function Blog() {
   const [apiReqs, setApiReqs] = useState({ isLoading: false, errorMsg: null, data: null })
   const [articles, setArticles] = useState([])
   const [searchFilter, setSearchFilter] = useState('')
+  const [currentPage, setCurrentPage] = useState(0)
+  const [pageListIndex, setPageListIndex] = useState(0)
 
   useEffect(() => {
     setApiReqs({
@@ -85,6 +89,36 @@ function Blog() {
     return matchesSearch
   })
 
+  const { pageItems, totalPages, pageList, totalPageListIndex } = usePagination({
+    arr: (filtered || []),
+    maxShow: 4,
+    index: currentPage,
+    maxPage: 5,
+    pageListIndex
+  });
+
+  const incrementPageListIndex = () => {
+    if (pageListIndex === totalPageListIndex) {
+      setPageListIndex(0)
+
+    } else {
+      setPageListIndex(prev => prev + 1)
+    }
+
+    return
+  }
+
+  const decrementPageListIndex = () => {
+    if (pageListIndex == 0) {
+      setPageListIndex(totalPageListIndex)
+
+    } else {
+      setPageListIndex(prev => prev - 1)
+    }
+
+    return
+  }
+
   return (
     <div className="pt-6 w-full min-h-screen">
       {/* breadcrumb */}
@@ -104,7 +138,7 @@ function Blog() {
         >
           + New Article
         </button>
-      </div>      
+      </div>
 
       {/* blog wrapper */}
       <div className="bg-white rounded-xl p-4">
@@ -143,7 +177,7 @@ function Blog() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {
-                filtered?.length === 0
+                pageItems?.length === 0
                   ?
                   <tr className="">
                     <td colSpan={6} className="px-3 sm:px-6 py-4 whitespace-nowrap">
@@ -153,7 +187,7 @@ function Blog() {
                     </td>
                   </tr>
                   :
-                  filtered.map((blog, idx) => (
+                  pageItems.map((blog, idx) => (
                     <tr key={idx}>
                       <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                         {blog.title}
@@ -167,7 +201,7 @@ function Blog() {
                       <td className="px-3 sm:px-6 py-4 whitespace-nowrap flex gap-2 items-center">
                         <button
                           className="cursor-pointer"
-                          onClick={() => navigate("/admin/content/blog-detail", { state: { article: blog }})}
+                          onClick={() => navigate("/admin/content/blog-detail", { state: { article: blog } })}
                         >
                           <svg
                             width="19"
@@ -204,6 +238,19 @@ function Blog() {
                   ))}
             </tbody>
           </table>
+
+          <Pagination
+            currentPage={currentPage}
+            pageItems={pageItems}
+            pageListIndex={pageListIndex}
+            pageList={pageList}
+            totalPageListIndex={totalPageListIndex}
+            decrementPageListIndex={decrementPageListIndex}
+            incrementPageListIndex={incrementPageListIndex}
+            setCurrentPage={setCurrentPage}
+          />
+
+          <div className="mb-2" />
         </div>
       </div>
     </div>

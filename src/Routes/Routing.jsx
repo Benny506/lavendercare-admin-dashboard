@@ -52,7 +52,6 @@ import MotherMessages from "../pages/admin/mothers/MotherMessages";
 import AllMothers from "../pages/admin/mothers/AllMothers";
 import BookingInformation from "../pages/admin/userManagement/BookingInformation";
 import MotherProfile from "../pages/admin/userManagement/MotherProfile";
-import SingleHealthCareProvider from "../pages/admin/healthcareProvider/SingleHealthCareProvider";
 import SingleVendor from "../pages/admin/serviceProvider/SingleVendor";
 import ServiceDetails from "../pages/admin/serviceProvider/auxiliary/ServiceDetails";
 import CreateCommunity from "../pages/admin/communities/CreateCommunity";
@@ -70,6 +69,7 @@ import CommunityChat from "../pages/admin/communities/CommunityChat";
 import { VoiceNoteProvider } from "../hooks/chatHooks/voiceNotes/useVoiceNote";
 import Orders from "../pages/admin/marketPlace/Orders";
 import VariantCombinations from "../pages/admin/marketPlace/VariantCombinations";
+import ServiceSetup from "../pages/admin/serviceProvider/ServiceSetup";
 
 function Routing() {
 
@@ -101,10 +101,10 @@ function Routing() {
 
 
             {/* Mothers  */}
-            <Route
+            {/* <Route
               path="/admin/mothers"
               element={<AllMothers />}
-            />
+            /> */}
             <Route
               path="/admin/mothers/single-mother"
               element={<MotherProfile />}
@@ -120,27 +120,31 @@ function Routing() {
 
             {/* service providers */}
             <Route
-              path="/admin/service-providers"
+              path="/admin/services"
               element={<ServiceProvider />}
             />
             <Route
-              path="/admin/service-provider/single-vendor"
+              path="/admin/services/single-provider"
               element={<SingleVendor />}
             />
             <Route
-              path="/admin/service-provider/single-vendor/service-details"
+              path="/admin/services/single-provider/service-setup"
+              element={<ServiceSetup />}
+            />            
+            <Route
+              path="/admin/services/single-provider/service-details"
               element={<ServiceDetails />}
             />
             {/* <Route
-            path="/admin/service-provider/disputes"
+            path="/admin/services/disputes"
             element={<Disputes />}
           /> */}
             <Route
-              path="/admin/service-provider/performance"
+              path="/admin/services/performance"
               element={<Performance />}
             />
             <Route
-              path="/admin/service-provider/disputes/:id"
+              path="/admin/services/disputes/:id"
               element={<DisputeDetails />}
             />
 
@@ -155,7 +159,7 @@ function Routing() {
             />
             <Route
               path="/admin/healthcare-provider/single-provider"
-              element={<SingleHealthCareProvider />}
+              element={<SingleVendor />}
             />
             <Route
               path="/admin/healthcare-provider/credentials-review"
@@ -170,8 +174,8 @@ function Routing() {
               path="/admin/healthcare-provider/mental-health-screening/:id"
               element={<MentalHealthScreeningDetail />}
             />
-            <Route path="/admin/healthcare-provider/caseloads" element={<CaseloadSummaries />} />
-            <Route path="/admin/healthcare-provider/all-caseload" element={<AllCaseload />} />
+            {/* <Route path="/admin/healthcare-provider/caseloads" element={<CaseloadSummaries />} />
+            <Route path="/admin/healthcare-provider/all-caseload" element={<AllCaseload />} /> */}
 
 
 

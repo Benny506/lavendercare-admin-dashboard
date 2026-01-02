@@ -13,6 +13,9 @@ import Pagination from "../components/Pagination";
 import { toast } from "react-toastify";
 import PatientInfo from "../mothers/PatientInfo";
 import { getAdminState } from "../../../redux/slices/adminState";
+import { getPublicImageUrl } from "../../../lib/requestApi";
+import Button from "../components/ui/button";
+import ProvidersModal from "../components/ProvidersModal";
 
 
 
@@ -25,64 +28,51 @@ function MotherProfile() {
 
     const user = state?.user
 
-    const { fetchBookings } = useApiReqs()
+    const { fetchBookings, fetchSingleMother, assignProvider } = useApiReqs()
 
-    const bookings = useSelector(state => getAdminState(state).bookings)
-
-    const [p_bookings, set_p_bookings] = useState([])
-    const [v_bookings, set_v_bookings] = useState([])
+    const [bookings, setBookings] = useState([])
     const [providers, setProviders] = useState([])
-    const [vendors, setVendors] = useState([])
-    const [timelines, setTimelines] = useState([])
     const [apiReqs, setApiReqs] = useState({ isLoading: false, errorMsg: null, data: null })
     const [currentPage, setCurrentPage] = useState(0)
     const [pageListIndex, setPageListIndex] = useState(0)
     const [canLoadMore, setCanLoadMore] = useState(true)
-
-    useEffect(() => {
-        if (bookings?.length > 0) {
-
-            const filtered = bookings?.filter(b => b?.user_id === user?.id)
-            const filtered_p = filtered?.filter(b => b?.provider_profile ? true : false)
-            const filtered_v = filtered?.filter(b => b?.vendor_profile ? true : false)
-
-            set_p_bookings(filtered_p)
-            set_v_bookings(filtered_v)
-
-        } else {
-            setApiReqs({
-                isLoading: true,
-                errorMsg: null,
-                data: {
-                    type: 'initialFetch',
-                }
-            })
-        }
-    }, [bookings])
+    const [mother, setMother] = useState()
+    const [providersModal, setProvidersModal] = useState({ visible: false, hide: null })
 
     useEffect(() => {
         if (!user) {
-            navigate('/admin/user-management')
+            // navigate(-1)
             toast.info("Could not load mother profile")
+            return
         }
+
+        fetchSingleMother({
+            callBack: ({ mother }) => {
+                if (mother) {
+                    setMother(mother)
+
+                } else {
+                    // navigate(-1)
+                }
+            },
+            mother_id: user?.id
+        })
     }, [])
+
+    useEffect(() => {
+        if(!mother) return;
+
+        setProviders(mother?.assignedProviders || [])
+        setBookings(mother?.bookings)
+    }, [mother])
 
     useEffect(() => {
         const { isLoading, data } = apiReqs
 
-        if (isLoading) dispatch(appLoadStart());
-        else dispatch(appLoadStop());
-
         if (isLoading && data) {
             const { type, requestInfo } = data
 
-            if (type === 'initialFetch') {
-                fetchBookings({
-                    callBack: ({ canLoadMore }) => setCanLoadMore(canLoadMore)
-                })
-            }
-
-            if (type === 'loadMoreBookings'){
+            if (type === 'loadMoreBookings') {
                 fetchBookings({
                     callBack: ({ canLoadMore }) => setCanLoadMore(canLoadMore)
                 })
@@ -90,28 +80,8 @@ function MotherProfile() {
         }
     }, [apiReqs])
 
-    useEffect(() => {
-        const _providers = removeDuplicatesByKey({
-            arr: p_bookings.map(p_b => p_b?.provider_profile),
-            key: 'provider_id'
-        })
-        setProviders(_providers)
-    }, [p_bookings])
-
-    useEffect(() => {
-        const _vendors = removeDuplicatesByKey({
-            arr: v_bookings.map(v_b => v_b?.vendor_profile),
-            key: 'id'
-        })
-        setVendors(_vendors)
-    }, [v_bookings])
-
-    useEffect(() => {
-        setTimelines([...p_bookings, ...v_bookings])
-    }, [p_bookings, v_bookings])
-
     const { pageItems, totalPages, pageList, totalPageListIndex } = usePagination({
-        arr: timelines,
+        arr: bookings,
         maxShow: 4,
         index: currentPage,
         maxPage: 5,
@@ -140,7 +110,10 @@ function MotherProfile() {
         return
     }
 
-    if (!user) return <></>
+    if (!mother) return <></>
+
+    const openProvidersModal = () => setProvidersModal({ visible: true, hide: hideProvidersModal })
+    const hideProvidersModal = () => setProvidersModal({ visible: false, hide: null })
 
     return (
         <div className="pt-6 w-full flex">
@@ -150,7 +123,7 @@ function MotherProfile() {
                 <PathHeader
                     paths={[
                         { type: 'text', text: 'Mothers' },
-                        { type: 'text', text: user?.name },
+                        { type: 'text', text: mother?.name },
                     ]}
                 />
 
@@ -159,14 +132,14 @@ function MotherProfile() {
                     {/* Left: Patient Info */}
                     <div className="w-full md:w-1/3 bg-white rounded-xl p-4 md:p-6">
                         <button
-                            onClick={() => navigate('/admin/mothers/mother-messages', { state: { mother: user } })}
+                            onClick={() => navigate('/admin/mothers/mother-messages', { state: { mother: mother } })}
                             className="px-3 py-2 rounded-lg bg-purple-100 text-purple-600 font-medium text-sm cursor-pointer"
                         >
                             Send a message
                         </button>
                         <PatientInfo
                             screeningInfo={{
-                                user_profile: user
+                                user_profile: mother
                             }}
                             noMentalHealth={true}
                         />
@@ -187,86 +160,58 @@ function MotherProfile() {
                         <div className="bg-white rounded-xl p-4 md:p-6">
                             <div>
                                 <div className="text-sm text-gray-500 mb-3">
-                                    Providers booked in the past
+                                    Assigned Providers
                                 </div>
                                 {providers?.length > 0 ?
-                                    providers.map((p, i) => (
-                                        <div
-                                            key={i}
-                                            className="flex items-center justify-between gap-4"
-                                        >
+                                    providers.map((p, i) => {
+
+                                        const providerInfo = p?.providerInfo
+
+                                        const profile_img = providerInfo?.profile_img ? getPublicImageUrl({ path: providerInfo?.profile_img, bucket_name: 'user_profiles' }) : null
+
+                                        return (
                                             <div
-                                                className="flex items-center gap-2"
+                                                key={i}
+                                                className="flex items-center justify-between gap-4"
                                             >
-                                                <ProfileImg
-                                                    profile_img={p?.profile_img}
-                                                    size="10"
-                                                />
-                                                <div>
-                                                    <div className="font-medium">{p?.provider_name}</div>
-                                                    <div className="text-xs text-gray-500">
-                                                        {p?.professional_title}
+                                                <div
+                                                    className="flex items-center gap-2"
+                                                >
+                                                    <ProfileImg
+                                                        profile_img={profile_img}
+                                                        size="10"
+                                                    />
+                                                    <div>
+                                                        <div className="font-medium">{providerInfo?.username}</div>
                                                     </div>
                                                 </div>
-                                            </div>
 
-                                            <button
-                                                onClick={() => navigate('/admin/healthcare-provider/single-provider', { state: { user: p } })}
-                                                className="bg-purple-600 text-white px-3 py-1 rounded-lg cursor-pointer text-purple-600 text-xs font-medium"
-                                            >
-                                                View
-                                            </button>
-                                        </div>
-                                    )) : (
+                                                <button
+                                                    onClick={() => navigate('/admin/healthcare-provider/single-provider', { state: { provider: providerInfo } })}
+                                                    className="bg-purple-600 text-white px-3 py-1 rounded-lg cursor-pointer text-purple-600 text-xs font-medium"
+                                                >
+                                                    View
+                                                </button>
+                                            </div>
+                                        )
+                                    }) : (
                                         <div className="text-xs text-gray-400">-</div>
                                     )}
-                            </div>
-                        </div>
 
-                        {/* Vendors booked in the pase */}
-                        <div className="bg-white rounded-xl p-4 md:p-6">
-                            <div>
-                                <div className="text-sm text-gray-500 mb-3">
-                                    Vendors booked in the past
+                                <div className="flex items-center justify-end mt-3">
+                                    <Button
+                                        onClick={openProvidersModal}
+                                    >
+                                        Add +
+                                    </Button>
                                 </div>
-                                {vendors?.length > 0 ?
-                                    vendors.map((v, i) => (
-                                        <div
-                                            key={i}
-                                            className="flex items-center justify-between gap-4"
-                                        >
-                                            <div
-                                                className="flex items-center gap-2"
-                                            >
-                                                <ProfileImg
-                                                    profile_img={v?.profile_img}
-                                                    size="10"
-                                                />
-                                                <div>
-                                                    <div className="font-medium">{v?.provider_name}</div>
-                                                    <div className="text-xs text-gray-500">
-                                                        {v?.location || 'Not set'}
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <button
-                                                onClick={() => navigate('/admin/service-provider/single-vendor', { state: { user: v } })}
-                                                className="bg-purple-600 text-white px-3 py-1 rounded-lg cursor-pointer text-purple-600 text-xs font-medium"
-                                            >
-                                                View
-                                            </button>
-                                        </div>
-                                    )) : (
-                                        <div className="text-xs text-gray-400">-</div>
-                                    )}
                             </div>
                         </div>
 
                         {/* Past Bookings */}
                         <div className="bg-white rounded-xl p-4 md:p-6">
                             <div className="text-sm text-gray-500 mb-3">Bookings</div>
-                            {timelines.length === 0 ? (
+                            {pageItems.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-12">
                                     <svg width="48" height="48" fill="none" viewBox="0 0 48 48">
                                         <rect width="48" height="48" rx="12" fill="#F3F3F3" />
@@ -299,32 +244,28 @@ function MotherProfile() {
                                     <table className="min-w-full text-xs md:text-sm">
                                         <thead>
                                             <tr className="text-left text-gray-400">
-                                                <th className="py-2 pr-4">Type</th>
                                                 <th className="py-2 pr-4">Who</th>
                                                 <th className="py-2 pr-4">Date & Time</th>
-                                                {/* <th className="py-2 pr-4">Service / Profession</th> */}
                                                 <th className="py-2 pr-4">Status</th>
                                                 <th className="py-2 pr-4">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {timelines.map((b, idx) => {
+                                            {pageItems.map((b, idx) => {
 
                                                 const date =
                                                     `${formatDate1({ dateISO: new Date(b?.day).toISOString() })}. ${formatTo12Hour({ time: b?.start_time })}`
 
-                                                const type = b?.provider_profile ? 'Provider' : 'Vendor'
 
-                                                const service_profession = b?.provider_profile?.professional_title || b?.service_info?.service_name
+                                                const service_name = b?.service_info?.service_name
 
-                                                const name = b?.provider_profile?.provider_name || b?.vendor_profile?.business_name
+                                                const provider_name = b?.provider?.username
 
                                                 return (
                                                     <tr key={idx} className="border-t border-gray-100">
-                                                        <td className="py-2 pr-4 font-medium">{type}</td>
-                                                        <td className="py-2 pr-4 font-medium">{name}</td>
+                                                        <td className="py-2 pr-4 font-medium">{provider_name}</td>
                                                         <td className="py-2 pr-4">{date}</td>
-                                                        <td className="py-2 pr-4">{service_profession}</td>
+                                                        <td className="py-2 pr-4">{service_name}</td>
                                                         <td className="py-2 pr-4">
                                                             {getStatusBadge(b?.status)}
                                                             {/* <span
@@ -340,7 +281,7 @@ function MotherProfile() {
                                                         </td>
                                                         <td className="py-2 pr-4">
                                                             <button
-                                                                onClick={() => navigate('/admin/user-management/booking-information', { state: { bookingInfo: b, mother: user } })}
+                                                                onClick={() => navigate('/admin/user-management/booking-information', { state: { bookingInfo: b, mother } })}
                                                                 className="bg-purple-100 text-purple-700 px-3 py-1 rounded-lg cursor-pointer"
                                                             >
                                                                 View Details
@@ -389,6 +330,27 @@ function MotherProfile() {
                     </div>
                 </div>
             </div>
+
+            <ProvidersModal
+                selectedProvidersIds={providers?.map(p => p?.id)}
+                onProviderSelected={provider => {
+                    assignProvider({
+                        callBack: ({ newAssignment }) => {
+                            if(!newAssignment) return;
+
+                            const assignedProviders = [{...newAssignment, providerInfo: provider}, ...(mother?.assignedProviders || [])]
+
+                            setMother({
+                                ...mother,
+                                assignedProviders
+                            })
+                        },
+                        mother_id: mother?.id,
+                        provider_id: provider?.id
+                    })
+                }}
+                modalProps={providersModal}
+            />
         </div>
     );
 }

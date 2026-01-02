@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import ProfileImg from '../components/ProfileImg';
 import { getRiskLevelBadge, getStatusBadge } from '../../../lib/utils_Jsx';
+import { getPublicImageUrl } from '../../../lib/requestApi';
 
 export default function PatientInfo({ screeningInfo, noMentalHealth }){
 
     const patient = screeningInfo?.user_profile
 
     if(!patient || !screeningInfo) return <></>
+
+    const profile_img = getPublicImageUrl({ path: patient?.profile_img, bucket_name: 'user_profiles' })
 
     return (
         <div className="bg-white rounded-xl p-4 w-full max-w-xs flex-shrink-0 flex flex-col items-center lg:items-start">
@@ -20,7 +23,7 @@ export default function PatientInfo({ screeningInfo, noMentalHealth }){
 
             <div className="flex flex-col items-center justify-start lg:items-start w-full">
                 <ProfileImg 
-                    profile_img={patient?.profile_img}
+                    profile_img={profile_img}
                     name={patient?.name}
                     size='12'
                 />
@@ -34,10 +37,10 @@ export default function PatientInfo({ screeningInfo, noMentalHealth }){
                 {
                     [
                         { title: 'Age:', value: patient?.age || 'Not set', },
-                        { title: 'Postpartum Day:', value: patient?.postpartumDay || 'Not set' },
+                        // { title: 'Postpartum Day:', value: patient?.postpartumDay || 'Not set' },
                         { title: 'Contact:', value: patient?.email || 'Not set' },
                         { title: 'Phone no:', value: patient?.phone_number || 'Not set' },
-                        { title: 'Pregnancy Status:', value: patient?.is_pregnant ? 'Pregnant' : 'PostPartum' }
+                        { title: 'Mother Type:', value: patient?.is_pregnant === null ? 'TTC' : patient?.is_pregnant ? 'Pregnant' : 'PostPartum' }
                     ]
                     .map((s, i) => {
                         const { title, value } = s

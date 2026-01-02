@@ -16,6 +16,7 @@
     "axios": "^1.11.0",
     "formik": "^2.4.6",
     "luxon": "^3.7.1",
+    "motion": "^12.23.26",
     "rc-slider": "^11.1.9",
     "react": "^19.1.1",
     "react-colorful": "^5.6.1",

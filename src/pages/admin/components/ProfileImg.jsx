@@ -6,7 +6,7 @@ export default function ProfileImg({ profile_img, name, size = "12" }) {
 
   return (
     <div
-      className={`flex items-center justify-center bg-gray-300 rounded-full overflow-hidden w-${size} h-${size}`}
+      className={`flex items-center justify-center ${profile_img ? '' : 'bg-gray-300'} rounded-full overflow-hidden w-${size} h-${size}`}
     >
       {profile_img ? (
         <img

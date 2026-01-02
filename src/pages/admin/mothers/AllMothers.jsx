@@ -9,10 +9,13 @@ import { isoToDateTime } from "../../../lib/utils";
 import ZeroItems from "../components/ZeroItems";
 import { Select } from "../components/ui/Select";
 import { userTypes } from "../../../lib/utils_Jsx";
-import { onRequestApi } from "../../../lib/requestApi";
+import { getPublicImageUrl, onRequestApi } from "../../../lib/requestApi";
 import Modal from "../components/ui/Modal";
 import useApiReqs from "../../../hooks/useApiReqs";
 import PathHeader from "../components/PathHeader";
+import { usePagination } from "../../../hooks/usePagination";
+import Pagination from "../components/Pagination";
+import ProfileImg from "../components/ProfileImg";
 
 
 function AllMothers() {
@@ -32,10 +35,11 @@ function AllMothers() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [apiReqs, setApiReqs] = useState({ isLoading: false, data: null, errorMsg: { type: null, err: null } })
   const [canLoadMore, setCanLoadMore] = useState(true)
+  const [currentPage, setCurrentPage] = useState(0)
+  const [pageListIndex, setPageListIndex] = useState(0)  
 
   useEffect(() => {
-    const _u = [...mothers, ...providers, ...vendors]
-    setUsers(_u)
+    setUsers(mothers?.filter(m => !m?.deleted_at))
   }, [mothers, providers, vendors])
 
   useEffect(() => {
@@ -70,6 +74,12 @@ function AllMothers() {
       }
     }
   }, [apiReqs])
+
+  useEffect(() => {
+    isModalOpen
+      ? (document.body.style.overflow = "hidden")
+      : (document.body.style.overflow = "auto");
+  }, [isModalOpen]);  
 
   const deleteUserSuccess = ({ requestInfo }) => {
     try {
@@ -212,30 +222,35 @@ function AllMothers() {
     }
   );
 
-  const handleDelete = (user) => {
-    setApiReqs({
-      isLoading: true,
-      errorMsg: null,
-      data: {
-        type: 'deleteUser',
-        requestInfo: {
-          url: 'https://tzsbbbxpdlupybfrgdbs.supabase.co/functions/v1/delete-user',
-          method: 'POST',
-          data: {
-            user_id: user?.id, role: user?.role
-          }
-        }
-      }
-    })
+  const { pageItems, totalPages, pageList, totalPageListIndex } = usePagination({
+    arr: filteredUsers,
+    maxShow: 4,
+    index: currentPage,
+    maxPage: 5,
+    pageListIndex
+  });
+
+  const incrementPageListIndex = () => {
+    if (pageListIndex === totalPageListIndex) {
+      setPageListIndex(0)
+
+    } else {
+      setPageListIndex(prev => prev + 1)
+    }
 
     return
-  };
+  }
 
-  useEffect(() => {
-    isModalOpen
-      ? (document.body.style.overflow = "hidden")
-      : (document.body.style.overflow = "auto");
-  }, [isModalOpen]);
+  const decrementPageListIndex = () => {
+    if (pageListIndex == 0) {
+      setPageListIndex(totalPageListIndex)
+
+    } else {
+      setPageListIndex(prev => prev - 1)
+    }
+
+    return
+  }  
 
   return (
     <div className="pt-6 w-full pb-5">
@@ -325,6 +340,12 @@ function AllMothers() {
                   scope="col"
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 "
                 >
+                  Profile
+                </th>                
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 "
+                >
                   Name
                 </th>
                 <th
@@ -348,9 +369,12 @@ function AllMothers() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredUsers.length > 0 ? (
-                filteredUsers.map((user) => {
-                  const name = user?.name || user?.business_name || user?.provider_name
+              {pageItems.length > 0 ? (
+                pageItems.map((user) => {
+
+                  const name = user?.name
+
+                  const profile_img = user?.profile_img ? getPublicImageUrl({ path: user?.profile_img, bucket_name: 'user_profiles' }) : null
 
                   return (
                     <tr
@@ -358,6 +382,12 @@ function AllMothers() {
                       className="hover:bg-gray-50 hover:cursor-pointer"
                       onClick={() => openUserModal(user)}
                     >
+                      <td className=" py-4 whitespace-nowrap">
+                        <ProfileImg 
+                          profile_img={profile_img}
+                          name={name}
+                        />
+                      </td>
                       <td className=" py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="ml-4">
@@ -420,6 +450,19 @@ function AllMothers() {
               )}
             </tbody>
           </table>
+
+          <Pagination
+            currentPage={currentPage}
+            pageItems={pageItems}
+            pageListIndex={pageListIndex}
+            pageList={pageList}
+            totalPageListIndex={totalPageListIndex}
+            decrementPageListIndex={decrementPageListIndex}
+            incrementPageListIndex={incrementPageListIndex}
+            setCurrentPage={setCurrentPage}
+          />
+
+          <div className="pb-2" />          
         </div>
 
         {
@@ -479,15 +522,15 @@ function AllMothers() {
             <div className="mt-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center mb-4">
-                  <div className="h-[50px] w-[50px] rounded-full bg-gray-200 flex items-center justify-center text-2xl font-bold text-gray-600">
-                    {(selectedUser.name || selectedUser?.provider_name || selectedUser?.business_name).charAt(0)}
-                  </div>
+                  <ProfileImg 
+                    profile_img={selectedUser?.profile_img ? getPublicImageUrl({ path: selectedUser?.profile_img, bucket_name: 'user_profiles' }) : null}
+                  />
                   <div className="ml-4">
                     <h4 className="text-lg font-semibold">
                       {selectedUser?.name}
                     </h4>
                     <p className="text-sm text-gray-500">
-                      {selectedUser.role}
+                      Mother
                     </p>
                   </div>
                 </div>
@@ -508,7 +551,7 @@ function AllMothers() {
                   </span>
                   <span>{selectedUser.phone_number || 'Not set'}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex gap-2">
                   <span className="text-sm text-gray-500">
                     Last Login:
                   </span>

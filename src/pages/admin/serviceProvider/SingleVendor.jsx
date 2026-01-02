@@ -13,6 +13,7 @@ import Pagination from "../components/Pagination";
 import VendorInfo from "./auxiliary/VendorInfo";
 import VendorServices from "./auxiliary/VendorServices";
 import { getAdminState } from "../../../redux/slices/adminState";
+import MothersGrid from "./auxiliary/MothersGrid";
 
 function SingleVendor() {
     const dispatch = useDispatch()
@@ -21,70 +22,35 @@ function SingleVendor() {
 
     const { state } = useLocation()
 
-    const user = state?.user
+    const provider = state?.provider
 
-    const { fetchBookings } = useApiReqs()
+    const { fetchProviderBookings, fetchProviderAssignments } = useApiReqs()
 
-    const allBookings = useSelector(state => getAdminState(state).bookings)
-
-    const [apiReqs, setApiReqs] = useState({ isLoading: false, errorMsg: null, data: null })
     const [bookings, setBookings] = useState(null)
+    const [assignments, setAssignments] = useState([])
     const [currentPage, setCurrentPage] = useState(0)
     const [pageListIndex, setPageListIndex] = useState(0)
-    const [canLoadMore, setCanLoadMore] = useState(true)
 
     useEffect(() => {
-        if (!user) {
+        if (!provider) {
             navigate('/admin/user-management')
             toast.info("Could load provider profile")
 
+            return;
         }
+
+        fetchProviderBookings({
+            callBack: ({ bookings }) => setBookings(bookings),
+            provider_id: provider?.id
+        })
+
+        fetchProviderAssignments({
+            callBack: ({ providerAssignments }) => {
+                setAssignments(providerAssignments || [])
+            },
+            provider_id: provider?.id
+        })
     }, [])
-
-    useEffect(() => {
-        if (!user) return;
-
-        if (allBookings?.length > 0) {
-
-            const filtered = allBookings?.filter(b => b?.vendor_id === user?.id)
-            setBookings(filtered)
-
-        } else {
-            setApiReqs({
-                isLoading: true,
-                errorMsg: null,
-                data: {
-                    type: 'fetchBookings',
-                    requestInfo: {
-                        vendor_id: user?.id
-                    }
-                }
-            })
-        }
-    }, [allBookings])
-
-    useEffect(() => {
-        const { isLoading, data } = apiReqs
-
-        if (isLoading) dispatch(appLoadStart());
-        else dispatch(appLoadStop());
-
-        if (isLoading && data) {
-            const { type, requestInfo } = data
-
-            if (type === 'fetchBookings') {
-                fetchBookings({
-                    callBack: ({ canLoadMore }) => setCanLoadMore(canLoadMore)
-                })
-            }
-
-            if (type === 'loadMoreBookings') {
-                fetchBookings({
-                    callBack: ({ canLoadMore }) => setCanLoadMore(canLoadMore)
-                })
-            }
-        }
-    }, [apiReqs])
 
     const { pageItems, totalPages, pageList, totalPageListIndex } = usePagination({
         arr: (bookings || []),
@@ -116,7 +82,7 @@ function SingleVendor() {
         return
     }
 
-    if (!user) return <></>
+    if (!provider) return <></>
 
     return (
         <div className="pt-6 w-full flex">
@@ -126,41 +92,39 @@ function SingleVendor() {
                 {/* breadcrumbs */}
                 <PathHeader
                     paths={[
-                        { text: 'Vendors' },
-                        { text: user?.business_name },
+                        { text: 'Providers' },
+                        { text: provider?.username },
                     ]}
                 />
 
                 {/* Main grid */}
-                <div className="flex flex-col md:flex-row gap-6">
-                    {/* Left: Patient Info */}
-                    <div className="w-full md:w-1/5 bg-white rounded-xl p-4 md:p-6">
+                <div className="w-full">
+                    <div className="mb-4">
                         <VendorInfo
-                            vendor={user}
+                            vendor={provider}
                         />
-
-                        {/* <div className="flex gap-2 mt-6">
-                            <button className="bg-red-100 text-red-700 px-4 py-2 rounded">
-                                Suspend
-                            </button>
-                            <button className="bg-red-600 text-white px-4 py-2 rounded">
-                                Delete
-                            </button>
-                        </div> */}
                     </div>
 
-                    {/* Right: Provider, Timeline, Bookings */}
-                    <div className="w-full md:w-4/5 flex flex-col gap-6">
+                    <div className="mb-4">
+                        <MothersGrid 
+                            mothers={assignments.map(assign => assign?.user_profile)}
+                            onSelect={(mother) => {
+                                navigate("/admin/mothers/single-mother", { state: { user: mother } })
+                            }}
+                        />
+                    </div>
+
+                    <div className="w-full flex flex-col gap-6">
                         {/* Vendor services  */}
                         <div className="bg-white rounded-xl p-4 md:p-6">
                             <div className="text-sm text-gray-500 mb-3">All services</div>
 
                             <VendorServices
-                                vendor={user}
+                                provider={provider}
                             />
                         </div>
                         {/* Past Bookings */}
-                        <div className="bg-white rounded-xl p-4 md:p-6">
+                        <div className="bg-white rounded-xl p-4 md:p-6 mb-2">
                             <div className="text-sm text-gray-500 mb-3">Past Bookings</div>
                             {pageItems.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-12">
@@ -239,26 +203,7 @@ function SingleVendor() {
                                         setCurrentPage={setCurrentPage}
                                     />
 
-                                    {
-                                        canLoadMore
-                                        &&
-                                        <div className="w-full flex items-center justify-center my-5">
-                                            <button
-                                                onClick={() => {
-                                                    setApiReqs({
-                                                        isLoading: true,
-                                                        errorMsg: null,
-                                                        data: {
-                                                            type: 'loadMoreBookings'
-                                                        }
-                                                    })
-                                                }}
-                                                className={'bg-purple-600 text-white px-4 py-2 rounded-lg cursor-pointer'}
-                                            >
-                                                Load more
-                                            </button>
-                                        </div>
-                                    }
+                                    <div className="mb-2" />
                                 </div>
                             )}
                         </div>

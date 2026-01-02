@@ -10,12 +10,19 @@ import supabase from "../../../database/dbInit";
 import { toast } from "react-toastify";
 import { providerStatusColors } from "../../../lib/utils_Jsx";
 import PathHeader from "../components/PathHeader";
+import { getPublicImageUrl } from "../../../lib/requestApi";
+import LicenseBadge from "./auxiliary/LicenseBadge";
+import { usePagination } from "../../../hooks/usePagination";
+import Pagination from "../components/Pagination";
+import { sendEmail } from "../../../lib/email";
 
 function ReviewCredential() {
   const dispatch = useDispatch()
 
   const providers = useSelector(state => getAdminState(state).providers)
 
+  const [currentPage, setCurrentPage] = useState(0)
+  const [pageListIndex, setPageListIndex] = useState(0)
   const [showModal, setShowModal] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState(null);
   const [searchFilter, setSearchFilter] = useState('')
@@ -39,11 +46,11 @@ function ReviewCredential() {
   const updateStatus = async ({ requestInfo }) => {
     try {
 
-      const { isApproved, provider_id, status } = requestInfo
+      const { provider_id, status } = requestInfo
 
       const { data, error } = await supabase
-        .from('provider_profiles')
-        .update({ credentials_approved: isApproved, status })
+        .from('providers_licenses')
+        .update({ status })
         .eq("provider_id", provider_id)
         .select()
         .single()
@@ -53,12 +60,28 @@ function ReviewCredential() {
         throw new Error()
       }
 
+      await sendEmail({
+        // to_email: selectedProvider?.email,
+        to_email: 'olomufeh@gmail.com',
+        subject: 'License status update',
+        data: {
+          status,
+          provider_name: selectedProvider?.username,
+          extra_text: 
+            status === 'approved'
+            ?
+              `Your submitted license document(s) have been approved. You are eligible to create healthcare services. Although, every service you create will still be reviewed before it is made publicly available to all mothers on LavenderCare`
+            :
+              `Your submitted license document(s) have been rejected and thus deleted. Kindly re-visit your dashboard and resubmit if you intend to offer Health-Care services.`
+        },
+        template_id: '351ndgwm9nrlzqx8'
+      })
+
       const updatedProviders = (providers || []).map(p => {
-        if (p?.provider_id === provider_id) {
+        if (p?.id === provider_id) {
           return {
             ...p,
-            credentials_approved: isApproved,
-            status
+            license: data
           }
         }
 
@@ -91,21 +114,46 @@ function ReviewCredential() {
   };
 
   const filteredData = (providers || [])?.filter(p => {
-    const { provider_name, professional_title } = p
+    const { username } = p
 
     const matchSearchFilter = (
-      searchFilter?.toLowerCase().includes(provider_name?.toLowerCase())
+      searchFilter?.toLowerCase().includes(username?.toLowerCase())
       ||
-      provider_name?.toLowerCase().includes(searchFilter?.toLowerCase())
-
-      ||
-      searchFilter?.toLowerCase().includes(professional_title?.toLowerCase())
-      ||
-      professional_title?.toLowerCase().includes(searchFilter?.toLowerCase())
+      username?.toLowerCase().includes(searchFilter?.toLowerCase())
     )
 
     return matchSearchFilter
   })
+
+  const { pageItems, totalPages, pageList, totalPageListIndex } = usePagination({
+    arr: filteredData,
+    maxShow: 4,
+    index: currentPage,
+    maxPage: 5,
+    pageListIndex
+  });
+
+  const incrementPageListIndex = () => {
+    if (pageListIndex === totalPageListIndex) {
+      setPageListIndex(0)
+
+    } else {
+      setPageListIndex(prev => prev + 1)
+    }
+
+    return
+  }
+
+  const decrementPageListIndex = () => {
+    if (pageListIndex == 0) {
+      setPageListIndex(totalPageListIndex)
+
+    } else {
+      setPageListIndex(prev => prev - 1)
+    }
+
+    return
+  }
 
   const rejectCredentials = () => {
     if (!selectedProvider) return;
@@ -115,26 +163,25 @@ function ReviewCredential() {
       return;
     }
 
-    initiateStatusUpdate({ provider_id: selectedProvider?.provider_id, isApproved: false, status: 'rejected' })
+    initiateStatusUpdate({ provider_id: selectedProvider?.id, status: 'rejected' })
   }
   const acceptCredentials = () => {
     if (!selectedProvider) return;
 
-    if (selectedProvider?.credentials_approved && selectedProvider?.status === 'approved') {
-      toast.success("Credentials already approved")
-      return;
-    }
+    // if (selectedProvider?.license?.status === 'approved') {
+    //   toast.success("Credentials already approved")
+    //   return;
+    // }
 
-    initiateStatusUpdate({ provider_id: selectedProvider?.provider_id, isApproved: true, status: 'approved' })
+    initiateStatusUpdate({ provider_id: selectedProvider?.id, status: 'approved' })
   }
-  const initiateStatusUpdate = ({ provider_id, isApproved, status }) => {
+  const initiateStatusUpdate = ({ provider_id, status }) => {
     return setApiReqs({
       isLoading: true,
       errorMsg: null,
       data: {
         type: 'updateStatus',
         requestInfo: {
-          isApproved,
           provider_id,
           status
         }
@@ -200,10 +247,10 @@ function ReviewCredential() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="py-2 sm:py-3 px-2 sm:px-4 text-left font-semibold text-gray-500 whitespace-nowrap">
-                  Provider Name
+                  Profile
                 </th>
                 <th className="py-2 sm:py-3 px-2 sm:px-4 text-left font-semibold text-gray-500 whitespace-nowrap">
-                  Professional Title
+                  Provider Name
                 </th>
                 <th className="py-2 sm:py-3 px-2 sm:px-4 text-left font-semibold text-gray-500 whitespace-nowrap">
                   Submitted On
@@ -218,35 +265,47 @@ function ReviewCredential() {
             </thead>
             <tbody>
               {
-                filteredData?.length > 0
+                pageItems?.length > 0
                   ?
-                  filteredData.map((p, idx) => (
-                    <tr key={p.name} className="border-t border-gray-100">
-                      <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
-                        {p?.provider_name}
-                      </td>
-                      <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
-                        {p?.professional_title}
-                      </td>
-                      <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
-                        {p?.documents_submitted_on ? isoToDateTime({ isoString: p?.documents_submitted_on }) : 'Not submitted'}
-                      </td>
-                      <td className={`py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap flex
+                  pageItems.map((p, idx) => {
+
+                    const profile_img = p?.profile_img ? getPublicImageUrl({ path: p?.profile_img, bucket_name: 'user_profiles' }) : null
+
+                    return (
+                      <tr key={idx} className="border-t border-gray-100">
+                        <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
+                          <ProfileImg
+                            profile_img={profile_img}
+                            name={p?.username}
+                          />
+                        </td>
+                        <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
+                          {p?.username}
+                        </td>
+                        <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
+                          {p?.documents_submitted_on ? isoToDateTime({ isoString: p?.documents_submitted_on }) : 'Not submitted'}
+                        </td>
+                        <td className={`py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap flex
                       `}>
-                        <div className={`${providerStatusColors[p?.status]} px-3 py-1 rounded-lg`}>
-                          {p?.status}
-                        </div>
-                      </td>
-                      <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
-                        <button
-                          className="bg-purple-600 cursor-pointer text-white px-4 py-1 rounded-full text-xs w-full sm:w-auto transition hover:bg-purple-700"
-                          onClick={() => handleReview(p)}
-                        >
-                          Review
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                          <LicenseBadge license={p?.license} />
+                        </td>
+                        <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
+                          {
+                            !p?.license
+                              ?
+                              'No action'
+                              :
+                              <button
+                                className="bg-purple-600 cursor-pointer text-white px-4 py-1 rounded-full text-xs w-full sm:w-auto transition hover:bg-purple-700"
+                                onClick={() => handleReview(p)}
+                              >
+                                Review
+                              </button>
+                          }
+                        </td>
+                      </tr>
+                    )
+                  })
                   :
                   <tr className="border-t border-gray-100">
                     <td colSpan={'6'} className="mt-5 p-5">
@@ -258,6 +317,19 @@ function ReviewCredential() {
               }
             </tbody>
           </table>
+
+          <Pagination
+            currentPage={currentPage}
+            pageItems={pageItems}
+            pageListIndex={pageListIndex}
+            pageList={pageList}
+            totalPageListIndex={totalPageListIndex}
+            decrementPageListIndex={decrementPageListIndex}
+            incrementPageListIndex={incrementPageListIndex}
+            setCurrentPage={setCurrentPage}
+          />
+
+          <div className="pb-2" />
         </div>
       </div>
 
@@ -296,16 +368,20 @@ function ReviewCredential() {
                 </svg>
               </div>
               <ProfileImg
-                name={selectedProvider?.provider_name}
-                profile_img={selectedProvider?.profile_img}
+                name={selectedProvider?.username}
+                profile_img={selectedProvider?.profile_img ? getPublicImageUrl({ path: selectedProvider?.profile_img, bucket_name: 'user_profiles' }) : null}
                 size="16"
               />
               <div className="font-semibold text-lg">
-                {selectedProvider?.provider_name}
+                {selectedProvider?.username}
               </div>
-              <div className="text-xs text-gray-500 mb-2">
-                {selectedProvider?.professional_title}
-              </div>
+
+              <input
+                type="checkbox"
+                className="w-5 h-5 accent-purple-600 rounded"
+                checked={selectedProvider?.license?.status === 'approved' ? true : false}
+                readOnly
+              />
             </div>
 
             <div className="mb-4">
@@ -320,69 +396,87 @@ function ReviewCredential() {
 
             <div className="mb-4">
               <div className="font-semibold text-sm mb-2">
-                Credential Document
+                Credential Documents
               </div>
+
               <div className="space-y-3">
-                <div
-                  className="border rounded-xl p-3 flex items-center gap-3 justify-between"
-                >
-                  <div>
-                    <div className="flex items-center gap-2 text-purple-600 font-semibold text-xs">
-                      <svg
-                        width="20"
-                        height="20"
-                        fill="none"
-                        viewBox="0 0 20 20"
+                {Array.isArray(selectedProvider?.license?.documents) &&
+                  selectedProvider.license.documents.length > 0 ? (
+
+                  selectedProvider.license.documents.map((doc, index) => {
+
+                    const url = doc?.file ? getPublicImageUrl({ path: doc?.file, bucket_name: 'provider_licenses' }) : null
+
+                    return (
+                      <div
+                        key={index}
+                        className="border rounded-xl p-3 flex items-center justify-between bg-white hover:bg-purple-50/40 transition"
                       >
-                        <rect width="20" height="20" rx="6" fill="#E9D5FF" />
-                        <path
-                          d="M7 15V5h6v10H7zm1-1h4V6H8v8zm1-4h2v2h-2v-2z"
-                          fill="#8B5CF6"
-                        />
-                      </svg>
-                      License document
-                    </div>
-                    {/* <div className="text-xs text-gray-400">200 KB</div> */}
-                    <div
-                      className="text-sm mt-2 text-purple-600 underline cursor-pointer"
-                      onClick={() => {
-                        if(!selectedProvider?.license_document){
-                          toast.info("Invalid credentials")
-                          return;
-                        }
+                        <div className="flex items-start gap-3">
+                          {/* File Icon */}
+                          <div className="w-9 h-9 rounded-lg bg-purple-100 flex items-center justify-center">
+                            <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+                              <path
+                                d="M6 2h5l5 5v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"
+                                fill="#8B5CF6"
+                              />
+                            </svg>
+                          </div>
 
-                        const pdfUrl = selectedProvider?.license_document
-                        const fileName = 'license_document.pdf';
+                          {/* Info */}
+                          <div>
+                            <p className="text-sm font-medium text-gray-800">
+                              Credential {index + 1}
+                            </p>
 
-                        const link = document.createElement('a');
-                        link.href = pdfUrl;
-                        link.download = fileName; // optional — suggests a name
-                        link.target = '_blank';   // open in new tab if not downloadable
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                      }}
-                    >
-                      View
-                    </div>
+                            <p className="text-xs text-gray-400">
+                              {doc?.extraText}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Action */}
+                        <button
+                          className="text-sm text-purple-600 font-medium underline hover:text-purple-700"
+                          onClick={() => {
+                            if (!url) {
+                              toast.info("Invalid credential document");
+                              return;
+                            }
+
+                            window.open(url, "_blank");
+                          }}
+                        >
+                          View
+                        </button>
+                      </div>
+                    )
+                  })
+
+                ) : (
+                  <div className="text-xs text-gray-400 italic">
+                    No credential documents uploaded.
                   </div>
-                  <input
-                    type="checkbox"
-                    className="w-5 h-5 accent-purple-600 rounded"
-                    checked={selectedProvider?.credentials_approved ? true : false}
-                    readOnly
-                  />
-                </div>
+                )}
               </div>
             </div>
 
+
             <div className="flex flex-col sm:flex-row gap-2 mt-6">
-              <button onClick={rejectCredentials} className="cursor-pointer bg-red-600 text-white px-6 py-2 rounded-full font-semibold w-full sm:w-1/2">
-                Reject
-              </button>
-              <button onClick={acceptCredentials} className="cursor-pointer bg-purple-600 text-white px-6 py-2 rounded-full font-semibold w-full sm:w-1/2">
-                Accept
-              </button>
+              <div className="w-full sm:w-1/2">
+                <button onClick={rejectCredentials} className="cursor-pointer bg-red-600 text-white px-6 py-2 rounded-full font-semibold w-full">
+                  Reject
+                </button>
+
+                <p className="text-xs text-center pt-1 text-gray-400">
+                  This will delete the credentials submitted and inform the provider
+                </p>
+              </div>
+              <div className="w-full sm:w-1/2">
+                <button onClick={acceptCredentials} className="cursor-pointer bg-purple-600 text-white px-6 py-2 rounded-full font-semibold w-full">
+                  Accept
+                </button>
+              </div>
             </div>
           </div>
         </Modal>

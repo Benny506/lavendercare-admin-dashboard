@@ -1,14 +1,16 @@
 import React from "react";
 
 const variantMap = {
-  primary: "bg-blue-600 text-white",
-  secondary: "bg-gray-700 text-white",
+  primary: "bg-[#F3ECFF] text-[#7B3FE4]",
+  secondary: "bg-gray-400 text-white",
   success: "bg-emerald-600 text-white",
   danger: "bg-red-600 text-white",
   warning: "bg-amber-500 text-black",
   info: "bg-sky-500 text-white",
   neutral: "bg-gray-200 text-gray-800",
-  default: "bg-[#703dcb] text-white"
+  default: "bg-[#703dcb] text-white",
+  outline:
+    "text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
 };
 
 const sizeMap = {

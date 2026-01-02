@@ -266,7 +266,7 @@ function MotherMessages() {
                                             ? 'bg-purple-600 text-white'
                                             : 'bg-gray-100 text-gray-900'
                                             } rounded-2xl px-4 py-3`}>
-                                            {file_type ? (
+                                            {file_type === 'audio' ? (
                                                 <div>
                                                     <AudioPlayer
                                                         channelId={topic}

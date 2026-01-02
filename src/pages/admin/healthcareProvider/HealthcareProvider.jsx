@@ -14,6 +14,10 @@ import { useNavigate } from "react-router-dom";
 import { getStatusBadge, providerStatusColors } from "../../../lib/utils_Jsx";
 import useApiReqs from "../../../hooks/useApiReqs";
 import SpecialtiesModal from "./auxiliary/SpecialtiesModal";
+import { getPublicImageUrl } from "../../../lib/requestApi";
+import ProfileImg from "../components/ProfileImg";
+import LicenseBadge from "./auxiliary/LicenseBadge";
+import { BsEye } from "react-icons/bs";
 
 
 function HealthcareProvider() {
@@ -21,7 +25,7 @@ function HealthcareProvider() {
 
   const navigate = useNavigate()
 
-  const { loadMoreUsers, addProviderSpecialty, deleteProviderSpecialty } = useApiReqs()
+  const { fetchProviders, loadMoreUsers, addProviderSpecialty, deleteProviderSpecialty } = useApiReqs()
 
   const providers = useSelector(state => getAdminState(state).providers)
   const providerSpecialties = useSelector(state => getAdminState(state).providerSpecialties)
@@ -31,7 +35,7 @@ function HealthcareProvider() {
   const [currentPage, setCurrentPage] = useState(0)
   const [pageListIndex, setPageListIndex] = useState(0)
   const [statsData, setStatsData] = useState({
-    totalProviders: 0, activeProviders: 0, inActiveProviders: 0
+    totalProviders: 0, approvedLicenses: 0, unApprovedLicenses: 0
   })
   const [canLoadMore, setCanLoadMore] = useState(true)
   const [specialtiesModal, setSpecialtiesModal] = useState({ visible: false, hide: null })
@@ -83,33 +87,28 @@ function HealthcareProvider() {
     try {
 
       const { count: totalProviders, error: totalProvidersError } = await supabase
-        .from('provider_profiles')
+        .from('providers')
         .select('*', { count: 'exact', head: true });
 
-      const { count: activeProviders, error: activeProvidersError } = await supabase
-        .from('provider_profiles')
+      const { count: approvedLicenses, error: approvedLicensesError } = await supabase
+        .from('providers_licenses')
         .select('*', { count: 'exact', head: true })
-        .eq("credentials_approved", true);
+        .eq("status", 'approved');
 
-      const { count: inActiveProviders, error: inActiveProvidersError } = await supabase
-        .from('provider_profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq("credentials_approved", false)
 
       const { data: specialties, error: specialtiesError } = await supabase
         .from('provider_specialties')
         .select("*")
 
-      if (totalProvidersError || activeProvidersError || inActiveProvidersError || specialtiesError) {
+      if (totalProvidersError || approvedLicensesError || specialtiesError) {
         console.log("totalProvidersError", totalProvidersError)
-        console.log("activeProvidersError", activeProvidersError)
-        console.log("inActiveProvidersError", inActiveProvidersError)
+        console.log("approvedLicensesError", approvedLicensesError)
 
         throw new Error()
       }
 
       setStatsData({
-        totalProviders, activeProviders, inActiveProviders
+        totalProviders, approvedLicenses, unApprovedLicenses: totalProviders - approvedLicenses
       })
 
       dispatch(setAdminState({
@@ -136,26 +135,21 @@ function HealthcareProvider() {
   const hideSpecialtiesModal = () => setSpecialtiesModal({ visible: false, hide: null })
 
   const filteredData = (providers || []).filter(p => {
-    const { provider_name, professional_title } = p
+    const { username } = p
 
     const matchesSearch =
       (
-        searchFilter?.toLowerCase().includes(provider_name?.toLowerCase())
+        searchFilter?.toLowerCase().includes(username?.toLowerCase())
         ||
-        provider_name?.toLowerCase().includes(searchFilter?.toLowerCase())
-
-        ||
-        searchFilter?.toLowerCase().includes(professional_title?.toLowerCase())
-        ||
-        professional_title?.toLowerCase().includes(searchFilter?.toLowerCase())
+        username?.toLowerCase().includes(searchFilter?.toLowerCase())
       );
 
     return matchesSearch;
   })
 
   const totalProvidersCount = statsData.totalProviders
-  const activeProvidersCount = statsData.activeProviders
-  const inActiveProvidersCount = statsData.inActiveProviders
+  const approvedLicensesCount = statsData.approvedLicenses
+  const unApprovedLicensesCount = statsData.unApprovedLicenses
 
   const { pageItems, totalPages, pageList, totalPageListIndex } = usePagination({
     arr: filteredData,
@@ -202,7 +196,7 @@ function HealthcareProvider() {
           Healthcare Provider
         </h2>
 
-        <div className="text-xs w-max text-gray-500 flex gap-2 bg-white py-3 px-4 rounded-sm items-center">
+        {/* <div className="text-xs w-max text-gray-500 flex gap-2 bg-white py-3 px-4 rounded-sm items-center">
           <svg
             width="18"
             height="14"
@@ -219,18 +213,18 @@ function HealthcareProvider() {
             />
           </svg>
           Export
-        </div>
+        </div> */}
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-xl p-4 flex flex-col items-start min-w-[120px]">
           <span className="text-xs text-gray-500 mb-1">Total Providers</span>
           <span className="text-3xl font-bold">
             {totalProvidersCount}
           </span>
         </div>
-        <div className="bg-white rounded-xl p-4 flex flex-col min-w-[120px]">
+        {/* <div className="bg-white rounded-xl p-4 flex flex-col min-w-[120px]">
           <span className="text-xs text-gray-500 mb-1">Provider Specialties</span>
           <span className="text-3xl font-bold">
             {providerSpecialties?.length || 0}
@@ -243,7 +237,7 @@ function HealthcareProvider() {
               + Add
             </button>
           </div>
-        </div>
+        </div> */}
         <div className="bg-white rounded-xl p-4 flex flex-col items-start min-w-[120px]">
           <span className="text-xs text-gray-500 mb-1 flex items-center gap-1">
             <svg
@@ -270,10 +264,10 @@ function HealthcareProvider() {
                 </clipPath>
               </defs>
             </svg>
-            Active
+            Licensed
           </span>
           <span className="text-3xl font-bold">
-            {activeProvidersCount}
+            {approvedLicensesCount}
           </span>
         </div>
         <div className="bg-white rounded-xl p-4 flex flex-col items-start min-w-[120px]">
@@ -302,10 +296,10 @@ function HealthcareProvider() {
                 </clipPath>
               </defs>
             </svg>
-            Inactive
+            UnLicensed
           </span>
           <span className="text-3xl font-bold">
-            {inActiveProvidersCount}
+            {unApprovedLicensesCount}
           </span>
         </div>
       </div>
@@ -346,13 +340,13 @@ function HealthcareProvider() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="py-2 sm:py-3 px-2 sm:px-4 text-left font-semibold text-gray-500 whitespace-nowrap">
+                  Profile
+                </th>
+                <th className="py-2 sm:py-3 px-2 sm:px-4 text-left font-semibold text-gray-500 whitespace-nowrap">
                   Name
                 </th>
                 <th className="py-2 sm:py-3 px-2 sm:px-4 text-left font-semibold text-gray-500 whitespace-nowrap">
                   Years of Exprience
-                </th>
-                <th className="py-2 sm:py-3 px-2 sm:px-4 text-left font-semibold text-gray-500 whitespace-nowrap">
-                  Professional Title
                 </th>
                 <th className="py-2 sm:py-3 px-2 sm:px-4 text-left font-semibold text-gray-500 whitespace-nowrap">
                   Rating
@@ -371,20 +365,25 @@ function HealthcareProvider() {
                   ?
                   pageItems.map((p, idx) => {
 
+                    const profile = p?.profile_img ? getPublicImageUrl({ path: p?.profile_img, bucket_name: 'user_profiles' }) : null
+
                     return (
                       <tr
                         key={idx}
-                        onClick={() => navigate('/admin/healthcare-provider/single-provider', { state: { user: p } })}
+                        onClick={() => navigate('/admin/healthcare-provider/single-provider', { state: { provider: p } })}
                         className="hover:bg-gray-100 cursor-pointer border-t border-gray-100"
                       >
                         <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
-                          {p?.provider_name}
+                          <ProfileImg 
+                            profile_img={profile}
+                            name={p?.username}
+                          />
+                        </td>
+                        <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
+                          {p?.username}
                         </td>
                         <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
                           {p?.years_of_experience || 'Not set'}
-                        </td>
-                        <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
-                          {p?.professional_title || 'Not set'}
                         </td>
                         <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap flex items-center gap-1">
                           <svg width="16" height="16" fill="none" viewBox="0 0 16 16">
@@ -393,43 +392,14 @@ function HealthcareProvider() {
                               fill="#FACC15"
                             />
                           </svg>
-                          {p.avg_rating}
+                          {p.rating}
                         </td>
                         <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
-                          <label className={`inline-flex items-center ${providerStatusColors[p?.status]}`}>
-                            {
-                              // p?.credentials_approved
-                              //   ?
-                              //   <MdToggleOn
-                              //     size={50}
-                              //     className={"text-purple-600"}
-                              //   />
-                              //   :
-                              //   <MdToggleOff
-                              //     size={50}
-                              //     className={'text-gray-200'}
-                              //   />
-                              p?.status
-                            }
-                          </label>
+                          <LicenseBadge license={p.license} />
                         </td>
                         <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap flex gap-2">
                           {/* <button className="text-purple-600 hover:underline"> */}
-                          <svg
-                            width="20"
-                            height="20"
-                            viewBox="0 0 20 20"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              d="M14.0514 3.73889L15.4576 2.33265C16.0678 1.72245 17.0572 1.72245 17.6674 2.33265C18.2775 2.94284 18.2775 3.93216 17.6674 4.54235L8.81849 13.3912C8.37792 13.8318 7.83453 14.1556 7.23741 14.3335L5 15L5.66648 12.7626C5.84435 12.1655 6.1682 11.6221 6.60877 11.1815L14.0514 3.73889ZM14.0514 3.73889L16.25 5.93749M15 11.6667V15.625C15 16.6605 14.1605 17.5 13.125 17.5H4.375C3.33947 17.5 2.5 16.6605 2.5 15.625V6.87499C2.5 5.83946 3.33947 4.99999 4.375 4.99999H8.33333"
-                              stroke="#6F3DCB"
-                              stroke-width="1.5"
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                            />
-                          </svg>
+                          <BsEye />
                           {/* </button> */}
                         </td>
                       </tr>

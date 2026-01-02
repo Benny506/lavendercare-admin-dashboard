@@ -12,7 +12,7 @@ export default function Modal({ isOpen, onClose, children }) {
       ></div>
 
       {/* Modal Content */}
-      <div className="relative bg-white rounded-2xl shadow-lg max-w-11/12 lg:min-w-2/5 min-w-4/5 overflow-y-auto max-h-4/5 mx-auto p-6 z-10">
+      <div className="relative bg-white rounded-2xl shadow-lg max-w-11/12 lg:min-w-3/5 min-w-4/5 overflow-y-auto max-h-4/5 mx-auto p-6 z-10">
         {/* Close Button */}
         <button
           onClick={onClose}

@@ -12,6 +12,8 @@ import { data, useNavigate } from "react-router-dom";
 import PathHeader from "../components/PathHeader";
 import useApiReqs from "../../../hooks/useApiReqs";
 import ServiceCategoryModal from "./auxiliary/ServiceCategoryModal";
+import { usePagination } from "../../../hooks/usePagination";
+import Pagination from "../components/Pagination";
 
 
 function ServiceProvider() {
@@ -19,176 +21,50 @@ function ServiceProvider() {
 
   const navigate = useNavigate()
 
-  const { fetchVendorServiceCategories, deleteVendorServiceCategory, addVendorServiceCategory, } = useApiReqs()
+  const { fetchVendorServiceCategories, deleteVendorServiceCategory, addVendorServiceCategory, fetchServices, updateService } = useApiReqs()
 
-  const vendors = useSelector(state => getAdminState(state).vendors)
-  const vendorServices = useSelector(state => getAdminState(state).vendorServices)
+  const services = useSelector(state => getAdminState(state).services)
   const vendorServiceCategories = useSelector(state => getAdminState(state).vendorServiceCategories)
 
   const [rejectModal, setRejectModal] = useState({ visible: false, hide: null, data: {} });
   const [activeTab, setActiveTab] = useState('all')
-  const [services, setServices] = useState([])
   const [apiReqs, setApiReqs] = useState({ isLoading: false, data: null, errorMsg: null })
   const [searchFilter, setSearchFilter] = useState('')
   const [canLoadMore, setCanLoadMore] = useState(true)
+  const [currentPage, setCurrentPage] = useState(0)
+  const [pageListIndex, setPageListIndex] = useState(0)
   const [serviceCategoryModal, setServiceCategoryModal] = useState({ visible: false, hide: null })
 
   useEffect(() => {
-    const loadedServices = (vendorServices || [])
+    const loadedServices = (services || [])
 
     fetchVendorServiceCategories({})
 
-    if (loadedServices?.length > 0) {
-      setServices(loadedServices)
-
-    } else {
-      setApiReqs({
-        isLoading: true,
-        errorMsg: null,
-        data: {
-          type: 'fetchServices',
-          requestInfo: {}
-        }
-      })
-    }
+    fetchServices({})
   }, [])
 
   useEffect(() => {
     const { isLoading, data } = apiReqs
 
-    if (isLoading) dispatch(appLoadStart());
-    else dispatch(appLoadStop())
+    // if (isLoading) dispatch(appLoadStart());
+    // else dispatch(appLoadStop())
 
     if (isLoading && data) {
       const { type, requestInfo } = data
 
-      if (type === 'fetchServices') {
-        fetchServices({ requestInfo })
-      }
-
-      if (type === 'updateServiceStatus') {
-        updateServiceStatus({ requestInfo })
-      }
-
-      if(type === 'addVendorServiceCategory'){
+      if (type === 'addVendorServiceCategory') {
         addVendorServiceCategory({
           service: requestInfo?.service
         })
       }
 
-      if(type === 'deleteVendorServiceCategory'){
+      if (type === 'deleteVendorServiceCategory') {
         deleteVendorServiceCategory({
           service: requestInfo?.service
         })
-      }      
+      }
     }
   }, [apiReqs])
-
-  const fetchServices = async ({ requestInfo }) => {
-    try {
-
-      const limit = 1000;
-      const from = (vendorServices?.length || 0);
-      const to = from + limit - 1;
-
-      const { data, error } = await supabase
-        .from('services')
-        .select(`
-          *,
-          types: service_types ( * )
-        `)
-        .order('created_at', { ascending: true, nullsFirst: false })
-        .limit(limit)
-        .range(from, to);
-
-      if (error) {
-        console.log(error)
-        throw new Error()
-      }
-
-      if (data?.length === 0) {
-        toast.info("All services loaded")
-        setCanLoadMore(false)
-        setApiReqs({ isLoading: false, data: null, errorMsg: null })
-        return;
-      }
-
-      const _services = data?.map(s => {
-        const vendorProfile = vendors?.filter(v => v?.id === s?.vendor_id)[0]
-        return {
-          ...s,
-          vendorProfile: vendorProfile || {}
-        }
-      })
-
-      setServices(_services)
-      dispatch(setAdminState({ vendorServices: _services }))
-
-      setApiReqs({ isLoading: false, data: null, errorMsg: null })
-
-    } catch (error) {
-      console.log(error)
-      return fetchServicesFailure({ errorMsg: 'Something went wrong! Try again.' })
-    }
-  }
-  const fetchServicesFailure = ({ errorMsg }) => {
-    setApiReqs({ isLoading: false, errorMsg, data: null })
-    toast.error(errorMsg)
-
-    return;
-  }
-
-  const updateServiceStatus = async ({ requestInfo }) => {
-    try {
-
-      const { newStatus, service_id } = requestInfo
-
-      const { data, error } = await supabase
-        .from('services')
-        .update({ status: newStatus })
-        .eq("id", service_id)
-        .select()
-        .single()
-
-      if (error) {
-        console.log(error)
-        throw new Error()
-      }
-
-      const updatedServices = services.map(s => {
-        if (s?.id === service_id) {
-          return {
-            ...s,
-            status: newStatus
-          }
-        }
-
-        return s
-      })
-
-      setServices(updatedServices)
-
-      dispatch(setAdminState({
-        vendorServices: updatedServices
-      }))
-
-      setApiReqs({ isLoading: false, data: null, errorMsg: null })
-
-      toast.success("Service status updated")
-
-      return
-
-    } catch (error) {
-      console.log(error)
-      return updateServiceStatusFailure({ errorMsg: 'Something went wrong! Try again.' })
-    }
-  }
-  const updateServiceStatusFailure = ({ errorMsg }) => {
-    setApiReqs({ isLoading: false, data: null, errorMsg })
-    toast.error(errorMsg)
-
-    return
-  }
 
   const openServiceCategoryModal = () => setServiceCategoryModal({ visible: true, hide: hideServiceCategoryModal })
   const hideServiceCategoryModal = () => setServiceCategoryModal({ visible: false, hide: null })
@@ -203,16 +79,12 @@ function ServiceProvider() {
     alterServiceStatus({ newStatus: 'approved', service_id: s?.id })
   }
   const alterServiceStatus = ({ newStatus, service_id }) => {
-    setApiReqs({
-      isLoading: true,
-      errorMsg: null,
-      data: {
-        type: 'updateServiceStatus',
-        requestInfo: {
-          newStatus,
-          service_id
-        }
-      }
+    updateService({
+      callBack: ({ }) => { },
+      update: {
+        status: newStatus
+      },
+      service_id
     })
 
     return
@@ -221,7 +93,7 @@ function ServiceProvider() {
   const filteredData = services?.filter(s => {
 
     const serviceName = s?.service_name || ''
-    const businessName = s?.vendorProfile?.business_name || ''
+    const username = s?.provider?.username || ''
 
     const matchesTab = activeTab === 'all' ? true : activeTab === s?.status
 
@@ -233,20 +105,52 @@ function ServiceProvider() {
 
         ||
 
-        businessName?.toLowerCase().includes(searchFilter?.toLowerCase())
+        username?.toLowerCase().includes(searchFilter?.toLowerCase())
         ||
-        searchFilter?.toLowerCase().includes(businessName?.toLowerCase())
+        searchFilter?.toLowerCase().includes(username?.toLowerCase())
       )
 
     return matchesTab && matchesSearch
   })
+
+  const { pageItems, totalPages, pageList, totalPageListIndex } = usePagination({
+    arr: filteredData,
+    maxShow: 4,
+    index: currentPage,
+    maxPage: 5,
+    pageListIndex
+  });
+
+  const incrementPageListIndex = () => {
+    alert(totalPageListIndex)
+    alert(pageListIndex)
+    if (pageListIndex === totalPageListIndex) {
+      setPageListIndex(0)
+
+    } else {
+      setPageListIndex(prev => prev + 1)
+    }
+
+    return
+  }
+
+  const decrementPageListIndex = () => {
+    if (pageListIndex == 0) {
+      setPageListIndex(totalPageListIndex)
+
+    } else {
+      setPageListIndex(prev => prev - 1)
+    }
+
+    return
+  }
 
   return (
     <div className="pt-6 w-full pb-5">
       {/* Breadcrumbs and title */}
       <PathHeader
         paths={[
-          { text: 'Vendors' }
+          { text: 'Services' }
         ]}
       />
 
@@ -340,13 +244,13 @@ function ServiceProvider() {
 
             <tbody className=" divide-y">
               {
-                filteredData?.length > 0
+                pageItems?.length > 0
                   ?
-                  filteredData.map((v, idx) => {
+                  pageItems.map((v, idx) => {
                     return (
-                      <tr key={v.name + idx} className="border-t border-gray-100">
+                      <tr key={idx} className="border-t border-gray-100">
                         <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
-                          {v?.vendorProfile?.business_name}
+                          {v?.provider?.username}
                         </td>
                         <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
                           {v?.service_name}
@@ -391,13 +295,13 @@ function ServiceProvider() {
                             )}
 
                             <button
-                              onClick={() => navigate('/admin/service-provider/single-vendor/service-details', { state: { vendor: v?.vendorProfile, service: v } })}
+                              onClick={() => navigate('/admin/services/single-provider/service-details', { state: { provider: v?.provider, service: v } })}
                               className="bg-purple-600 cursor-pointer text-white px-3 py-1 rounded text-xs w-full sm:w-auto transition hover:bg-purple-700"
                             >
                               Service Info
                             </button>
                             <button
-                              onClick={() => navigate('/admin/service-provider/single-vendor', { state: { user: v?.vendorProfile } })}
+                              onClick={() => navigate('/admin/services/single-provider', { state: { provider: v?.provider } })}
                               className="bg-purple-100 cursor-pointer text-purple-600 hover:bg-purple-200 px-3 py-1 rounded text-xs w-full sm:w-auto transition"
                             >
                               Business Info
@@ -424,6 +328,21 @@ function ServiceProvider() {
             </tbody>
           </table>
 
+          <Pagination
+            currentPage={currentPage}
+            pageItems={pageItems}
+            pageListIndex={pageListIndex}
+            pageList={pageList}
+            totalPageListIndex={totalPageListIndex}
+            decrementPageListIndex={decrementPageListIndex}
+            incrementPageListIndex={incrementPageListIndex}
+            setCurrentPage={setCurrentPage}
+          />
+
+          <div className="mb-2" />
+        </div>
+
+        <div>
           {
             canLoadMore
             &&
@@ -482,7 +401,7 @@ function ServiceProvider() {
         }}
       />
 
-      <ServiceCategoryModal 
+      <ServiceCategoryModal
         modalProps={serviceCategoryModal}
         setApiReqs={setApiReqs}
       />

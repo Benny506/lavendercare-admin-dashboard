@@ -10,78 +10,27 @@ import { toast } from "react-toastify"
 import ZeroItems from "../../components/ZeroItems"
 import { formatTimeToDuration, formatTimeToHHMMSS, timeToAMPM_FromHour } from "../../../../lib/utils"
 import { vendorStatusColors } from "../../../../lib/utils_Jsx"
+import { getPublicImageUrl } from "../../../../lib/requestApi"
 
 export default function VendorInfo({ vendor }) {
     const dispatch = useDispatch()
 
     if (!vendor) return <></>
 
+    const image_url = vendor?.profile_img ? getPublicImageUrl({ path: vendor?.profile_img, bucket_name: 'user_profiles' }) : null
+
     return (
-        <div className="bg-white rounded-xl w-full max-w-xs flex-shrink-0 flex flex-col gap-6 items-center lg:items-start">
-            <div className="flex flex-wrap gap-2 items-center justify-start lg:items-start w-full">
+        <div className="bg-white rounded-xl w-full flex flex-col gap-6 items-start justify-start p-4">
+            <div className="flex flex-wrap gap-2 items-center w-full">
                 <ProfileImg
-                    profile_img={vendor?.profile_img}
-                    name={vendor?.business_name}
+                    profile_img={image_url}
+                    name={vendor?.username}
                     size='12'
                 />
                 <div className="flex flex-col items-center gap-1">
-                    <span className="font-bold text-lg">{vendor?.business_name}</span>
-                    <span className="font-light text-sm text-gray-600">{vendor?.location}</span>
+                    <span className="font-bold text-lg">{vendor?.username}</span>
                 </div>
-            </div>
-
-            <div
-                style={{
-                    borderBottom: '1px solid gray'
-                }}
-                className="w-full pb-6"
-            >
-                <div className="text-lg font-medium text-black mb-4">Bio</div>
-                <p className="text-gray-600 m-0 p-0 font-medium text-sm">
-                    {vendor?.bio || 'Not set'}
-                </p>
-            </div>
-
-            <div
-                style={{
-                    borderBottom: '1px solid gray'
-                }}
-                className="w-full pb-6"
-            >
-                <div className="text-lg font-medium text-black mb-4">Basic Info</div>
-
-                {
-                    [
-                        { Icon: () => <FaPhone color="gray" size={15} />, value: vendor?.phone_number || 'Not set' },
-                        { Icon: () => <MdEmail color="gray" size={15} />, value: vendor?.email || 'Not set' },
-                        { Icon: () => <FaLocationArrow color="gray" size={15} />, value: vendor?.location || 'Not set' },
-                    ]
-                        .map((s, i) => {
-                            const { Icon, value } = s
-
-                            return (
-                                <div
-                                    key={i}
-                                    className="text-sm mb-2 flex gap-2 items-center"
-                                >
-                                    <Icon /> <span className="font-medium text-gray-600">{value}</span>
-                                </div>
-                            )
-                        })
-                }
-            </div>    
-
-            <div
-                style={{
-                    borderBottom: '1px solid gray'
-                }}
-                className="w-full pb-6"
-            >
-                <div className="text-lg font-medium text-black mb-4">Working condition</div>
-                <p className="text-gray-600 m-0 p-0 font-medium text-sm">
-                    {vendor?.working_condition || 'Not set'}
-                </p>
-            </div>                             
+            </div>                           
         </div>
     )
 }

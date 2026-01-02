@@ -9,30 +9,14 @@ import { MdCheckBox, MdCheckBoxOutlineBlank, MdDelete } from 'react-icons/md';
 import { useDispatch, useSelector } from 'react-redux';
 import { appLoadStart, appLoadStop } from '../../../redux/slices/appLoadingSlice';
 import { toast } from 'react-toastify';
-import Modal from '../components/ui/Modal';
-import Badge from '../components/ui/Badge';
-import Carousel from '../components/ui/Carousel';
 import { getMultiplePublicUrls, getPublicImageUrl, getPublicUrl, uploadAsset } from '../../../lib/requestApi';
 import supabase from '../../../database/dbInit';
-import { formatNumberWithCommas } from '../../../lib/utils';
-import ProductVariants from './AddVariantValueModal';
 import { getAdminState, setAdminState } from '../../../redux/slices/adminState';
 import useApiReqs from '../../../hooks/useApiReqs';
 import { BsBox2, BsCheck2Square, BsTrash } from 'react-icons/bs';
 import ProductImage from './ProductImage';
 import { v4 as uuidv4 } from 'uuid';
-
-
-
-
-
-//HIDING A PRODUCT IS NOT WORKING
-//EDIT PRODUCT VARIANT ADDITION FLOW
-//UPDATE WHAT CATEGORIES ARE VISIBLE FOR BOOKINGS (APP)!
-
-
-
-
+import ProductForm from './ProductForm';
 
 
 const validationSchema = yup.object().shape({
@@ -90,7 +74,7 @@ function AddProduct() {
   const [productInfo, setProductInfo] = useState(null)
   const [apiReqs, setApiReqs] = useState({
     isLoading: false, errorMsg: null, data: null
-  })
+  })  
 
   useEffect(() => {
     fetchProductCategories({})
@@ -243,6 +227,24 @@ function AddProduct() {
 
     return;
   }
+
+  return (
+    <ProductForm
+      productInfo={productInfo}
+      product={product}
+      product_id={product_id}
+      categories={categories}
+      setCategories={setCategories}
+      productCategories={productCategories}
+      categoryInput={categoryInput}
+      setCategoryInput={setCategoryInput}
+      addProductCategory={addProductCategory}
+      productPreviews={productPreviews}
+      setProductPreviews={setProductPreviews}
+      setProductInfo={setProductInfo}
+      setApiReqs={setApiReqs}
+    />
+  )
 
   return (
     <div className="w-full py-6">

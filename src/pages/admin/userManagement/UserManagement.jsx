@@ -9,12 +9,13 @@ import { isoToDateTime } from "../../../lib/utils";
 import ZeroItems from "../components/ZeroItems";
 import { Select } from "../components/ui/Select";
 import { userTypes } from "../../../lib/utils_Jsx";
-import { onRequestApi } from "../../../lib/requestApi";
+import { getPublicImageUrl, onRequestApi } from "../../../lib/requestApi";
 import Pagination from "../components/Pagination";
 import { usePagination } from "../../../hooks/usePagination";
 import Modal from "../components/ui/Modal";
 import PathHeader from "../components/PathHeader";
 import useApiReqs from "../../../hooks/useApiReqs";
+import ProfileImg from "../components/ProfileImg";
 
 
 function UserManagement() {
@@ -200,7 +201,7 @@ function UserManagement() {
   // Filter users based on search term
   const filteredUsers = users.filter(
     (user) => {
-      const name = user?.name || user?.business_name || user?.provider_name || ''
+      const name = user?.name || user?.business_name || user?.username || ''
 
       const email = user?.email || ''
 
@@ -271,9 +272,9 @@ function UserManagement() {
   };
 
   const handleViewProfile = () => {
-    if(!selectedUser) return <></>
+    if(!selectedUser) return;
 
-    navigate(
+    const path = 
       selectedUser?.role === 'mother'
       ? 
         '/admin/mothers/single-mother'
@@ -282,14 +283,13 @@ function UserManagement() {
       ?
         '/admin/healthcare-provider/single-provider'
       :
-      selectedUser?.role === 'vendor'
-      ?
-        '/admin/service-provider/single-vendor'      
-      :
       ''
-      , 
-      { state: { user: selectedUser } }
-    )
+    
+    const key = selectedUser?.role === 'provider' ? 'provider' : 'user' 
+    
+    if(!path) return;
+
+    navigate(path, { state: { [key]: selectedUser } })
   }
 
   return (
@@ -403,6 +403,12 @@ function UserManagement() {
                   scope="col"
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 "
                 >
+                  Profile
+                </th>                
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 "
+                >
                   Name
                 </th>
                 <th
@@ -440,9 +446,11 @@ function UserManagement() {
             <tbody className="bg-white divide-y divide-gray-200">
               {pageItems.length > 0 ? (
                 pageItems.map((user) => {
-                  const name = user?.name || user?.business_name || user?.provider_name
+                  const name = user?.name || user?.username
 
                   const lastLogin = user?.last_sign_in_at ? isoToDateTime({ isoString: user?.last_sign_in_at }) : 'Null'
+
+                  const profile_img = getPublicImageUrl({ path: user?.profile_img, bucket_name: 'user_profiles' })
 
                   return (
                     <tr
@@ -450,6 +458,12 @@ function UserManagement() {
                       className="hover:bg-gray-50 hover:cursor-pointer"
                       onClick={() => openUserModal(user)}
                     >
+                      <td className=" py-4 whitespace-nowrap">
+                        <ProfileImg 
+                          profile_img={profile_img}
+                          name={name}
+                        />
+                      </td>                      
                       <td className=" py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="ml-4">
@@ -530,7 +544,7 @@ function UserManagement() {
               ) : (
                 <tr>
                   <td
-                    colSpan="6"
+                    colSpan="7"
                     className="px-6 py-4 text-center text-sm text-gray-500"
                   >
                     <ZeroItems 
@@ -552,6 +566,8 @@ function UserManagement() {
             incrementPageListIndex={incrementPageListIndex}
             setCurrentPage={setCurrentPage}
           />
+
+          <div className="mb-2" />
         </div>
 
         {
@@ -612,11 +628,11 @@ function UserManagement() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center mb-4">
                   <div className="h-[50px] w-[50px] rounded-full bg-gray-200 flex items-center justify-center text-2xl font-bold text-gray-600">
-                    {(selectedUser.name || selectedUser?.provider_name || selectedUser?.business_name).charAt(0)}
+                    {(selectedUser.name || selectedUser?.username)?.charAt(0)}
                   </div>
                   <div className="ml-4">
                     <h4 className="text-lg font-semibold">
-                      {selectedUser?.name || selectedUser?.business_name || selectedUser?.provider_name}
+                      {selectedUser?.name || selectedUser?.username}
                     </h4>
                     <p className="text-sm text-gray-500">
                       {selectedUser.role}
@@ -640,7 +656,7 @@ function UserManagement() {
                   </span>
                   <span>{selectedUser.phone_number || 'Not set'}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex gap-2">
                   <span className="text-sm text-gray-500">
                     Last Login:
                   </span>
@@ -677,26 +693,14 @@ function UserManagement() {
                 {selectedUser.role === "provider" && (
                   <div className="mt-4 p-3 bg-green-50 rounded-lg">
                     <h5 className="font-medium text-green-800">
-                      Healthcare Provider
+                      Provider
                     </h5>
                     <p className="text-sm text-green-700 mt-1">
-                      Access to patient records and appointment
+                      Access to appointment
                       management.
                     </p>
                   </div>
-                )}
-
-                {selectedUser.role === "vendor" && (
-                  <div className="mt-4 p-3 bg-yellow-50 rounded-lg">
-                    <h5 className="font-medium text-yellow-800">
-                      Vendor service Provider
-                    </h5>
-                    <p className="text-sm text-yellow-700 mt-1">
-                      Access to patient service bookings and appointment
-                      management.
-                    </p>
-                  </div>
-                )}                
+                )}               
               </div>
             </div>
 

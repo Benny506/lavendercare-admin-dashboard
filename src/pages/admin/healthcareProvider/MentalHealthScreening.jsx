@@ -15,6 +15,8 @@ import PathHeader from "../components/PathHeader";
 import { BsCheck } from "react-icons/bs";
 import { MdOutlineCancel } from "react-icons/md";
 import FeedBackModal from "./auxiliary/FeedBackModal";
+import Pagination from "../components/Pagination";
+import { usePagination } from "../../../hooks/usePagination";
 
 
 function MentalHealthScreening() {
@@ -32,6 +34,8 @@ function MentalHealthScreening() {
   const [searchFilter, setSearchFilter] = useState('')
   const [testInfoModal, setTestInfoModal] = useState({ visible: false, hide: null, data: null })
   const [canLoadMore, setCanLoadMore] = useState(true)
+  const [currentPage, setCurrentPage] = useState(0)
+  const [pageListIndex, setPageListIndex] = useState(0)
 
   useEffect(() => {
     fetchTestResults({
@@ -77,6 +81,36 @@ function MentalHealthScreening() {
 
     return matchesSearch && matchesSelect
   })
+
+  const { pageItems, totalPages, pageList, totalPageListIndex } = usePagination({
+    arr: filteredData,
+    maxShow: 4,
+    index: currentPage,
+    maxPage: 5,
+    pageListIndex
+  });
+
+  const incrementPageListIndex = () => {
+    if (pageListIndex === totalPageListIndex) {
+      setPageListIndex(0)
+
+    } else {
+      setPageListIndex(prev => prev + 1)
+    }
+
+    return
+  }
+
+  const decrementPageListIndex = () => {
+    if (pageListIndex == 0) {
+      setPageListIndex(totalPageListIndex)
+
+    } else {
+      setPageListIndex(prev => prev - 1)
+    }
+
+    return
+  }
 
   return (
     <div className="pt-6 min-h-screen">
@@ -183,9 +217,9 @@ function MentalHealthScreening() {
             </thead>
             <tbody>
               {
-                filteredData?.length > 0
+                pageItems?.length > 0
                   ?
-                  filteredData.map((s, idx) => {
+                  pageItems.map((s, idx) => {
 
                     const { answer } = s
 
@@ -222,10 +256,10 @@ function MentalHealthScreening() {
                           <button
                             className="bg-purple-600 cursor-pointer text-white px-4 py-1 rounded-full text-xs w-full sm:w-auto transition hover:bg-purple-700"
                             onClick={() =>
-                              navigate(`/admin/mothers/mother-messages?mother_id=${s?.user_profile?.id}`, { state: { mother_id: s?.user_profile?.id } })
+                              navigate(`/admin/mothers/single-mother`, { state: { user: s?.user_profile } })
                             }
                           >
-                            Chat
+                            Mother Info
                           </button>
                           {
                             !feedBackSent
@@ -242,7 +276,7 @@ function MentalHealthScreening() {
                           }
 
                           <button
-                            className="bg-purple-600 cursor-pointer text-white px-4 py-1 rounded-full text-xs w-full sm:w-auto transition hover:bg-purple-700"
+                            className="bg-gray-600 cursor-pointer text-white px-4 py-1 rounded-full text-xs w-full sm:w-auto transition hover:bg-grey-700"
                             onClick={() =>
                               navigate(`/admin/healthcare-provider/mental-health-screening/${s?.id}`, { state: { patient_id: s?.user_profile?.id } })
                             }
@@ -250,12 +284,12 @@ function MentalHealthScreening() {
                             View Details
                           </button>
 
-                          <button
+                          {/* <button
                             className="bg-gray-600 cursor-pointer text-white px-4 py-1 rounded-full text-xs w-full sm:w-auto transition hover:bg-grey-700"
                             onClick={() => openTestInfoModal(s)}
                           >
                             Test info
-                          </button>
+                          </button> */}
                         </td>
                       </tr>
                     )
@@ -269,6 +303,19 @@ function MentalHealthScreening() {
               }
             </tbody>
           </table>
+
+          <Pagination
+            currentPage={currentPage}
+            pageItems={pageItems}
+            pageListIndex={pageListIndex}
+            pageList={pageList}
+            totalPageListIndex={totalPageListIndex}
+            decrementPageListIndex={decrementPageListIndex}
+            incrementPageListIndex={incrementPageListIndex}
+            setCurrentPage={setCurrentPage}
+          />
+
+          <div className="pb-2" />          
         </div>
       </div>
 
