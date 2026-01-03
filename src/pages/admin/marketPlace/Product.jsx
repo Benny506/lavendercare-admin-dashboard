@@ -17,7 +17,6 @@ import { BsCheck } from "react-icons/bs";
 import { MdOutlineCancel } from "react-icons/md";
 import { getPublicImageUrl } from "../../../lib/requestApi";
 import ProfileImg from "../components/ProfileImg";
-import Button from "../components/ui/button";
 
 function Product() {
   const dispatch = useDispatch()
