@@ -14,7 +14,7 @@ import { toast } from "react-toastify";
 import PatientInfo from "../mothers/PatientInfo";
 import { getAdminState } from "../../../redux/slices/adminState";
 import { getPublicImageUrl } from "../../../lib/requestApi";
-import Button from "../components/ui/button";
+import Button from "../components/ui/Button";
 import ProvidersModal from "../components/ProvidersModal";
 
 

@@ -14,7 +14,7 @@ import useApiReqs from "../../../../hooks/useApiReqs";
 import ServiceType from "./ServiceType";
 import AddServiceModal from "./AddServiceModal";
 import ServiceHours from "./ServiceHours";
-import Button from "../../components/ui/button";
+import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 
 export default function ServiceDetails() {

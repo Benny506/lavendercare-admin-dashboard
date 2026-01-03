@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import * as yup from 'yup'
 import ErrorMsg1 from '../../components/ErrorMsg1';
 import HourSelect from '../../components/HourSelect';
-import Button from '../../components/ui/button';
+import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import InputGroup from '../../components/ui/InputGroup';
 import { extractHour_FromHHMM, hourNumberToHHMM, timeToAMPM_FromHour } from '../../../../lib/utils';

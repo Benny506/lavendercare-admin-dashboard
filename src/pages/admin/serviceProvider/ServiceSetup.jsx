@@ -8,7 +8,7 @@ import Card from "../components/ui/Card";
 import ErrorMsg1 from "../components/ErrorMsg1";
 import InputGroup from "../components/ui/InputGroup";
 import HourSelect from "../components/HourSelect";
-import Button from "../components/ui/button";
+import Button from "../components/ui/Button";
 import { countries, NigerianCities, states } from "../../../constants/locationConstants";
 import useApiReqs from "../../../hooks/useApiReqs";
 import { extractHour_FromHHMM, formatNumberWithCommas, formatTo12Hour, hourNumberToHHMM, secondsToLabel, timeToAMPM_FromHour } from "../../../lib/utils";
