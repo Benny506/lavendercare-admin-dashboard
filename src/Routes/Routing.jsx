@@ -139,14 +139,14 @@ function Routing() {
             path="/admin/services/disputes"
             element={<Disputes />}
           /> */}
-            <Route
+            {/* <Route
               path="/admin/services/performance"
               element={<Performance />}
             />
             <Route
               path="/admin/services/disputes/:id"
               element={<DisputeDetails />}
-            />
+            /> */}
 
 
 

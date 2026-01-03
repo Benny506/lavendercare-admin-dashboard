@@ -14,7 +14,7 @@ import { getPublicImageUrl } from "../../../lib/requestApi";
 import LicenseBadge from "./auxiliary/LicenseBadge";
 import { usePagination } from "../../../hooks/usePagination";
 import Pagination from "../components/Pagination";
-import { sendEmail } from "../../../lib/email";
+import { sendEmail, statusUpdateMail } from "../../../lib/email";
 
 function ReviewCredential() {
   const dispatch = useDispatch()
@@ -60,21 +60,17 @@ function ReviewCredential() {
         throw new Error()
       }
 
-      await sendEmail({
-        // to_email: selectedProvider?.email,
+      await statusUpdateMail({
         to_email: 'olomufeh@gmail.com',
         subject: 'License status update',
-        data: {
-          status,
-          provider_name: selectedProvider?.username,
-          extra_text: 
-            status === 'approved'
+        title: `License ${status}`,
+        provider_name: selectedProvider?.username,
+        extra_text:
+          status === 'approved'
             ?
-              `Your submitted license document(s) have been approved. You are eligible to create healthcare services. Although, every service you create will still be reviewed before it is made publicly available to all mothers on LavenderCare`
+            `Your submitted license document(s) have been approved. You are eligible to create healthcare services. Although, every service you create will still be reviewed before it is made publicly available to all mothers on LavenderCare`
             :
-              `Your submitted license document(s) have been rejected and thus deleted. Kindly re-visit your dashboard and resubmit if you intend to offer Health-Care services.`
-        },
-        template_id: '351ndgwm9nrlzqx8'
+            `Your submitted license document(s) have been rejected and thus deleted. Kindly re-visit your dashboard and resubmit if you intend to offer Health-Care services.`
       })
 
       const updatedProviders = (providers || []).map(p => {

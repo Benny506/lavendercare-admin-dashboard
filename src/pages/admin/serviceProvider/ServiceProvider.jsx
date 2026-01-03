@@ -14,6 +14,7 @@ import useApiReqs from "../../../hooks/useApiReqs";
 import ServiceCategoryModal from "./auxiliary/ServiceCategoryModal";
 import { usePagination } from "../../../hooks/usePagination";
 import Pagination from "../components/Pagination";
+import { statusUpdateMail } from "../../../lib/email";
 
 
 function ServiceProvider() {
@@ -34,6 +35,7 @@ function ServiceProvider() {
   const [currentPage, setCurrentPage] = useState(0)
   const [pageListIndex, setPageListIndex] = useState(0)
   const [serviceCategoryModal, setServiceCategoryModal] = useState({ visible: false, hide: null })
+  const [rejectServiceReason, setRejectServiceReason] = useState('')
 
   useEffect(() => {
     const loadedServices = (services || [])
@@ -78,9 +80,28 @@ function ServiceProvider() {
   const approveService = (s) => {
     alterServiceStatus({ newStatus: 'approved', service_id: s?.id })
   }
-  const alterServiceStatus = ({ newStatus, service_id }) => {
+  const alterServiceStatus = async ({ newStatus, service_id }) => {
+
+    const provider_id = services?.filter(s => s?.id === service_id)?.[0]?.provider?.id
+    const provider_name = services?.filter(s => s?.id === service_id)?.[0]?.provider?.username
+    const service_name = services?.filter(s => s?.id === service_id)?.[0]?.service_name
+
     updateService({
-      callBack: ({ }) => { },
+      callBack: async ({ }) => {
+        await statusUpdateMail({
+          receiver_id: provider_id,
+          subject: `Service Status Update`,
+          title: `Service ${newStatus}`,
+          extra_text:
+            newStatus === 'approved'
+              ?
+              `Your service: ${service_name} has been approved`
+              :
+              `Your service: ${service_name} was rejected. ${rejectServiceReason}`,
+          provider_name
+        })
+        setRejectServiceReason('')
+      },
       update: {
         status: newStatus
       },
@@ -164,7 +185,7 @@ function ServiceProvider() {
         </div>
 
         <div className="bg-white rounded-xl p-4 flex flex-col min-w-[120px] mb-4">
-          <span className="text-xs text-gray-500 mb-1">Vendor Service Categories</span>
+          <span className="text-xs text-gray-500 mb-1">All Service Categories</span>
           <span className="text-3xl font-bold">
             {vendorServiceCategories?.length || 0}
           </span>
@@ -399,7 +420,17 @@ function ServiceProvider() {
             noFunc: () => { },
           }
         }}
-      />
+      >
+        <p className="mb-2 text-sm text-gray-500">Reason for rejecting this service {'('}optional{')'}</p>
+        <div className="relative">
+          <textarea
+            value={rejectServiceReason}
+            onChange={e => setRejectServiceReason(e.target.value)}
+            placeholder="Because of this or that"
+            className="w-full rounded-xl bg-white px-4 py-3 text-gray-900 shadow-sm border border-gray-200 transition-all duration-200 focus:outline-none focus:border-[#703dcb] focus:ring-4 focus:ring-[#703dcb]/15 hover:shadow-md"
+          />
+        </div>
+      </ConfirmModal>
 
       <ServiceCategoryModal
         modalProps={serviceCategoryModal}

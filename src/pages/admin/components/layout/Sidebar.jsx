@@ -38,7 +38,7 @@ const sidebarMenu = [
     path: "/admin/services",
     submenu: [
       { title: "View All", path: "/admin/services" },
-      { title: "Performance", path: "/admin/services/performance" },
+      // { title: "Performance", path: "/admin/services/performance" },
       // {
       //   title: "Disputes and Issues",
       //   path: "/admin/services/disputes",

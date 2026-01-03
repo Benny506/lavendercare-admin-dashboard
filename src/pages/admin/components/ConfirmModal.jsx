@@ -1,6 +1,6 @@
 import Modal from "./ui/Modal";
 
-export default function ConfirmModal({ modalProps }){
+export default function ConfirmModal({ modalProps, children }){
 
     if(!modalProps) return <></>
 
@@ -34,6 +34,14 @@ export default function ConfirmModal({ modalProps }){
             <div className="text-sm text-gray-600 mb-6">
                 { data?.msg || 'Are you sure. This action cannot be undone' }
             </div>
+
+            {
+                children
+                &&
+                    <div className="mb-6">
+                        { children }
+                    </div>
+            }
 
             <div className="flex justify-end gap-2">
                 <button
