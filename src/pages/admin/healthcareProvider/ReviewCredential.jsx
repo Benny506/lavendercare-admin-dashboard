@@ -61,10 +61,12 @@ function ReviewCredential() {
       }
 
       await statusUpdateMail({
-        to_email: 'olomufeh@gmail.com',
+        to_email: selectedProvider?.email,
+        receiver_id: selectedProvider?.id,
+        btn_link: "https://lavendercare-providers.netlify.app/#/settings",
         subject: 'License status update',
         title: `License ${status}`,
-        provider_name: selectedProvider?.username,
+        username: selectedProvider?.username,
         extra_text:
           status === 'approved'
             ?

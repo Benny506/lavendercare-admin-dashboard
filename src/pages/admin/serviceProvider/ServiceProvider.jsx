@@ -98,7 +98,8 @@ function ServiceProvider() {
               `Your service: ${service_name} has been approved`
               :
               `Your service: ${service_name} was rejected. ${rejectServiceReason}`,
-          provider_name
+          username: provider_name,
+          btn_link: "https://lavendercare-providers.netlify.app/#/services"
         })
         setRejectServiceReason('')
       },
