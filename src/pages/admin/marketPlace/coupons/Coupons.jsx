@@ -13,6 +13,7 @@ import useApiReqs from '../../../../hooks/useApiReqs';
 import CouponAnalysis from './CouponAnalysis';
 import PathHeader from '../../components/PathHeader';
 import { BsSearch } from 'react-icons/bs';
+import { FaEdit } from 'react-icons/fa';
 
 const tabFilters = [
     { key: "stats", label: "Analytics" },
@@ -158,11 +159,11 @@ export default function Coupons() {
                                                         </button>
 
                                                         <button
-                                                            className="text-blue-600 hover:text-blue-800"
+                                                            className="text-gray-600 hover:text-gray-800"
                                                             onClick={() => navigate("/admin/marketplace/coupons/edit", { state: coupon })}
                                                         >
                                                             <CustomToolTip title="Edit this coupon">
-                                                                <i className="bi bi-pencil"></i>
+                                                                <FaEdit size={20} />
                                                             </CustomToolTip>
                                                         </button>
                                                     </td>

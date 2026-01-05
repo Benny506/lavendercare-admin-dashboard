@@ -69,7 +69,7 @@ export default function CouponForm() {
 
                             if (isEdit) {
                                 editCoupon({
-                                    callBack: () => navigate("/coupons"),
+                                    callBack: () => navigate("/admin/marketplace/coupons"),
                                     requestInfo: payload,
                                     coupon_id: state?.id,
                                 });
