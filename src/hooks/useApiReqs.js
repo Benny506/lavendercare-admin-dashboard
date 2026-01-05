@@ -251,7 +251,7 @@ export default function useApiReqs() {
             dispatch(appLoadStop())
         }
     }
-    const fetchProviderAssignments = async ({ callBack = () => {}, provider_id }) => {
+    const fetchProviderAssignments = async ({ callBack = () => { }, provider_id }) => {
         try {
 
             dispatch(appLoadStart())
@@ -264,7 +264,7 @@ export default function useApiReqs() {
                 `)
                 .eq("provider_id", provider_id)
 
-            if(error){
+            if (error) {
                 console.log(error)
                 throw new Error()
             }
@@ -272,14 +272,14 @@ export default function useApiReqs() {
             dispatch(appLoadStop())
 
             callBack && callBack({ providerAssignments: data })
-            
+
         } catch (error) {
             console.log(error)
             toast.error("Error loading provider assignments")
-            dispatch(appLoadStop())            
+            dispatch(appLoadStop())
         }
     }
-    const assignProvider = async ({ callBack = () => {}, provider_id, mother_id }) => {
+    const assignProvider = async ({ callBack = () => { }, provider_id, mother_id }) => {
         try {
 
             dispatch(appLoadStart())
@@ -293,9 +293,9 @@ export default function useApiReqs() {
                 .select()
                 .single()
 
-            if(error){
+            if (error) {
                 console.log(error)
-                if(error.message.includes("duplicate key")) {
+                if (error.message.includes("duplicate key")) {
                     toast.info("Provider already assigned to this mother")
                     dispatch(appLoadStop())
 
@@ -307,11 +307,11 @@ export default function useApiReqs() {
             dispatch(appLoadStop())
 
             callBack && callBack({ newAssignment: data })
-            
+
         } catch (error) {
             console.log(error)
             toast.error("Error assigning provider")
-            dispatch(appLoadStop())            
+            dispatch(appLoadStop())
         }
     }
 
@@ -1874,6 +1874,121 @@ export default function useApiReqs() {
 
 
 
+    //coupons
+    const createCoupon = async ({ callBack = () => { }, requestInfo }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from('coupons')
+                .insert(requestInfo)
+
+            if (error) {
+                console.log(error)
+                throw new Error()
+            }
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({})
+
+            toast.success("Coupon successfully created")
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error creating coupon. Try again later!.")
+
+        } finally {
+            dispatch(appLoadStop())
+        }
+    }
+    const editCoupon = async ({ callBack = () => { }, requestInfo, coupon_id }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from('coupons')
+                .update(requestInfo)
+                .eq("id", coupon_id)
+
+            if (error) {
+                console.log(error)
+                throw new Error()
+            }
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({})
+
+            toast.success("Coupon successfully updated")
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error updating coupon. Try again later!.")
+
+        } finally {
+            dispatch(appLoadStop())
+        }
+    }
+    const fetchCoupons = async ({ callBack = () => { } }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from("coupons")
+                .select("*")
+
+            if (error) {
+                console.log(error)
+                throw new Error()
+            }
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ coupons: data })
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error fetching coupons. Try again later!.")
+
+        } finally {
+            dispatch(appLoadStop())
+        }
+    }
+    const fetchCouponsUsages = async ({ callBack = () => { } }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from("coupon_usage")
+                .select("*")
+
+            if (error) {
+                console.log(error)
+                throw new Error()
+            }
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ usage: data })
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error fetching coupons usage. Try again later!.")
+
+        } finally {
+            dispatch(appLoadStop())
+        }
+    }
+
+
+
+
+
     const apiReqError = ({ errorMsg }) => {
         toast.error(errorMsg)
         dispatch(appLoadStop())
@@ -1979,6 +2094,16 @@ export default function useApiReqs() {
         //blgs
         fetchBlogCategories,
         addBlogCategory,
-        deleteBlogCategory
+        deleteBlogCategory,
+
+
+
+
+
+        //coupons,
+        createCoupon,
+        editCoupon,
+        fetchCoupons,
+        fetchCouponsUsages
     }
 }

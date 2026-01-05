@@ -30,7 +30,8 @@ export default function SingleOrder({ visible, order, orders = [], setOrders = (
 
     const handleConfirmOrder = ({ pickUpState, pickUpAddress }) => {
         // recipientAddress, recipientState, recipientName, recipientPhone, recipientEmail, uniqueID, batchId, valueOfItem, weight, pickUpState, pickUpAddress, fragile
-        const [address, city, state, country] = order?.shipping_address.split(" - ");
+        const address = order?.shipping_address?.address
+        const state = order?.shipping_address?.state
 
         const phoneData = order?.user_profile?.unique_phones
 
@@ -148,7 +149,7 @@ export default function SingleOrder({ visible, order, orders = [], setOrders = (
                                                     Shipped to:
                                                 </p>
                                                 <p className="fw-bold text-sm text-gray-700">
-                                                    {order?.shipping_address}
+                                                    {order?.shipping_address?.country} {order?.shipping_address?.state} {order?.shipping_address?.city} {order?.shipping_address?.address}
                                                 </p>
                                             </div>
                                         </div>

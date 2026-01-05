@@ -210,6 +210,49 @@ export const formatTimeToHHMMSS = ({ secs }) => {
     .padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 };
 
+export const formatNiceTime = ({ timeUTC }) => {
+  if (!timeUTC) return "";
+
+  const dt = DateTime.fromISO(timeUTC, { zone: "utc" }).setZone(DateTime.local().zoneName);
+  return dt.toFormat("hh:mm a");
+};
+
+export const formatNiceDate = ({ dateUTC }) => {
+  if (!dateUTC) return "";
+
+  const dt = DateTime.fromISO(dateUTC, { zone: "utc" }).setZone(DateTime.local().zoneName);
+  const day = dt.toFormat("cccc"); // Thursday
+  const dayNum = dt.day;
+  const month = dt.toFormat("LLLL"); // October
+
+  // Add suffix to day (st, nd, rd, th)
+  const suffix =
+    dayNum % 10 === 1 && dayNum !== 11
+      ? "st"
+      : dayNum % 10 === 2 && dayNum !== 12
+      ? "nd"
+      : dayNum % 10 === 3 && dayNum !== 13
+      ? "rd"
+      : "th";
+
+  return `${day} ${dayNum}${suffix} ${month}`;
+};
+
+export function formatReadableDate({ dateString }) {
+  const dt = DateTime.fromISO(dateString);
+  const day = dt.day;
+  const suffix =
+    day % 10 === 1 && day !== 11
+      ? "st"
+      : day % 10 === 2 && day !== 12
+      ? "nd"
+      : day % 10 === 3 && day !== 13
+      ? "rd"
+      : "th";
+
+  return `${dt.toFormat("cccc, d'")}${suffix}${dt.toFormat(" MMMM yyyy")}`;
+}
+
 export function formatTimeToDuration({ secs }) {
   const totalMinutes = secs / 60
   const hours = Math.floor(totalMinutes / 60);

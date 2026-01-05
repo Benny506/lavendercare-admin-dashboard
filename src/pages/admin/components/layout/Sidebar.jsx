@@ -85,6 +85,10 @@ const sidebarMenu = [
         title: "Orders",
         path: "/admin/marketplace/orders",
       },
+      {
+        title: "Coupons",
+        path: "/admin/marketplace/coupons",
+      },      
     ],
   },
   // {

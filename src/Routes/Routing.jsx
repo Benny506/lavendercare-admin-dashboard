@@ -70,6 +70,9 @@ import { VoiceNoteProvider } from "../hooks/chatHooks/voiceNotes/useVoiceNote";
 import Orders from "../pages/admin/marketPlace/Orders";
 import VariantCombinations from "../pages/admin/marketPlace/VariantCombinations";
 import ServiceSetup from "../pages/admin/serviceProvider/ServiceSetup";
+import Coupons from "../pages/admin/marketPlace/coupons/Coupons";
+import CouponForm from "../pages/admin/marketPlace/coupons/CouponForm";
+import CouponStats from "../pages/admin/marketPlace/coupons/CouponStats";
 
 function Routing() {
 
@@ -198,6 +201,10 @@ function Routing() {
             <Route path="/admin/marketplace/add-product" element={<AddProduct />} />
             <Route path="/admin/marketplace/edit-product" element={<AddProduct />} />
             <Route path="/admin/marketplace/orders" element={<Orders />} />
+            <Route path="/admin/marketplace/coupons" element={<Coupons />} />
+            <Route path="/admin/marketplace/coupons/create" element={<CouponForm />} />
+            <Route path="/admin/marketplace/coupons/edit" element={<CouponForm />} />
+            <Route path="/admin/marketplace/coupons/single-coupon-stats" element={<CouponStats />} />
             {/* <Route path="/admin/marketplace/promotions" element={<MarketPromotions />} /> */}
 
             {/* order and transactions */}
