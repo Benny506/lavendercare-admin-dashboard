@@ -90,16 +90,11 @@ export default function AddVariantCombination({ modalProps, product, setProduct,
                         .number('Price must be a number')
                         .min(0, 'Price cannot be negative')
                         .required('Price is required'),
-                    weight: yup
-                        .number('Weight must be a number')
-                        .min(0, 'Weight cannot be negative')
-                        .required('Weight is required'),                        
                 })}
                 initialValues={{
                     price_currency: vCombo?.price_currency || '',
                     price_value: vCombo?.price_value || '',
-                    stock: vCombo?.stock || '',
-                    weight: vCombo?.weight || ''
+                    stock: vCombo?.stock || ''
                 }}
                 onSubmit={(values, { resetForm }) => {
                     if (optionsArray?.length > 0) {
@@ -172,18 +167,6 @@ export default function AddVariantCombination({ modalProps, product, setProduct,
                                     />
                                 </div>
                                 <div className="flex flex-col space-y-2 w-1/2 px-1">
-                                    <label className="text-gray-700 font-medium">Weight {'(kg)'}</label>
-                                    <input
-                                        type="number"
-                                        placeholder="0"
-                                        value={values.weight}
-                                        onChange={handleChange}
-                                        onBlur={handleBlur}
-                                        name="weight"
-                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    />
-                                </div>                                
-                                <div className="flex flex-col space-y-2 w-1/2 px-1">
                                     <label className="text-gray-700 font-medium">Price</label>
 
                                     <div className="flex space-x-2">
@@ -221,10 +204,6 @@ export default function AddVariantCombination({ modalProps, product, setProduct,
                             </ErrorMessage>
 
                             <ErrorMessage name="price_value">
-                                {errorMsg => <ErrorMsg1 errorMsg={errorMsg} />}
-                            </ErrorMessage>
-
-                            <ErrorMessage name="weight">
                                 {errorMsg => <ErrorMsg1 errorMsg={errorMsg} />}
                             </ErrorMessage>
                         </div>

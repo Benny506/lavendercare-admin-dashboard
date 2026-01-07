@@ -131,7 +131,7 @@ export default function VariantCombinations() {
                                     <th className="text-left py-4 px-3 font-semibold text-gray-700">Types</th>
                                     <th className="text-left py-4 px-3 font-semibold text-gray-700">Is Virtual ?</th>
                                     <th className="text-left py-4 px-3 font-semibold text-gray-700">Stock</th>
-                                    <th className="text-left py-4 px-3 font-semibold text-gray-700">Weight {'(kg)'}</th>
+                                    <th className="text-left py-4 px-3 font-semibold text-gray-700">Weight</th>
                                     <th className="text-left py-4 px-3 font-semibold text-gray-700">Price</th>
                                     <th className="text-left py-4 px-3 font-semibold text-gray-700">Actions</th>
                                 </tr>

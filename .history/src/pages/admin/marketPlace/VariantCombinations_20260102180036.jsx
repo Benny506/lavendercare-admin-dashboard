@@ -131,7 +131,6 @@ export default function VariantCombinations() {
                                     <th className="text-left py-4 px-3 font-semibold text-gray-700">Types</th>
                                     <th className="text-left py-4 px-3 font-semibold text-gray-700">Is Virtual ?</th>
                                     <th className="text-left py-4 px-3 font-semibold text-gray-700">Stock</th>
-                                    <th className="text-left py-4 px-3 font-semibold text-gray-700">Weight {'(kg)'}</th>
                                     <th className="text-left py-4 px-3 font-semibold text-gray-700">Price</th>
                                     <th className="text-left py-4 px-3 font-semibold text-gray-700">Actions</th>
                                 </tr>
@@ -139,7 +138,7 @@ export default function VariantCombinations() {
                             <tbody className="bg-white divide-y divide-gray-200">
                                 {
                                     product_variants_combinations?.map((vCombo, i) => {
-                                        const { weight, stock, price_currency, price_value, options, is_virtual } = vCombo
+                                        const { stock, price_currency, price_value, options, is_virtual } = vCombo
 
                                         return (
                                             <tr key={i} className="">
@@ -152,7 +151,6 @@ export default function VariantCombinations() {
                                                 </td>
                                                 <td className="py-4 px-3">{is_virtual ? <BsCheck size={16} color="#703DCB" /> : <MdOutlineCancel size={16} color="red" />}</td>
                                                 <td className="py-4 px-3">{formatNumberWithCommas(stock)}</td>
-                                                <td className="py-4 px-3">{formatNumberWithCommas(weight)}</td>
                                                 <td className="py-4 px-3">{price_currency} {formatNumberWithCommas(price_value)}</td>
                                                 <td className="py-4 px-3 text-center">
                                                     <div className="flex items-center gap-2">

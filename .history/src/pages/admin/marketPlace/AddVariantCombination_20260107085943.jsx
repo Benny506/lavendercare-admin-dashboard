@@ -172,7 +172,7 @@ export default function AddVariantCombination({ modalProps, product, setProduct,
                                     />
                                 </div>
                                 <div className="flex flex-col space-y-2 w-1/2 px-1">
-                                    <label className="text-gray-700 font-medium">Weight {'(kg)'}</label>
+                                    <label className="text-gray-700 font-medium">Weight</label>
                                     <input
                                         type="number"
                                         placeholder="0"
