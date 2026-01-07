@@ -217,6 +217,12 @@ export const formatNiceTime = ({ timeUTC }) => {
   return dt.toFormat("hh:mm a");
 };
 
+export function uniqueArrByKey(arr, key) {
+  const map = new Map();
+  arr.forEach(item => map.set(item[key], item));
+  return Array.from(map.values());
+}
+
 export const formatNiceDate = ({ dateUTC }) => {
   if (!dateUTC) return "";
 

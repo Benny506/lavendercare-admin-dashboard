@@ -1989,6 +1989,102 @@ export default function useApiReqs() {
 
 
 
+    //delivery
+    const fetchWeightsDeliveryOptions = async ({ callBack = () => { } }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from("weights_delivery_options")
+                .select("*")
+
+            if (error) {
+                console.log(error)
+                throw new Error()
+            }
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ options: data })
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error weights-delivery-options. Try reloading the page.")
+
+        } finally {
+            dispatch(appLoadStop())
+        }
+    }
+    const addWeightsDeliveryOption = async ({ callBack = () => { }, columns }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from("weights_delivery_options")
+                .upsert(
+                    columns,
+                    {
+                        onConflict: 'destination'
+                    }
+                )
+                .select()
+                .single()
+
+            if(error){
+                console.log(error)
+                throw new Error()
+            }
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ newWeightDeliveryOption: data })
+
+            toast.success("Option saved!")
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error adding weights-delivery-option. Try again later!.")
+
+        } finally {
+            dispatch(appLoadStop())
+        }
+    }
+    const deleteWeightsDeliveryOption = async ({ callBack = () => {}, option_id }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from("weights_delivery_options")
+                .delete()
+                .eq("id", option_id)
+
+            if(error){
+                console.log(error)
+                throw new Error()
+            }
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ deleted_option_id: option_id })
+
+            toast.success("Option deleted")
+            
+        } catch (error) {
+            console.log(error)
+            toast.error("Error deleting weights-delivery-option. Try again later!.")
+
+        } finally {
+            dispatch(appLoadStop())
+        }
+    }    
+
+
+
+
+
     const apiReqError = ({ errorMsg }) => {
         toast.error(errorMsg)
         dispatch(appLoadStop())
@@ -2104,6 +2200,15 @@ export default function useApiReqs() {
         createCoupon,
         editCoupon,
         fetchCoupons,
-        fetchCouponsUsages
+        fetchCouponsUsages,
+
+
+
+
+
+        //delivery
+        fetchWeightsDeliveryOptions,
+        addWeightsDeliveryOption,
+        deleteWeightsDeliveryOption
     }
 }

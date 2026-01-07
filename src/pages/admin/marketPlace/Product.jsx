@@ -17,6 +17,7 @@ import { BsCheck } from "react-icons/bs";
 import { MdOutlineCancel } from "react-icons/md";
 import { getPublicImageUrl } from "../../../lib/requestApi";
 import ProfileImg from "../components/ProfileImg";
+import WeightsModal from "./weightsDelivery/WeightsModal";
 
 function Product() {
   const dispatch = useDispatch()
@@ -31,6 +32,8 @@ function Product() {
   const [canLoadMore, setCanLoadMore] = useState(true)
   const [currentPage, setCurrentPage] = useState(0)
   const [pageListIndex, setPageListIndex] = useState(0)
+  const [weightsDeliveryModal, setWeightsDeliveryModal] = useState({ visible: false, hide: null })
+
 
 
   useEffect(() => {
@@ -46,6 +49,9 @@ function Product() {
       }
     })
   }
+
+  const openWeightsDeliveryModal = () => setWeightsDeliveryModal({ visible: true, hide: hideWeightsDeliveryModal })
+  const hideWeightsDeliveryModal = () => setWeightsDeliveryModal({ visible: false, hide: null })
 
   const filteredData = (products || [])?.filter(p => {
     const { product_name } = p
@@ -104,16 +110,22 @@ function Product() {
 
         <div className="flex flex-row md:items-center gap-2">
           <div className="flex gap-2">
-            <button className="border border-gray-200 w-full rounded-lg px-3 py-1 text-gray-700">
+            <button className="border border-gray-200 rounded-lg px-3 py-1 text-gray-700">
               All
             </button>
           </div>
           <button
-            className="bg-(--primary-500) cursor-pointer w-full text-white rounded-lg px-4 py-2 font-semibold transition"
+            className="bg-(--primary-500) cursor-pointer text-white rounded-lg px-4 py-2 font-semibold transition"
             onClick={() => navigate("/admin/marketplace/add-product")}
           >
             Add Product
-          </button>
+          </button>          
+          <button
+            className="bg-gray-600 cursor-pointer text-white rounded-lg px-4 py-2 font-semibold transition"
+            onClick={openWeightsDeliveryModal}
+          >
+            Weights + Delivery
+          </button>          
         </div>
       </div>
 
@@ -230,6 +242,10 @@ function Product() {
           </div>
         }
       </div>
+
+      <WeightsModal 
+        modalProps={weightsDeliveryModal}
+      />
     </div>
   );
 }
