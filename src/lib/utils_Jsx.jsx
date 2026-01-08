@@ -11,6 +11,7 @@ export const vendorStatusColors = {
   pending: "bg-orange-100 text-orange-600",
   approved: "bg-green-100 text-green-600",
   rejected: "bg-red-100 text-red-600",
+  hidden: "bg-gray-200 text-gray-500",
 };
 //services
 export const serviceStatuses = [
@@ -30,7 +31,7 @@ export const servicesMap = {
         feedBack: 'Rejected by admin. Edit and re-submit for approval'
     },
     hidden: {
-        color: "bg-gray-500 text-gray-500",
+        color: "bg-gray-200 text-gray-500",
         feedBack: "Prospective clients can not see this service"
     }
 }

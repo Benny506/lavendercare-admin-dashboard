@@ -100,7 +100,7 @@ export default function ServiceDetails() {
                 </div>
 
                 <div
-                    className={`flex gap-4 my-6 w-full p-4 rounded-2xl ${getServiceStatusColor({ status })}`}
+                    className={`flex justify-between gap-4 my-6 w-full p-4 rounded-2xl ${getServiceStatusColor({ status })}`}
                 >
                     <div className="flex flex-col justify-between">
                         <p className="text-md font-bold">
@@ -110,6 +110,45 @@ export default function ServiceDetails() {
                             {getServiceStatusFeedBack({ status })}
                         </p>
                     </div>
+
+                    {
+                        service?.status === 'hidden'
+                            ?
+                            <Button
+                                onClick={() => updateService({
+                                    callBack: ({ updatedService }) => {
+                                        if (updatedService) {
+                                            setService(updatedService)
+                                        }
+                                    },
+                                    update: {
+                                        status: "approved"
+                                    },
+                                    service_id: service?.id
+                                })}
+                            >
+                                Show
+                            </Button>
+                            :
+                            service?.status === 'approved'
+                            &&
+                            <Button
+                                onClick={() => updateService({
+                                    callBack: ({ updatedService }) => {
+                                        if (updatedService) {
+                                            setService(updatedService)
+                                        }
+                                    },
+                                    update: {
+                                        status: "hidden"
+                                    },
+                                    service_id: service?.id
+                                })}
+                                variant="danger"
+                            >
+                                Hide
+                            </Button>
+                    }
                 </div>
 
                 <div className="mb-6">
