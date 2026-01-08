@@ -173,7 +173,7 @@ export default function ServiceSetup({ info = {} }) {
                                                 <button
                                                     type="button"
                                                     onClick={() => {
-                                                        if (license.status !== 'approved') return toast.info("License not submitted or not approved!")
+                                                        // if (license?.status !== 'approved') return toast.error("License not submitted or not approved!");
                                                         setFieldValue("service_type", "healthcare")
                                                     }}
                                                     className={`relative text-left p-5 rounded-2xl border transition-all duration-200 group

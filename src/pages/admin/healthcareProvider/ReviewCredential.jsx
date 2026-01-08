@@ -289,10 +289,10 @@ function ReviewCredential() {
                         </td>
                         <td className="py-2 sm:py-3 px-2 sm:px-4 whitespace-nowrap">
                           {
-                            !p?.license
-                              ?
-                              'No action'
-                              :
+                            // !p?.license
+                            //   ?
+                            //   'No action'
+                            //   :
                               <button
                                 className="bg-purple-600 cursor-pointer text-white px-4 py-1 rounded-full text-xs w-full sm:w-auto transition hover:bg-purple-700"
                                 onClick={() => handleReview(p)}
