@@ -1999,14 +1999,19 @@ export default function useApiReqs() {
                 .from("weights_delivery_options")
                 .select("*")
 
-            if (error) {
+            const { data: destinations, error: destinationsError } = await supabase
+                .from("delivery_destinations")
+                .select("*")
+
+            if (error || destinationsError) {
                 console.log(error)
+                console.log("destinationsError", destinationsError)
                 throw new Error()
             }
 
             dispatch(appLoadStop())
 
-            callBack && callBack({ options: data })
+            callBack && callBack({ options: data, destinations })
 
         } catch (error) {
             console.log(error)
@@ -2032,7 +2037,7 @@ export default function useApiReqs() {
                 .select()
                 .single()
 
-            if(error){
+            if (error) {
                 console.log(error)
                 throw new Error()
             }
@@ -2051,7 +2056,7 @@ export default function useApiReqs() {
             dispatch(appLoadStop())
         }
     }
-    const deleteWeightsDeliveryOption = async ({ callBack = () => {}, option_id }) => {
+    const deleteWeightsDeliveryOption = async ({ callBack = () => { }, option_id }) => {
         try {
 
             dispatch(appLoadStart())
@@ -2061,7 +2066,7 @@ export default function useApiReqs() {
                 .delete()
                 .eq("id", option_id)
 
-            if(error){
+            if (error) {
                 console.log(error)
                 throw new Error()
             }
@@ -2071,7 +2076,7 @@ export default function useApiReqs() {
             callBack && callBack({ deleted_option_id: option_id })
 
             toast.success("Option deleted")
-            
+
         } catch (error) {
             console.log(error)
             toast.error("Error deleting weights-delivery-option. Try again later!.")
@@ -2079,7 +2084,65 @@ export default function useApiReqs() {
         } finally {
             dispatch(appLoadStop())
         }
-    }    
+    }
+    const addDeliveryDestination = async ({ callBack = () => { }, columns }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from("delivery_destinations")
+                .insert(columns)
+                .select("*")
+                .single()
+
+            if (error) {
+                console.log(error)
+                if (error.message.includes("duplicate")) {
+                    return apiReqError({ errorMsg: 'Destination already exists!' })
+                }
+                throw new Error()
+            }
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ newDestination: data })
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error adding delivery destination. Try again later!.")
+
+        } finally {
+            dispatch(appLoadStop())
+        }
+    }
+    const deleteDeliveryDestination = async ({ callBack = () => { }, destination_id }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from('delivery_destinations')
+                .delete()
+                .eq("id", destination_id)
+
+            if (error) {
+                console.log(error)
+                throw new Error()
+            }
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ deleted_destination_id: destination_id })
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error deleting delivery destination. Try again later!.")
+
+        } finally {
+            dispatch(appLoadStop())
+        }
+    }
 
 
 
@@ -2209,6 +2272,8 @@ export default function useApiReqs() {
         //delivery
         fetchWeightsDeliveryOptions,
         addWeightsDeliveryOption,
-        deleteWeightsDeliveryOption
+        deleteWeightsDeliveryOption,
+        addDeliveryDestination,
+        deleteDeliveryDestination
     }
 }

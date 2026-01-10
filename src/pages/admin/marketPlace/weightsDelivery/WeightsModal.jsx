@@ -9,6 +9,8 @@ import ZeroItems from "../../components/ZeroItems";
 import { uniqueArrByKey } from "../../../../lib/utils";
 import useApiReqs from "../../../../hooks/useApiReqs";
 import Modal from "../../components/ui/Modal";
+import AddDestinationModal from "./AddDestinationModal";
+import Button from "../../components/ui/Button";
 
 export const weightsDeliveryLocationsMap = [
     'lagos mainland', 'lagos island', 'outside lagos', 'african countries', 'other countries'
@@ -18,17 +20,32 @@ export default function WeightsModal({ modalProps }) {
 
     const { fetchWeightsDeliveryOptions, addWeightsDeliveryOption, deleteWeightsDeliveryOption } = useApiReqs()
     const [options, setOptions] = useState([])
+    const [addDestinationModal, setAddDestinationModal] = useState({ visible: false, hide: null })
+    const [destinations, setDestinations] = useState([])
 
     useEffect(() => {
         if (modalProps?.visible) {
             fetchWeightsDeliveryOptions({
-                callBack: ({ options }) => setOptions(options)
+                callBack: ({ options, destinations }) => {
+                    setOptions(options)
+                    setDestinations(destinations)
+                }
             })
         }
     }, [modalProps])
 
+    const openAddDestinationModal = () => setAddDestinationModal({ visible: true, hide: hideAddDestinationModal })
+    const hideAddDestinationModal = () => setAddDestinationModal({ visible: false, hide: null })
+
     if (!modalProps) return <></>;
     const { visible, hide } = modalProps
+
+    if (addDestinationModal?.visible) return (
+        <AddDestinationModal
+            modalProps={addDestinationModal}
+            _setDestinations={setDestinations}
+        />
+    )
 
     return (
         <>
@@ -109,28 +126,42 @@ export default function WeightsModal({ modalProps }) {
                             setFieldValue,
                         }) => (
 
-                            <div className="flex items-center flex-wrap gap-4">
+                            <div className="flex items-start flex-wrap gap-4">
 
                                 {/* DESTINATION */}
-                                <div className="lg:w-2/5 md:2-full">
-                                    <label className="block font-medium mb-1">Destination</label>
-                                    <select
-                                        name="destination"
-                                        value={values.destination}
-                                        onChange={handleChange}
-                                        onBlur={handleBlur}
-                                        className="w-full border rounded px-3 py-2 focus:ring focus:ring-purple-500"
-                                    >
-                                        <option value="">Delivered to?</option>
-                                        {weightsDeliveryLocationsMap?.map((opt, i) => (
-                                            <option key={i} value={opt}>{opt}</option>
-                                        ))}
-                                    </select>
+                                <div className="w-full">
+                                    <div className="w-full gap-2">
+                                        <label className="block font-medium mb-1">Destination</label>
+                                        <select
+                                            name="destination"
+                                            value={values.destination}
+                                            onChange={handleChange}
+                                            onBlur={handleBlur}
+                                            className="w-full border rounded px-3 py-2 focus:ring focus:ring-purple-500"
+                                        >
+                                            <option value="">Delivered to?</option>
+                                            {destinations?.map((opt, i) => {
+
+                                                const destination = opt?.destination
+
+                                                return (
+                                                    <option key={i} value={destination}>{destination}</option>
+                                                )
+                                            })}
+                                        </select>
+                                        <div className="mt-2">
+                                            <Button
+                                                onClick={openAddDestinationModal}
+                                            >
+                                                Update
+                                            </Button>
+                                        </div>
+                                    </div>
                                     <ErrorMessage name="destination" render={(msg) => <ErrorMsg1 errorMsg={msg} />} />
                                 </div>
 
                                 {/* FLAT FEE */}
-                                <div className="lg:w-2/5 md:2-full">
+                                <div className="lg:w-2/5 md:w-full">
                                     <label className="block font-medium mb-1">Flat fee</label>
                                     <div className="flex">
                                         <select
