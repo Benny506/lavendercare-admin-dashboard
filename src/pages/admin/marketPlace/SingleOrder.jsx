@@ -11,6 +11,9 @@ import ErrorMsg1 from "../components/ErrorMsg1";
 import useApiReqs from "../../../hooks/useApiReqs";
 import { toast } from "react-toastify";
 import { orderStatuses } from "../../../constants/orderConstants";
+import Button from "../components/ui/Button";
+import DeliveryAddrIssueModal from "./weightsDelivery/DeliveryAddrIssueModal";
+import { sendEmail } from "../../../lib/email";
 // import ProductPreview from "../products/ProductPreview";
 
 export default function SingleOrder({ visible, order, orders = [], setOrders = () => { } }) {
@@ -20,6 +23,7 @@ export default function SingleOrder({ visible, order, orders = [], setOrders = (
     const [previewedProduct, setPreviewedProduct] = useState(null);
     const [showConfirm, setShowConfirm] = useState(false)
     const [singleOrder, setSingleOrrder] = useState(order)
+    const [deliveryAddrIssueModal, setDeliveryAddrIssueModal] = useState({ visible: false, hide: null })
 
     useEffect(() => {
         const o = orders?.filter(ord => ord?.id === order?.id)?.[0]
@@ -27,6 +31,9 @@ export default function SingleOrder({ visible, order, orders = [], setOrders = (
     }, [orders])
 
     if (!singleOrder?.order_items) return null;
+
+    const openDeliveryAddrIssueModal = () => setDeliveryAddrIssueModal({ visible: true, hide: hideDeliveryAddrIssueModal })
+    const hideDeliveryAddrIssueModal = () => setDeliveryAddrIssueModal({ visible: false, hide: null })
 
     const handleConfirmOrder = ({ pickUpState, pickUpAddress }) => {
         // recipientAddress, recipientState, recipientName, recipientPhone, recipientEmail, uniqueID, batchId, valueOfItem, weight, pickUpState, pickUpAddress, fragile
@@ -68,7 +75,7 @@ export default function SingleOrder({ visible, order, orders = [], setOrders = (
         const update = { status }
 
         updateOrder({
-            callBack: ({ }) => {
+            callBack: async ({ }) => {
                 const updatedOrders = orders?.map(ord => {
                     if (ord?.id === order?.id) {
                         return {
@@ -83,7 +90,9 @@ export default function SingleOrder({ visible, order, orders = [], setOrders = (
                 setOrders(updatedOrders)
             },
             update,
-            order_id: order?.id
+            order_id: order?.id,
+            userName: order?.user_profile?.name,
+            user_id: order?.user_id
         })
     }
 
@@ -91,7 +100,217 @@ export default function SingleOrder({ visible, order, orders = [], setOrders = (
         <>
             {/* Collapse wrapper */}
             <div className={`${visible ? "block" : "hidden"} transition-all`}>
-                <div className="flex flex-wrap -mx-1">
+                <div className="flex items-start justify-between">
+                    <div className="lg:w-1/2 md:w-full w-full mr-3">
+                        <div className="bg-white shadow-lg rounded-lg p-3">
+                            <h2 className="text-md mb-3">
+                                Delivery, Shipping & Customer Information
+                            </h2>
+                            <div className="flex flex-col gap-0 mb-2">
+                                <p className="fw-bold text-sm text-gray-500">
+                                    Region:
+                                </p>
+                                <p className="fw-bold text-sm text-gray-700">
+                                    {order?.metadata?.deliveryRegion?.title}
+                                </p>
+                            </div>
+                            <hr className="my-2 border-gray-200" />
+                            <div className="flex flex-col gap-0 mb-2">
+                                <p className="fw-bold text-sm text-gray-500">
+                                    By:
+                                </p>
+                                <p className="fw-bold text-sm text-gray-700">
+                                    {order?.user_profile?.name || 'Deleted account'}
+                                </p>
+                            </div>
+                            <hr className="my-2 border-gray-200" />
+                            <div className="flex flex-col gap-0">
+                                <p className="fw-bold text-sm text-gray-500">
+                                    Shipped to:
+                                </p>
+                                <p className="fw-bold text-sm text-gray-700">
+                                    {order?.shipping_address?.country} {order?.shipping_address?.state} {order?.shipping_address?.city} {order?.shipping_address?.address}
+                                </p>
+                            </div>
+                            <hr className="my-2 border-gray-200" />
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <Button
+                                    onClick={openDeliveryAddrIssueModal}
+                                >
+                                    Address Issue?
+                                </Button>
+                                <Button
+                                    variant="secondary"
+                                    onClick={openDeliveryAddrIssueModal}
+                                >
+                                    Update?
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Action Button */}
+                    <div className="lg:w-1/2 md:w-full w-full ml-3">
+                        <div className="bg-white shadow-lg rounded-lg p-3 mt-3">
+                            <h2 className="text-md mb-3">
+                                Actions
+                            </h2>
+                            {
+                                singleOrder?.status === 'pending'
+                                    ?
+                                    <div className="">
+                                        <button
+                                            onClick={() => updateOrderStatus('placed')}
+                                            className="cursor-pointer border border-gray-300 text-gray-700 rounded-md px-4 py-2 text-sm hover:bg-gray-50 transition"
+                                        >
+                                            Confirm Order
+                                        </button>
+
+                                        <p className="mt-2 text-sm text-gray-600">
+                                            NOTE: Pending orders are orders that money has not been received for. Either the user cancelled the payment or a transaction error occured. Confirming this order will mark it
+                                            as placed. Then you will be able to set the delivery information about it
+                                        </p>
+                                    </div>
+                                    :
+                                    <div>
+                                        <Formik
+                                            validationSchema={yup.object().shape({
+                                                status: yup.string().required("Order status is required"),
+                                                tracking_id: yup.string(),
+                                                tracking_link: yup.string().url("Enter a valid URL"),
+                                                additional_text: yup.string()
+                                            })}
+                                            initialValues={{
+                                                status: '',
+                                                tracking_id: '',
+                                                tracking_link: '',
+                                                additional_text: ''
+                                            }}
+                                            onSubmit={(values, { resetForm }) => {
+
+                                                const update = {
+                                                    status: values?.status || singleOrder?.status,
+                                                    tracking_id: values?.tracking_id || singleOrder?.tracking_id,
+                                                    tracking_link: values?.tracking_link || singleOrder?.tracking_link,
+                                                    additional_text: values?.additional_text || singleOrder?.additional_text,
+                                                }
+
+                                                updateOrder({
+                                                    callBack: async ({ }) => {
+                                                        const updatedOrders = orders?.map(ord => {
+                                                            if (ord?.id === order?.id) {
+                                                                return {
+                                                                    ...ord,
+                                                                    ...update
+                                                                }
+                                                            }
+
+                                                            return ord
+                                                        })
+
+                                                        setOrders(updatedOrders)
+                                                    },
+                                                    order_id: order?.id,
+                                                    update,
+                                                    userName: order?.user_profile?.name,
+                                                    user_id: order?.user_id
+                                                })
+
+                                                resetForm()
+                                            }}
+                                        >
+                                            {({ values, handleBlur, handleChange, handleSubmit }) => (
+                                                <div>
+                                                    <div className="flex flex-col mb-3">
+                                                        <label className="text-gray-700 font-medium">Tracking ID ({singleOrder?.tracking_id || 'if any'})</label>
+                                                        <input
+                                                            value={values.tracking_id}
+                                                            onChange={handleChange}
+                                                            onBlur={handleBlur}
+                                                            name="tracking_id"
+                                                            placeholder="**********"
+                                                            required
+                                                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                                                        />
+                                                        <ErrorMessage name="tracking_id">
+                                                            {errorMsg => <ErrorMsg1 errorMsg={errorMsg} />}
+                                                        </ErrorMessage>
+                                                    </div>
+                                                    <div className="flex flex-col mb-3">
+                                                        <label className="text-gray-700 font-medium">Tracking Link ({singleOrder?.tracking_link || 'if any'})</label>
+                                                        <input
+                                                            value={values.tracking_link}
+                                                            onChange={handleChange}
+                                                            onBlur={handleBlur}
+                                                            name="tracking_link"
+                                                            placeholder="https://tracker.com"
+                                                            required
+                                                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                                                        />
+                                                        <ErrorMessage name="tracking_link">
+                                                            {errorMsg => <ErrorMsg1 errorMsg={errorMsg} />}
+                                                        </ErrorMessage>
+                                                    </div>
+                                                    <div className="flex flex-col mb-3">
+                                                        <label className="text-gray-700 font-medium">Additional Info ({singleOrder?.additional_text || 'brief text for user clarification'})</label>
+                                                        <input
+                                                            value={values.additional_text}
+                                                            onChange={handleChange}
+                                                            onBlur={handleBlur}
+                                                            name="additional_text"
+                                                            placeholder="Just arrived at..."
+                                                            required
+                                                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                                                        />
+                                                        <ErrorMessage name="additional_text">
+                                                            {errorMsg => <ErrorMsg1 errorMsg={errorMsg} />}
+                                                        </ErrorMessage>
+                                                    </div>
+                                                    <div className="flex flex-col mb-5">
+                                                        <label className="text-gray-700 font-medium">Order status ({singleOrder?.status || 'Status not set'})</label>
+                                                        <select
+                                                            value={values.status}
+                                                            onChange={handleChange}
+                                                            onBlur={handleBlur}
+                                                            name="status"
+                                                            required
+                                                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                                                        >
+                                                            <option value="">Status</option>
+                                                            {
+                                                                orderStatuses.map((o_status, i) => {
+                                                                    return (
+                                                                        <option key={i} value={o_status}>
+                                                                            {o_status}
+                                                                        </option>
+                                                                    )
+                                                                })
+                                                            }
+                                                        </select>
+                                                        <ErrorMessage name="status">
+                                                            {errorMsg => <ErrorMsg1 errorMsg={errorMsg} />}
+                                                        </ErrorMessage>
+                                                    </div>
+                                                    <button
+                                                        onClick={handleSubmit}
+                                                        className="cursor-pointer my-4 px-3 py-1 text-white rounded-lg"
+                                                        style={{
+                                                            backgroundColor: '#703DCB', borderColor: '#703DCB',
+                                                            borderRadius: '10px',
+                                                        }}
+                                                    >
+                                                        Update order
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </Formik>
+                                    </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex flex-wrap -mx-1 mt-5">
                     {singleOrder.order_items.map((item, idx) => {
 
                         const image_urls =
@@ -135,23 +354,6 @@ export default function SingleOrder({ visible, order, orders = [], setOrders = (
                                                     variants={item?.variant_info?.options}
                                                 />
                                             </div>
-                                            <hr className="my-2 border-gray-200" />
-                                            <div className="flex flex-col gap-0 mb-2">
-                                                <p className="fw-bold text-sm text-gray-500">
-                                                    By:
-                                                </p>
-                                                <p className="fw-bold text-sm text-gray-700">
-                                                    {order?.user_profile?.name || 'Deleted account'}
-                                                </p>
-                                            </div>
-                                            <div className="flex flex-col gap-0">
-                                                <p className="fw-bold text-sm text-gray-500">
-                                                    Shipped to:
-                                                </p>
-                                                <p className="fw-bold text-sm text-gray-700">
-                                                    {order?.shipping_address?.country} {order?.shipping_address?.state} {order?.shipping_address?.city} {order?.shipping_address?.address}
-                                                </p>
-                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -159,137 +361,6 @@ export default function SingleOrder({ visible, order, orders = [], setOrders = (
                         );
                     })}
                 </div>
-
-                {/* Action Button */}
-                {
-                    singleOrder?.status === 'placed'
-                        ?
-                        <button
-                            onClick={() => updateOrderStatus('confirmed')}
-                            className="cursor-pointer border border-gray-300 text-gray-700 rounded-md px-4 py-2 text-sm hover:bg-gray-50 transition"
-                        >
-                            Confirm Order
-                        </button>
-                        :
-                        <div>
-                            <Formik
-                                validationSchema={yup.object().shape({
-                                    status: yup.string().required("Order status is required"),
-                                    tracking_id: yup.string(),
-                                    tracking_link: yup.string().url("Enter a valid URL"),
-                                    additional_text: yup.string()
-                                })}
-                                initialValues={{
-                                    status: '',
-                                    tracking_id: '',
-                                    tracking_link: '',
-                                    additional_text: ''
-                                }}
-                                onSubmit={(values, { resetForm }) => {
-
-                                    const update = {
-                                        status: values?.status || singleOrder?.status,
-                                        tracking_id: values?.tracking_id || singleOrder?.tracking_id,
-                                        tracking_link: values?.tracking_link || singleOrder?.tracking_link,
-                                        additional_text: values?.additional_text || singleOrder?.additional_text,
-                                    }
-
-                                    updateOrder({
-                                        callBack: ({ }) => { },
-                                        order_id: order?.id,
-                                        update
-                                    })
-
-                                    resetForm()
-                                }}
-                            >
-                                {({ values, handleBlur, handleChange, handleSubmit }) => (
-                                    <div>
-                                        <div className="flex flex-col mb-3">
-                                            <label className="text-gray-700 font-medium">Tracking ID ({singleOrder?.tracking_id || 'if any'})</label>
-                                            <input
-                                                value={values.tracking_id}
-                                                onChange={handleChange}
-                                                onBlur={handleBlur}
-                                                name="tracking_id"
-                                                placeholder="**********"
-                                                required
-                                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                                            />
-                                            <ErrorMessage name="tracking_id">
-                                                {errorMsg => <ErrorMsg1 errorMsg={errorMsg} />}
-                                            </ErrorMessage>
-                                        </div>
-                                        <div className="flex flex-col mb-3">
-                                            <label className="text-gray-700 font-medium">Tracking Link ({singleOrder?.tracking_link || 'if any'})</label>
-                                            <input
-                                                value={values.tracking_link}
-                                                onChange={handleChange}
-                                                onBlur={handleBlur}
-                                                name="tracking_link"
-                                                placeholder="https://tracker.com"
-                                                required
-                                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                                            />
-                                            <ErrorMessage name="tracking_link">
-                                                {errorMsg => <ErrorMsg1 errorMsg={errorMsg} />}
-                                            </ErrorMessage>
-                                        </div>
-                                        <div className="flex flex-col mb-3">
-                                            <label className="text-gray-700 font-medium">Additional Info ({singleOrder?.additional_text || 'brief text for user clarification'})</label>
-                                            <input
-                                                value={values.additional_text}
-                                                onChange={handleChange}
-                                                onBlur={handleBlur}
-                                                name="additional_text"
-                                                placeholder="Just arrived at..."
-                                                required
-                                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                                            />
-                                            <ErrorMessage name="additional_text">
-                                                {errorMsg => <ErrorMsg1 errorMsg={errorMsg} />}
-                                            </ErrorMessage>
-                                        </div>
-                                        <div className="flex flex-col mb-5">
-                                            <label className="text-gray-700 font-medium">Order status ({singleOrder?.status || 'Status not set'})</label>
-                                            <select
-                                                value={values.status}
-                                                onChange={handleChange}
-                                                onBlur={handleBlur}
-                                                name="status"
-                                                required
-                                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                                            >
-                                                <option value="">Status</option>
-                                                {
-                                                    orderStatuses.map((o_status, i) => {
-                                                        return (
-                                                            <option key={i} value={o_status}>
-                                                                {o_status}
-                                                            </option>
-                                                        )
-                                                    })
-                                                }
-                                            </select>
-                                            <ErrorMessage name="status">
-                                                {errorMsg => <ErrorMsg1 errorMsg={errorMsg} />}
-                                            </ErrorMessage>
-                                        </div>
-                                        <button
-                                            onClick={handleSubmit}
-                                            className="cursor-pointer my-4 px-3 py-1 text-white rounded-lg"
-                                            style={{
-                                                backgroundColor: '#703DCB', borderColor: '#703DCB',
-                                                borderRadius: '10px',
-                                            }}
-                                        >
-                                            Update order
-                                        </button>
-                                    </div>
-                                )}
-                            </Formik>
-                        </div>
-                }
             </div>
 
 
@@ -433,6 +504,11 @@ export default function SingleOrder({ visible, order, orders = [], setOrders = (
                 </Formik>
             </Modal>
 
+            <DeliveryAddrIssueModal
+                isOpen={deliveryAddrIssueModal.visible}
+                onClose={deliveryAddrIssueModal.hide}
+                order={order}
+            />
         </>
     );
 }

@@ -20,6 +20,7 @@ export default function Orders() {
     const [statusFilter, setStatusFilter] = useState('All');
     const [orders, setOrders] = useState([]);
     const [visibleOrderId, setVisibleOrderId] = useState('');
+    const [searchFilter, setSearchFilter] = useState('')
     const [currentPage, setCurrentPage] = useState(0)
     const [pageListIndex, setPageListIndex] = useState(0)
 
@@ -29,10 +30,22 @@ export default function Orders() {
         });
     }, []);
 
-    const filteredOrders =
-        statusFilter === 'All'
-            ? orders
-            : orders.filter((order) => order.status === statusFilter);
+    const filteredOrders = orders?.filter(o => {
+        const { status, order_number } = o
+
+        const byStatus = statusFilter === 'All' ? true : status === statusFilter
+
+        const bySearch = 
+            !searchFilter
+            ?
+                true
+            :
+                searchFilter?.toLowerCase()?.includes(order_number?.toLowerCase())
+                ||
+                order_number?.toLowerCase()?.includes(searchFilter?.toLowerCase())
+
+        return bySearch && byStatus
+    })
 
     const { pageItems, totalPages, pageList, totalPageListIndex } = usePagination({
         arr: filteredOrders,
@@ -108,7 +121,7 @@ export default function Orders() {
                     </div>
 
                     {/* Filter */}
-                    <div>
+                    <div className='flex items-center justify-between flex-wrap gap-4'>
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
@@ -120,6 +133,13 @@ export default function Orders() {
                             <option value="Shipped">Shipped</option>
                             <option value="Delivered">Delivered</option>
                         </select>
+                        <input
+                            type="text"
+                            placeholder="Search by order number"
+                            className="w-full md:w-64 border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-(--primary-200)"
+                            value={searchFilter}
+                            onChange={e => setSearchFilter(e.target.value)}
+                        />
                     </div>
 
                     {/* Orders Table */}
@@ -130,7 +150,7 @@ export default function Orders() {
                             <table className="min-w-full divide-y divide-gray-200 text-xs sm:text-sm">
                                 <thead className="bg-gray-50">
                                     <tr>
-                                        {['Order ID', 'Date', 'Items', 'Total', 'Status', 'Actions'].map(
+                                        {['Order Number', 'Date', 'Items', 'Total', 'Status', 'Actions'].map(
                                             (header) => (
                                                 <th
                                                     key={header}
@@ -152,7 +172,7 @@ export default function Orders() {
                                             <>
                                                 <tr key={order.id} className="">
                                                     <td className="px-6 py-4 font-semibold text-[#703DCB]">
-                                                        {order.id}
+                                                        {order.order_number}
                                                     </td>
                                                     <td className="px-6 py-4 text-gray-500">
                                                         {formatDate1({ dateISO: order.created_at })}

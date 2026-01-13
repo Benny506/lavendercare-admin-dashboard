@@ -75,16 +75,17 @@ function ServiceProvider() {
   const hideRejectModal = () => setRejectModal({ visible: false, hide: null, data: {} })
 
   const rejectService = (s) => {
-    alterServiceStatus({ newStatus: 'rejected', service_id: s?.id })
+    alterServiceStatus({ newStatus: 'rejected', service: s })
   }
   const approveService = (s) => {
-    alterServiceStatus({ newStatus: 'approved', service_id: s?.id })
+    alterServiceStatus({ newStatus: 'approved', service: s })
   }
-  const alterServiceStatus = async ({ newStatus, service_id }) => {
+  const alterServiceStatus = async ({ newStatus, service }) => {
 
-    const provider_id = services?.filter(s => s?.id === service_id)?.[0]?.provider?.id
-    const provider_name = services?.filter(s => s?.id === service_id)?.[0]?.provider?.username
-    const service_name = services?.filter(s => s?.id === service_id)?.[0]?.service_name
+    const provider_id = service?.provider?.id
+    const service_id = service?.id
+    const provider_name = service?.provider?.username
+    const service_name = service?.service_name
 
     updateService({
       callBack: async ({ }) => {

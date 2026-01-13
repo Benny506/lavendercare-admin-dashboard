@@ -1745,7 +1745,7 @@ export default function useApiReqs() {
             dispatch(appLoadStop())
         }
     }
-    const updateOrder = async ({ callBack = () => { }, update, order_id }) => {
+    const updateOrder = async ({ callBack = () => { }, update, order_id, userName, user_id }) => {
         try {
 
             dispatch(appLoadStart())
@@ -1762,9 +1762,37 @@ export default function useApiReqs() {
                 throw new Error()
             }
 
+            if(userName && user_id){
+                const { result, errorMsg } = await requestApi({
+                    url: 'https://tzsbbbxpdlupybfrgdbs.supabase.co/functions/v1/retrieve-user-email',
+                    method: 'POST',
+                    data: {
+                        user_id
+                    }
+                })
+
+                if(!result || !result?.email){
+                    console.log(errorMsg)
+                    toast.info("Could not send mail to customer! But order-status has been updated in-app")
+                }
+
+                const sent = await sendEmail({
+                    to_email: result?.email,
+                    subject: 'Order status update',
+                    data: {
+                        userName
+                    },
+                    template_id: '3z0vklovx0vg7qrx'
+                })
+
+                if(!sent.sent){
+                    toast.info("Could not send mail to customer! But order-status has been updated in-app")
+                }
+            }
+
             dispatch(appLoadStop())
 
-            callBack && callBack({ status, order_id })
+            callBack && callBack({ status: data?.status, order_id, orderInfo: data })
 
             toast.success("Order updated")
 
@@ -2148,6 +2176,48 @@ export default function useApiReqs() {
 
 
 
+    //users
+    const fetchUserEmail = async ({ callBack = () => {}, user_id }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { responseStatus, result, errorMsg } = await requestApi({
+                url: 'https://tzsbbbxpdlupybfrgdbs.supabase.co/functions/v1/retrieve-user-email',
+                method: 'POST',
+                data: {
+                    user_id
+                }
+            })
+
+            if(!result){
+                console.log(errorMsg)
+                throw new Error()
+            }
+
+            const { email } = result
+
+            if(!email){
+                return apiReqError({ errorMsg: 'User email could not be retrieved! Try again later' })
+            }
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ email })
+            
+        } catch (error) {
+            console.log(error)
+            toast.error("Error retrieving user email. Try again later!.")
+
+        } finally {
+            dispatch(appLoadStop())
+        }
+    }
+
+
+
+
+
     const apiReqError = ({ errorMsg }) => {
         toast.error(errorMsg)
         dispatch(appLoadStop())
@@ -2274,6 +2344,13 @@ export default function useApiReqs() {
         addWeightsDeliveryOption,
         deleteWeightsDeliveryOption,
         addDeliveryDestination,
-        deleteDeliveryDestination
+        deleteDeliveryDestination,
+
+
+
+
+
+        //users
+        fetchUserEmail
     }
 }

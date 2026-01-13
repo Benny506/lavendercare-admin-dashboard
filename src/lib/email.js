@@ -15,8 +15,8 @@ export const statusUpdateMail = async ({
 
     if (!receiver_email && receiver_id) {
         const { data, error } = await supabase.rpc("get_user_email", {
-            // p_user_id: receiver_id,
-            p_user_id: '9c291b48-308d-4c2b-9bf6-1570b60e8dfd', //test: Id belongs to olomufeh@gmail.com
+            p_user_id: receiver_id,
+            // p_user_id: '9c291b48-308d-4c2b-9bf6-1570b60e8dfd', //test: Id belongs to olomufeh@gmail.com
         })
 
         if (error) {

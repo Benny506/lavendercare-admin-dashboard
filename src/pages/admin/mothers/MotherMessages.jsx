@@ -137,6 +137,7 @@ function MotherMessages() {
         sendMessage({
             text: input.trim(),
             toUser: peerId,
+            channel_id: topic,
             user_notification_token: mother?.notification_token
         });
         setInput('');
