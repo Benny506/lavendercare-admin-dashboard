@@ -9,6 +9,7 @@ const BRAND = "#703DCB"; // Updated brand color
 
 const couponSchema = Yup.object().shape({
     code: Yup.string().required("Coupon code is required"),
+    coupon_for: Yup.string().required("This Coupon code applies to?"),
     type: Yup.string()
         .oneOf(["percentage", "fixed"])
         .required("Type is required"),
@@ -33,6 +34,7 @@ export default function CouponForm() {
         usage_limit: state?.usage_limit || "",
         expires_at: state?.expires_at || "",
         is_active: state?.is_active || true,
+        coupon_for: state?.coupon_for || ""
     };
 
     const isEdit = !!(state?.id && state?.code && state?.type);
@@ -43,7 +45,7 @@ export default function CouponForm() {
                 <PathHeader
                     paths={[
                         { type: 'text', text: 'Coupons' },
-                        { type: 'text', text:  isEdit ? `Edit: ${state?.code}` : "Add" },
+                        { type: 'text', text: isEdit ? `Edit: ${state?.code}` : "Add" },
                     ]}
                 />
 
@@ -52,7 +54,7 @@ export default function CouponForm() {
                     <h2 className="text-2xl font-semibold">
                         {isEdit ? `Edit Coupon: ${state.code}` : "Create Coupon"}
                     </h2>
-                </div>                
+                </div>
 
                 {/* Form */}
                 <div className="bg-white shadow-sm rounded-lg p-4 mt-2">
@@ -108,8 +110,8 @@ export default function CouponForm() {
                                             name="type"
                                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
                                         >
-                                            <option value="percentage">Percentage</option>
                                             <option value="fixed">Fixed Amount</option>
+                                            <option value="percentage">Percentage</option>
                                         </Field>
                                         <ErrorMessage
                                             name="type"
@@ -157,20 +159,42 @@ export default function CouponForm() {
                                 </div>
 
                                 {/* Expiry Date */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Expiry Date
-                                    </label>
-                                    <Field
-                                        type="date"
-                                        name="expires_at"
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
-                                    />
-                                    <ErrorMessage
-                                        name="expires_at"
-                                        component="div"
-                                        className="text-red-600 text-sm mt-1"
-                                    />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Applies for
+                                        </label>
+                                        <Field
+                                            as="select"
+                                            name="coupon_for"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
+                                        >
+                                            <option value="">Select one</option>
+                                            <option value="products">Products</option>
+                                            <option value="bookings">Bookings</option>
+                                        </Field>
+                                        <ErrorMessage
+                                            name="coupon_for"
+                                            component="div"
+                                            className="text-red-600 text-sm mt-1"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Expiry Date
+                                        </label>
+                                        <Field
+                                            type="date"
+                                            name="expires_at"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
+                                        />
+                                        <ErrorMessage
+                                            name="expires_at"
+                                            component="div"
+                                            className="text-red-600 text-sm mt-1"
+                                        />
+                                    </div>
                                 </div>
 
                                 {/* Active Checkbox */}

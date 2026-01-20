@@ -1683,10 +1683,8 @@ export default function useApiReqs() {
                 .select(`
                     *,
                     order_items ( * ),
-                    user_profile: user_id ( 
-                        *,
-                        unique_phones ( * )
-                    )
+                    user_profile: user_id (*),
+                    sessionInfo: checkout_sessions (*)
                 `)
                 .order("created_at", { ascending: false })
 

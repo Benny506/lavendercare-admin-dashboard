@@ -12,6 +12,8 @@ import PathHeader from '../components/PathHeader';
 import { FaEdit } from 'react-icons/fa';
 import { usePagination } from '../../../hooks/usePagination';
 import Pagination from '../components/Pagination';
+import { PiInvoice } from 'react-icons/pi';
+import InvoiceModal from '../components/InvoiceModal';
 
 export default function Orders() {
     const navigate = useNavigate();
@@ -23,6 +25,7 @@ export default function Orders() {
     const [searchFilter, setSearchFilter] = useState('')
     const [currentPage, setCurrentPage] = useState(0)
     const [pageListIndex, setPageListIndex] = useState(0)
+    const [invoiceModal, setInvoiceModal] = useState({ visible: false, hide: null })
 
     useEffect(() => {
         fetchOrders({
@@ -30,16 +33,63 @@ export default function Orders() {
         });
     }, []);
 
+    const openInvoiceModal = ({ order }) => {
+        if (!order) return;
+
+        const invoice = {
+            invoiceNumber: `INV-${order?.order_number}`,
+            orderId: order?.order_number,
+            orderDate: formatDate1({ dateISO: order?.created_at }),
+            currency: "₦",
+            status: order?.status !== 'pending' ? 'PAID' : 'NOT-PAID',
+        };
+
+        const customer = {
+            name: order?.user_profile?.name,
+            // email: "john.doe@email.com",
+            phone: order?.shipping_address?.phone_number,
+            address: `${order?.shipping_address?.address} ${order?.shipping_address?.city} ${order?.shipping_address?.state} ${order?.shipping_address?.country}`,
+            // company: "Doe Enterprises",
+        };
+
+        const items = order?.order_items?.map(item => {
+            return {
+                name: item?.product_info?.product_name,
+                quantity: item.quantity,
+                unitPrice: item?.unit_price,
+            }
+        })
+
+        const payments = {
+            method: "Paystack",
+            trxRef: order?.sessionInfo?.trx_ref,
+            paidAt: formatDate1({ dateISO: order?.created_at }),
+        };
+
+        const discount = order?.coupon_discount_applied || 0
+
+        const metadata = {
+            invoice,
+            customer,
+            items,
+            payments,
+            discount
+        }
+
+        setInvoiceModal({ visible: true, hide: hideInvoiceModal, metadata })
+    }
+    const hideInvoiceModal = () => setInvoiceModal({ visible: false, hide: null })
+
     const filteredOrders = orders?.filter(o => {
         const { status, order_number } = o
 
         const byStatus = statusFilter === 'All' ? true : status === statusFilter
 
-        const bySearch = 
+        const bySearch =
             !searchFilter
-            ?
+                ?
                 true
-            :
+                :
                 searchFilter?.toLowerCase()?.includes(order_number?.toLowerCase())
                 ||
                 order_number?.toLowerCase()?.includes(searchFilter?.toLowerCase())
@@ -221,8 +271,12 @@ export default function Orders() {
                                                                 )}
                                                             </CustomToolTip>
 
-                                                            <CustomToolTip title="Status">
+                                                            {/* <CustomToolTip title="Status">
                                                                 <FaEdit color='#703DCB' size={18} className='cursor-pointer' />
+                                                            </CustomToolTip> */}
+
+                                                            <CustomToolTip title="Invoice">
+                                                                <PiInvoice onClick={() => openInvoiceModal({ order })} color='#703DCB' size={18} className='cursor-pointer' />
                                                             </CustomToolTip>
                                                         </div>
                                                     </td>
@@ -264,6 +318,12 @@ export default function Orders() {
                     </p>
                 </div>
             </div>
+
+            <InvoiceModal
+                isOpen={invoiceModal?.visible}
+                onClose={invoiceModal?.hide}
+                metadata={invoiceModal?.metadata}
+            />
         </div>
     );
 }

@@ -124,6 +124,15 @@ export default function SingleOrder({ visible, order, orders = [], setOrders = (
                                 </p>
                             </div>
                             <hr className="my-2 border-gray-200" />
+                            <div className="flex flex-col gap-0 mb-2">
+                                <p className="fw-bold text-sm text-gray-500">
+                                    Phone number:
+                                </p>
+                                <p className="fw-bold text-sm text-gray-700">
+                                    {order?.shipping_address?.phone_number || 'Not set'}
+                                </p>
+                            </div>                            
+                            <hr className="my-2 border-gray-200" />
                             <div className="flex flex-col gap-0">
                                 <p className="fw-bold text-sm text-gray-500">
                                     Shipped to:

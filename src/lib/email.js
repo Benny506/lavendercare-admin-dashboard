@@ -1,6 +1,8 @@
 import supabase from "../database/dbInit";
 import { requestApi } from "./requestApi"
 
+const adminEmail = 'hello@lavendercare.co'
+
 export const statusUpdateMail = async ({
     to_email,
     receiver_id,

@@ -120,7 +120,7 @@ export default function Coupons() {
                                     <table className="min-w-full divide-y divide-gray-200">
                                         <thead className="bg-gray-50">
                                             <tr>
-                                                {['Code', 'Type', 'Discount value', 'Used count', 'Usage limit', 'Expires at', 'Active', 'Actions'].map((h, idx) => (
+                                                {['Code', 'For', 'Type', 'Discount value', 'Used count', 'Usage limit', 'Expires at', 'Active', 'Actions'].map((h, idx) => (
                                                     <th key={idx} className="px-3 py-3 text-left text-sm font-semibold text-gray-700">{h}</th>
                                                 ))}
                                             </tr>
@@ -129,6 +129,7 @@ export default function Coupons() {
                                             {filteredCoupons.map((coupon) => (
                                                 <tr key={coupon.id}>
                                                     <td className="px-3 py-3">{coupon?.code}</td>
+                                                    <td className="px-3 py-3">{coupon?.coupon_for}</td>
                                                     <td className="px-3 py-3 font-semibold">{coupon?.type}</td>
                                                     <td className="px-3 py-3 font-semibold">
                                                         {formatNumberWithCommas(coupon?.discount_value)}

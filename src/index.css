@@ -1,6 +1,23 @@
 @import "tailwindcss";
 @import "./fonts/font.css";
 
+@media print {
+    body {
+        background: white;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+
+    .print-full {
+        width: 100% !important;
+        max-width: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+}
+
 
 body {
   font-family: 'GT Walsheim Pro', 'system-ui', 'sans-serif', 'ui-sans-serif', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
