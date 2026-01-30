@@ -5,11 +5,11 @@ import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { Formik, ErrorMessage } from 'formik'
 import * as yup from 'yup'
 import ErrorMsg1 from "../components/ErrorMsg1";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { appLoadStart, appLoadStop } from "../../../redux/slices/appLoadingSlice";
 import { toast } from "react-toastify";
 import { adminLogin } from "../../../database/dbInit";
-import { setUserDetails } from "../../../redux/slices/userDetailsSlice";
+import { getUserDetailsState, setUserDetails } from "../../../redux/slices/userDetailsSlice";
 import { setAdminState } from "../../../redux/slices/adminState";
 import { onRequestApi } from "../../../lib/requestApi";
 
@@ -17,6 +17,8 @@ function Login() {
   const dispatch = useDispatch()
 
   const navigate = useNavigate()
+
+  const roles = useSelector(state => getUserDetailsState(state).roles)
 
   const [passwordVisible, setPasswordVisible] = useState(false)
   const [apiReqs, setApiReqs] = useState({ isLoading: false, data: null, errorMsg: null })
@@ -50,7 +52,7 @@ function Login() {
 
       setApiReqs({ isLoading: false, errorMsg: null, data: null })
 
-      const { profile, mothers, vendors, providers, user, session, permissions, allPermissions } = data
+      const { profile, mothers, vendors, providers, user, session, permissions, allPermissions, roles } = data
 
       dispatch(setUserDetails({ profile, user, session, permissions, roles, allPermissions }))
       dispatch(setAdminState({ mothers, vendors, providers }))

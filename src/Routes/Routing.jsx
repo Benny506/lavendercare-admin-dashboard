@@ -349,9 +349,27 @@ function Routing() {
           {/* Roles & Permissions  */}
           <Route path="/admin" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route path="/admin/settings/roles" element={<Role />} />
-            <Route path="/admin/settings/roles/new" element={<NewRole />} />
-            <Route path="/admin/settings/roles/edit" element={<NewRole />} />
-            <Route path="/admin/settings/permissions" element={<Permissions />} />
+            <Route path="/admin/settings/roles/new" element={
+              <PermissionCheck
+                permission_required={['admin_roles.manage']}
+              >
+                <NewRole />
+              </PermissionCheck>
+            } />
+            <Route path="/admin/settings/roles/edit" element={
+              <PermissionCheck
+                permission_required={['admin_roles.manage']}
+              >
+                <NewRole />
+              </PermissionCheck>
+            } />
+            <Route path="/admin/settings/permissions" element={
+              <PermissionCheck
+                permission_required={['admin_roles.manage']}
+              >
+                <Permissions />
+              </PermissionCheck>
+            } />
           </Route>
 
 

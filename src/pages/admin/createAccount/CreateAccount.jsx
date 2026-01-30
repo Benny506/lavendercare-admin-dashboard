@@ -77,7 +77,7 @@ function CreateAccount() {
         <div className="text-center flex flex-col gap-2">
           <h2 className="text-3xl lg:text-4xl font-bold">Create Admin Account</h2>
           <p className="text-(--gray-500) w-[382px] mx-auto text-sm sm:text-base px-3">
-            You were invited to become a care-coordinator
+            INVITES ONLY
           </p>
         </div>
 

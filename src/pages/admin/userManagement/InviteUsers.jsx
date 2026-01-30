@@ -4,15 +4,20 @@ import * as yup from 'yup'
 import ErrorMsg1 from "../components/ErrorMsg1";
 import { adminRoles } from "../../../lib/roles";
 import { useEffect, useState } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { appLoadStart, appLoadStop } from "../../../redux/slices/appLoadingSlice";
 import { toast } from "react-toastify";
 import supabase from "../../../database/dbInit";
 import { requestApi } from "../../../lib/requestApi";
 import { sendEmail } from "../../../lib/email";
+import { getUserDetailsState } from "../../../redux/slices/userDetailsSlice";
+import { v4 as uuidv4 } from 'uuid'
+import { DateTime } from "luxon";
 
 function InviteUsers() {
   const dispatch = useDispatch()
+
+  const roles = useSelector(state => getUserDetailsState(state).roles)
 
   const [apiReqs, setApiReqs] = useState({ isLoading: false, errorMsg: null, data: null })
 
@@ -46,9 +51,10 @@ function InviteUsers() {
       await sendEmail({
         to_email: requestInfo?.email,
         data: {
-          receiving_email: requestInfo?.email
+          receiving_email: requestInfo?.email,
+          role: roles?.map(r => r?.id === requestInfo?.role_id)?.[0]?.name || 'Admin'
         },
-        subject: 'Admin Invitation',
+        subject: `Admin Invitation`,
         template_id: '351ndgwy98qlzqx8'
       })
 
@@ -86,18 +92,27 @@ function InviteUsers() {
           <Formik
             validationSchema={yup.object().shape({
               email: yup.string().email("Must be a valid email address").required("Email address is required"),
-              role: yup.string().required("Admin role is required")
+              role_id: yup.string().required("Role is required")
             })}
             initialValues={{
-              email: '', role: ''
+              email: '', role_id: ''
             }}
             onSubmit={values => {
+              
+              const next24Hours = DateTime.utc().plus({ hours: 24 })
+
               setApiReqs({
                 isLoading: true,
                 errorMsg: null,
                 data: {
                   type: 'inviteUser',
-                  requestInfo: values
+                  requestInfo: {
+                    id: uuidv4(),
+                    role_id: values.role_id,
+                    email: values.email,
+                    created_at: new Date().toISOString(),
+                    expires_at: next24Hours.toISO()
+                  }
                 }
               })
             }}
@@ -125,30 +140,37 @@ function InviteUsers() {
                     <p className="text-sm text-gray-600 pb-1">Role</p>
                     <select
                       className="placeholder:text-gray-600 py-[10px] h-[44px] px-4 rounded-md border-gray-300 w-full border"
-                      value={values.role}
-                      name="role"
+                      value={values.role_id}
+                      name="role_id"
                       onChange={handleChange}
                       onBlur={handleBlur}                      
                     >
                       <option value={''} selected>Select one</option>
                       {
-                        adminRoles.map((r, i) => {
+                        roles?.filter(r => 
+                          !r?.name?.toLowerCase()?.includes("super")
+                          &&
+                          !r?.name?.toLowerCase()?.includes("admin")
+                        ).map((r, i) => {
+
+                          const roleName = roles?.map(_r => r?.id === _r?.id)?.[0]?.name
+
                           return (
                             <option 
                               key={i}
-                              value={r}
+                              value={r?.id}
                             >
-                              { r }                           
+                              { roleName || r?.name }                           
                             </option>
                           )
                         })
                       }
                     </select>
-                    <ErrorMessage name="role">
+                    <ErrorMessage name="role_id">
                       { errorMsg => <ErrorMsg1 errorMsg={errorMsg} /> }
                     </ErrorMessage>                    
                   </label>
-                  <p className="text-[16px] leading-0 text-gray-400 text-right">+ Create Admin role</p>
+                  {/* <p className="text-[16px] leading-0 text-gray-400 text-right">+ Create Admin role</p> */}
                 </div>
 
                 {/* invite user buttons */}

@@ -7,8 +7,8 @@ export const SUPABASE_URL = 'https://tzsbbbxpdlupybfrgdbs.supabase.co'
 export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR6c2JiYnhwZGx1cHliZnJnZGJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzU0MTEsImV4cCI6MjA2NzU1MTQxMX0.3MPot37N05kaUG8W84JItSKgH2bymVBee1MxJ905XEk'
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    realtime: { params: { eventsPerSecond: 10 } },
-    debug: true // This will print realtime connection logs
+  realtime: { params: { eventsPerSecond: 10 } },
+  debug: true // This will print realtime connection logs
 })
 
 export default supabase
@@ -28,10 +28,10 @@ export async function adminLogin({ email, password }) {
     console.log("Users error", error)
     return { errorMsg: error.message, data: null };
   }
-  
+
   const { data: infoData, error: infoError } = await getAdminDetails({ id: data.user.id })
 
-  if(infoError){
+  if (infoError) {
     return {
       data: null,
       errorMsg: infoError
@@ -45,15 +45,15 @@ export async function adminLogin({ email, password }) {
       profile: {
         ...data, ...infoData?.profile
       },
-      ...infoData      
+      ...infoData
     },
     errorMsg: null
   }
 }
-export async function getAdminDetails({ id }){
+export async function getAdminDetails({ id }) {
 
   try {
-  
+
     const { data: roles, error: rolesError } = await supabase
       .from("roles")
       .select("*")
@@ -62,24 +62,24 @@ export async function getAdminDetails({ id }){
     const { data: allPermissions, error: allPermissionsError } = await supabase
       .from("permissions")
       .select("*")
-      .eq("perm_for", "admin")      
+      .eq("perm_for", "admin")
 
     const { data: allusers, error: allUsersError } = await supabase.rpc('get_all_profiles_with_email')
     const { data: profileData, error: profileError } = await supabase
       .from("admins")
       .select('*')
-      .eq('id', id) 
+      .eq('id', id)
       .single();
 
-      const { data: permissions, error: permissionsError } = await supabase.rpc("get_my_permissions")
+    const { data: permissions, error: permissionsError } = await supabase.rpc("get_my_permissions")
 
-    if(
-        profileError
-        ||
-        allUsersError
-        ||
-        permissionsError || allPermissionsError || rolesError
-      ){
+    if (
+      profileError
+      ||
+      allUsersError
+      ||
+      permissionsError || allPermissionsError || rolesError
+    ) {
       console.log("Profile error", profileError)
       console.log("All users error", allUsersError)
       console.log("permissionsError", permissionsError)
@@ -91,20 +91,25 @@ export async function getAdminDetails({ id }){
 
     const { users: mothers, providers, vendors } = allusers
 
-    return{
+    return {
       data: {
         profile: profileData,
         providers,
         mothers,
         vendors,
-        permissions,
+        permissions: permissions?.map(p => {
+          return {
+            permission_key: p?.key || p?.permission_key,
+            description: p?.description
+          }
+        }),
         roles,
         allPermissions
       },
       error: null
-    }   
-    
-    
+    }
+
+
   } catch (error) {
     console.log(error)
     return { error: "Error getting admon profile", data: null };
@@ -117,55 +122,55 @@ export async function getAdminDetails({ id }){
 
 // OTP 
 export async function createOrUpdateOtp({ email, requiresAuth }) {
-    // 1. Check if user exists in auth.mothers
-    const { data: userExistsData, error: existsError } = await supabase
-        .rpc('user_exists', { email_input: email });
+  // 1. Check if user exists in auth.mothers
+  const { data: userExistsData, error: existsError } = await supabase
+    .rpc('user_exists', { email_input: email });
 
-    const userAlreadyExists = userExistsData === true ? true : false
+  const userAlreadyExists = userExistsData === true ? true : false
 
-    if(requiresAuth){
-        if(!userAlreadyExists){
-            return { userAlreadyExists }
-        }
-
-    } else{
-        if (userAlreadyExists) {
-            return { userAlreadyExists };
-        }
+  if (requiresAuth) {
+    if (!userAlreadyExists) {
+      return { userAlreadyExists }
     }
 
+  } else {
+    if (userAlreadyExists) {
+      return { userAlreadyExists };
+    }
+  }
 
-    // 2. Generate 6-digit OTP
-    const otp = generateNumericCode(6)
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-    // 3. Upsert into otps
-    const { error: otpError } = await supabase
-        .from('otps')
-        .upsert(
-            {
-                email,
-                otp,
-                expires_at: expiresAt,
-            },
-            { onConflict: ['email'] }
+  // 2. Generate 6-digit OTP
+  const otp = generateNumericCode(6)
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+  // 3. Upsert into otps
+  const { error: otpError } = await supabase
+    .from('otps')
+    .upsert(
+      {
+        email,
+        otp,
+        expires_at: expiresAt,
+      },
+      { onConflict: ['email'] }
     );
 
-    if (otpError) {
-        console.log('Error upserting OTP:', otpError);
+  if (otpError) {
+    console.log('Error upserting OTP:', otpError);
 
-        if(requiresAuth){
-            return { error: 'Error sending OTP to mail', userAlreadyExists }
-        }
-
-        return { error: 'Error sending OTP to mail' }
+    if (requiresAuth) {
+      return { error: 'Error sending OTP to mail', userAlreadyExists }
     }
 
-    if(requiresAuth){
-        return { token: { otp, expiresAt }, userAlreadyExists };
-    }
+    return { error: 'Error sending OTP to mail' }
+  }
 
-    return { token: { otp, expiresAt } };
+  if (requiresAuth) {
+    return { token: { otp, expiresAt }, userAlreadyExists };
+  }
+
+  return { token: { otp, expiresAt } };
 }
 export async function validateOtp({ email, otp }) {
   const { data: isValid, error } = await supabase
@@ -182,7 +187,7 @@ export async function validateOtp({ email, otp }) {
 export async function checkPhoneNumberExists({ phone_number }) {
   const { data: isUsed, error } = await supabase
     .rpc('check_phone_number_exists', { p_phone: phone_number });
-    
+
   if (error) {
     console.error('Phone number check error:', error);
     throw error;

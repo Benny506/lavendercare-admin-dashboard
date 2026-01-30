@@ -1,11 +1,35 @@
 import React from "react";
 import NavComponent from "./components/NavComponent";
-import { useSelector } from "react-redux";
-import { getUserDetailsState } from "../../../redux/slices/userDetailsSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { clearUserDetails, getUserDetailsState } from "../../../redux/slices/userDetailsSlice";
+import Button from "../components/ui/Button";
+import { appLoadStart, appLoadStop } from "../../../redux/slices/appLoadingSlice";
+import { toast } from "react-toastify";
+import supabase from "../../../database/dbInit";
 
 function General() {
 
+  const dispatch = useDispatch()
+
   const profile = useSelector(state => getUserDetailsState(state).profile)
+
+  const userLogout = async () => {
+    dispatch(appLoadStart())
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      toast.error("Logout error")
+      console.error("Logout error:", error.message);
+    }
+
+    dispatch(appLoadStop())
+
+    if(!error){
+      dispatch(clearUserDetails())
+      toast.success("Logged out!")
+    }
+  };
+
 
   return (
     <div className="pt-6 w-full min-h-screen">
@@ -27,6 +51,12 @@ function General() {
                   readOnly
                 />
               </div>
+            </div>
+
+            <div className="flex items-start justify-start mt-5">
+              <Button onClick={userLogout} variant="danger">
+                Logout
+              </Button>
             </div>
           </div>
         </div>
