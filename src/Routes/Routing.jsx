@@ -73,6 +73,7 @@ import ServiceSetup from "../pages/admin/serviceProvider/ServiceSetup";
 import Coupons from "../pages/admin/marketPlace/coupons/Coupons";
 import CouponForm from "../pages/admin/marketPlace/coupons/CouponForm";
 import CouponStats from "../pages/admin/marketPlace/coupons/CouponStats";
+import PermissionCheck from "../pages/admin/components/permissions/PermissionCheck";
 
 function Routing() {
 
@@ -86,89 +87,191 @@ function Routing() {
           <Route path="/admin/verify-account" element={<VerifyEmail />} />
           <Route path="/admin/recover-account" element={<RecoverAccount />} />
 
-          <Route path="/admin" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-            <Route path="/admin/dashboard" element={<Dashboard />} />
 
-            {/* user management */}
-            <Route path="/admin/user-management" element={<UserManagement />} />
-            <Route path="/admin/user-management/profile" element={<UserManagementProfile />} />
-            <Route path="/admin/user-management/booking-information" element={<BookingInformation />} />
-            {/* <Route path="/admin/user-management/activity-logs" element={<ActivityLogs />} /> */}
+
+
+
+          {/* BLOGS  */}
+          <Route path="/admin" element={
+            <PermissionCheck
+              permission_required={['content.delete', 'content.edit', 'content.create']}
+            >
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            </PermissionCheck>
+          }>
+            <Route index element={<Blog />} />
+            <Route path="/admin/content/blog" element={<Blog />} />
+            <Route path="/admin/content/new-blog" element={<NewBlog />} />
+            <Route path="/admin/content/edit-blog" element={<NewBlog />} />
+            <Route path="/admin/content/blog-detail" element={<BlogDetail />} />
+          </Route>
+
+
+
+
+
+          {/* COMMUNITIES  */}
+          <Route path="/admin" element={
+            <PermissionCheck
+              permission_required={['community.manage']}
+            >
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            </PermissionCheck>
+          }>
+            <Route path="/admin/communities/all-communities" element={<Communities />} />
+            <Route path="/admin/communities/create" element={<CreateCommunity />} />
+            <Route path="/admin/communities/chat" element={<CommunityChat />} />
+          </Route>
+
+
+
+
+
+          {/* PRODUCTS  */}
+          <Route path="/admin" element={
+            <PermissionCheck
+              permission_required={['products.manage']}
+            >
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            </PermissionCheck>
+          }>
+            <Route path="/admin/marketplace/manage-product" element={<Product />} />
+            <Route path="/admin/marketplace/manage-product/product-variants" element={<VariantCombinations />} />
+            <Route path="/admin/marketplace/add-product" element={<AddProduct />} />
+            <Route path="/admin/marketplace/edit-product" element={<AddProduct />} />
+          </Route>
+
+
+
+
+
+          {/* ORDERS */}
+          <Route path="/admin" element={
+            <PermissionCheck
+              permission_required={['orders.manage']}
+            >
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            </PermissionCheck>
+          }>
+            <Route path="/admin/marketplace/orders" element={<Orders />} />
+          </Route>
+
+
+
+
+
+          {/* COUPONS  */}
+          <Route path="/admin" element={
+            <PermissionCheck
+              permission_required={['coupons.manage']}
+            >
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            </PermissionCheck>
+          }>
+            <Route path="/admin/marketplace/coupons" element={<Coupons />} />
+            <Route path="/admin/marketplace/coupons/create" element={<CouponForm />} />
+            <Route path="/admin/marketplace/coupons/edit" element={<CouponForm />} />
+            <Route path="/admin/marketplace/coupons/single-coupon-stats" element={<CouponStats />} />
+          </Route>
+
+
+
+
+
+          {/* PROVIDERS */}
+          <Route path="/admin" element={
+            <PermissionCheck
+              permission_required={['providers.approve', 'providers.assign', 'services.edit', 'services.create', 'service.delete']}
+            >
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            </PermissionCheck>
+          }>
             <Route
-              path="/admin/user-management/invite-user"
-              element={<InviteUsers />}
-            />
-
-
-
-
-
-            {/* Mothers  */}
-            {/* <Route
-              path="/admin/mothers"
-              element={<AllMothers />}
-            /> */}
-            <Route
-              path="/admin/mothers/single-mother"
-              element={<MotherProfile />}
+              path="/admin/healthcare-provider"
+              element={
+                <PermissionCheck
+                  permission_required={['providers.assign', 'services.edit', 'services.create', 'service.delete']}
+                >
+                  <HealthcareProvider />
+                </PermissionCheck>
+              }
             />
             <Route
-              path="/admin/mothers/mother-messages"
-              element={<MotherMessages />}
+              path="/admin/healthcare-provider/single-provider"
+              element={
+                <PermissionCheck
+                  permission_required={['providers.assign', 'services.edit', 'services.create', 'service.delete']}
+                >
+                  <SingleVendor />
+                </PermissionCheck>
+              }
             />
+            <Route
+              path="/admin/healthcare-provider/credentials-review"
+              element={
+                <PermissionCheck
+                  permission_required={['providers.approve']}
+                >
+                  <ReviewCredential />
+                </PermissionCheck>
+              }
+            />
+          </Route>
 
 
 
 
 
-            {/* service providers */}
+          {/* SERVICES */}
+          <Route path="/admin" element={
+            <PermissionCheck
+              permission_required={['services.create', 'services.edit', 'services.delete']}
+            >
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            </PermissionCheck>
+          }>
             <Route
               path="/admin/services"
               element={<ServiceProvider />}
             />
             <Route
-              path="/admin/services/single-provider"
-              element={<SingleVendor />}
-            />
-            <Route
               path="/admin/services/single-provider/service-setup"
               element={<ServiceSetup />}
-            />            
+            />
             <Route
               path="/admin/services/single-provider/service-details"
               element={<ServiceDetails />}
             />
-            {/* <Route
-            path="/admin/services/disputes"
-            element={<Disputes />}
-          /> */}
-            {/* <Route
-              path="/admin/services/performance"
-              element={<Performance />}
-            />
-            <Route
-              path="/admin/services/disputes/:id"
-              element={<DisputeDetails />}
-            /> */}
+          </Route>
 
 
 
 
 
-            {/* healthcare provider */}
-            <Route
-              path="/admin/healthcare-provider"
-              element={<HealthcareProvider />}
-            />
-            <Route
-              path="/admin/healthcare-provider/single-provider"
-              element={<SingleVendor />}
-            />
-            <Route
-              path="/admin/healthcare-provider/credentials-review"
-              element={<ReviewCredential />}
-            />
-            {/* mental health screening */}
+          {/* SCREENINGS */}
+          <Route path="/admin" element={
+            <PermissionCheck
+              permission_required={['screenings.manage']}
+            >
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            </PermissionCheck>
+          }>
             <Route
               path="/admin/healthcare-provider/mental-health-screening"
               element={<MentalHealthScreening />}
@@ -177,70 +280,92 @@ function Routing() {
               path="/admin/healthcare-provider/mental-health-screening/:id"
               element={<MentalHealthScreeningDetail />}
             />
-            {/* <Route path="/admin/healthcare-provider/caseloads" element={<CaseloadSummaries />} />
-            <Route path="/admin/healthcare-provider/all-caseload" element={<AllCaseload />} /> */}
+          </Route>
 
 
 
 
 
+          {/* User Mgt  */}
+          <Route path="/admin" element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }>
+            <Route path="/admin/user-management" element={
+              <PermissionCheck
+                permission_required={['care_coordinator', 'providers.assign']}
+              >
+                <UserManagement />
+              </PermissionCheck>
+            } />
+            <Route
+              path="/admin/mothers/mother-messages"
+              element={
+                <PermissionCheck
+                  permission_required={['care_coordinator']}
+                >
+                  <MotherMessages />
+                </PermissionCheck>
+              } />
+            <Route
+              path="/admin/mothers/single-mother"
+              element={
+                <PermissionCheck
+                  permission_required={['care_coordinator', 'providers.assign']}
+                >
+                  <MotherProfile />
+                </PermissionCheck>
+              }
+            />
+            <Route
+              path="/admin/user-management/invite-user"
+              element={
+                <PermissionCheck
+                  permission_required={['invite_user']}
+                >
+                  <InviteUsers />
+                </PermissionCheck>
+              }
+            />
+          </Route>
 
-            {/* blog */}
-            <Route path="/admin/content/blog" element={<Blog />} />
-            <Route path="/admin/content/new-blog" element={<NewBlog />} />
-            <Route path="/admin/content/edit-blog" element={<NewBlog />} />
-            <Route path="/admin/content/blog-detail" element={<BlogDetail />} />
-            {/* <Route path="/admin/content/resource" element={<Resource />} /> */}
-            {/* <Route path="/admin/content/promotions" element={<Promotions />} /> */}
 
 
 
-            {/* marketplace */}
-            <Route path="/admin/marketplace/manage-product" element={<Product />} />
-            <Route path="/admin/marketplace/manage-product/product-variants" element={<VariantCombinations />} />
-            <Route path="/admin/marketplace/add-product" element={<AddProduct />} />
-            <Route path="/admin/marketplace/edit-product" element={<AddProduct />} />
-            <Route path="/admin/marketplace/orders" element={<Orders />} />
-            <Route path="/admin/marketplace/coupons" element={<Coupons />} />
-            <Route path="/admin/marketplace/coupons/create" element={<CouponForm />} />
-            <Route path="/admin/marketplace/coupons/edit" element={<CouponForm />} />
-            <Route path="/admin/marketplace/coupons/single-coupon-stats" element={<CouponStats />} />
-            {/* <Route path="/admin/marketplace/promotions" element={<MarketPromotions />} /> */}
-
-            {/* order and transactions */}
-            {/* <Route path="/admin/orders" element={<Order />} />
-          <Route path="/admin/order/refunds" element={<Refund />} />
-          <Route path="/admin/order/payout-requests" element={<PayoutRequests />} />
-          <Route path="/admin/order/transaction-history" element={<TransactionHistory />} />
-          <Route path="/admin/order/detail" element={<OrderDetail />} /> */}
+          {/* DASHBOARD  */}
+          <Route path="/admin" element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }>
+            <Route path="/admin/dashboard" element={<Dashboard />} />
+          </Route>
 
 
+
+
+
+          {/* Roles & Permissions  */}
+          <Route path="/admin" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+            <Route path="/admin/settings/roles" element={<Role />} />
+            <Route path="/admin/settings/roles/new" element={<NewRole />} />
+            <Route path="/admin/settings/roles/edit" element={<NewRole />} />
+            <Route path="/admin/settings/permissions" element={<Permissions />} />
+          </Route>
+
+
+
+
+
+          {/* GLOBAL */}
+          <Route path="/admin" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             {/* support */}
             <Route path="/admin/support/all-tickets" element={<AllTickets />} />
-            {/* <Route path="/admin/support/escalated-tickets" element={<EscalatedTickets />} /> */}
             <Route path="/admin/support/ticket-details/:id" element={<TicketDetails />} />
 
-            {/* analytics */}
-            {/* <Route path="/admin/analytics/sales" element={<SalesAndRevenue />} />
-          <Route path="/admin/analytics/bookings" element={<ConsulationVolumes />} />
-          <Route path="/admin/analytics/screening" element={<ScreeningOutcomes />} />
-          <Route path="/admin/analytics/user-engagement" element={<UserEngagement />} />
-          <Route path="/admin/analytics/provider-and-vendors" element={<ProviderVendor />} />
-          <Route path="/admin/analytics/report-builder" element={<CustomReport />} /> */}
-
-
-            {/* communities */}
-            <Route path="/admin/communities/all-communities" element={<Communities />} />
-            <Route path="/admin/communities/create" element={<CreateCommunity />} />
-            <Route path="/admin/communities/chat" element={<CommunityChat />} />
-
-
-
             {/* settings */}
-            {/* <Route path="/admin/settings/general" element={<General />} />
-          <Route path="/admin/settings/roles" element={<Role />} />
-          <Route path="/admin/settings/roles/new" element={<NewRole />} />
-          <Route path="/admin/settings/permissions" element={<Permissions />} /> */}
+            <Route path="/admin/settings/general" element={<General />} />
           </Route>
 
           <Route path="*" element={<NotFound />} />

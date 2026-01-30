@@ -16,6 +16,8 @@ import { getAdminState } from "../../../redux/slices/adminState";
 import { getPublicImageUrl } from "../../../lib/requestApi";
 import Button from "../components/ui/Button";
 import ProvidersModal from "../components/ProvidersModal";
+import FeedBackModal from "../healthcareProvider/auxiliary/FeedBackModal";
+import NotifyModal from "../components/notifications/NotifyModal";
 
 
 
@@ -38,6 +40,7 @@ function MotherProfile() {
     const [canLoadMore, setCanLoadMore] = useState(true)
     const [mother, setMother] = useState()
     const [providersModal, setProvidersModal] = useState({ visible: false, hide: null })
+    const [notifyModal, setNotifyModal] = useState({ visible: false, hide: null })
 
     useEffect(() => {
         if (!user) {
@@ -60,7 +63,7 @@ function MotherProfile() {
     }, [])
 
     useEffect(() => {
-        if(!mother) return;
+        if (!mother) return;
 
         setProviders(mother?.assignedProviders || [])
         setBookings(mother?.bookings)
@@ -79,6 +82,9 @@ function MotherProfile() {
             }
         }
     }, [apiReqs])
+
+    const openNotifyModal = () => setNotifyModal({ visible: true, hide: hideNotifyModal })
+    const hideNotifyModal = () => setNotifyModal({ visible: false, hide: null })
 
     const { pageItems, totalPages, pageList, totalPageListIndex } = usePagination({
         arr: bookings,
@@ -131,12 +137,22 @@ function MotherProfile() {
                 <div className="flex flex-col md:flex-row gap-6">
                     {/* Left: Patient Info */}
                     <div className="w-full md:w-1/3 bg-white rounded-xl p-4 md:p-6">
-                        <button
-                            onClick={() => navigate('/admin/mothers/mother-messages', { state: { mother: mother } })}
-                            className="px-3 py-2 rounded-lg bg-purple-100 text-purple-600 font-medium text-sm cursor-pointer"
-                        >
-                            Send a message
-                        </button>
+                        <div className="flex items-center justify-between gap-4 flex-wrap">
+                            <button
+                                onClick={() => navigate('/admin/mothers/mother-messages', { state: { mother: mother } })}
+                                className="px-3 py-2 rounded-lg bg-purple-100 text-purple-600 font-medium text-sm cursor-pointer"
+                            >
+                                Chat
+                            </button>
+
+                            <button
+                                onClick={openNotifyModal}
+                                className="px-3 py-2 rounded-lg bg-purple-600 text-purple-100 font-medium text-sm cursor-pointer"
+                            >
+                                Notify
+                            </button>
+                        </div>
+
                         <PatientInfo
                             screeningInfo={{
                                 user_profile: mother
@@ -336,9 +352,9 @@ function MotherProfile() {
                 onProviderSelected={provider => {
                     assignProvider({
                         callBack: ({ newAssignment }) => {
-                            if(!newAssignment) return;
+                            if (!newAssignment) return;
 
-                            const assignedProviders = [{...newAssignment, providerInfo: provider}, ...(mother?.assignedProviders || [])]
+                            const assignedProviders = [{ ...newAssignment, providerInfo: provider }, ...(mother?.assignedProviders || [])]
 
                             setMother({
                                 ...mother,
@@ -350,6 +366,10 @@ function MotherProfile() {
                     })
                 }}
                 modalProps={providersModal}
+            />
+
+            <NotifyModal 
+                modalProps={notifyModal}
             />
         </div>
     );

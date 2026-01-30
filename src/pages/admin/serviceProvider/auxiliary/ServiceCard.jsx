@@ -8,7 +8,7 @@ export default function ServiceCard({ service, provider }) {
 
     const navigate = useNavigate()
 
-    if(!service || !provider) return <></>
+    if (!service || !provider) return <></>
 
     const {
         id,
@@ -19,7 +19,9 @@ export default function ServiceCard({ service, provider }) {
         state,
         city,
         location,
-        types
+        types,
+        locations,
+        is_virtual
     } = service;
 
     return (
@@ -48,38 +50,14 @@ export default function ServiceCard({ service, provider }) {
                     </div>
                 </div>
 
-                {/* Types */}
-                {types?.length > 0 && (
-                    <div>
-                        <p className="text-xs font-medium text-gray-500 mb-1">
-                            Session Types
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                            {types.map((t, i) => (
-                                <span
-                                    key={i}
-                                    className="px-3 py-1 rounded-full text-xs bg-gray-100 text-gray-700"
-                                >
-                                    {t.type_name}
-                                </span>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
                 {/* Location */}
                 <div>
                     <p className="text-xs font-medium text-gray-500 mb-1">
                         Location
                     </p>
-                    <div className="flex flex-wrap gap-2 text-sm text-gray-700">
-                        {[country, state, city, location].map((s, i) => (
-                            <span key={i} className="flex items-center gap-1">
-                                <BsDot size={16} />
-                                {s?.replaceAll("_", " ")}
-                            </span>
-                        ))}
-                    </div>
+                    <p>
+                        {is_virtual ? 'Virtual' : locations?.length > 0 ? locations?.length + ' set' : 'Not set'}
+                    </p>
                 </div>
 
                 {/* Footer */}

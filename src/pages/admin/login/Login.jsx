@@ -24,13 +24,13 @@ function Login() {
   useEffect(() => {
     const { isLoading, data } = apiReqs
 
-    if(isLoading) dispatch(appLoadStart());
+    if (isLoading) dispatch(appLoadStart());
     else dispatch(appLoadStop())
 
-    if(isLoading && data){
+    if (isLoading && data) {
       const { requestInfo, type } = data
 
-      if(type === 'login'){
+      if (type === 'login') {
         login({ requestInfo })
       }
     }
@@ -41,7 +41,7 @@ function Login() {
 
       const { data, errorMsg } = await adminLogin(requestInfo)
 
-      if(errorMsg){
+      if (errorMsg) {
         setApiReqs({ isLoading: false, data: null, errorMsg })
         toast.error(errorMsg)
 
@@ -50,13 +50,17 @@ function Login() {
 
       setApiReqs({ isLoading: false, errorMsg: null, data: null })
 
-      const { profile, mothers, vendors, providers } = data
+      const { profile, mothers, vendors, providers, user, session, permissions, allPermissions } = data
 
-      dispatch(setUserDetails({ profile }))
+      dispatch(setUserDetails({ profile, user, session, permissions, roles, allPermissions }))
       dispatch(setAdminState({ mothers, vendors, providers }))
 
-      navigate('/admin/dashboard')
-      
+      const permKeys = permissions?.map(p => p?.permission_key)
+
+      if (permKeys?.length === 0) return toast.info("Access Denied!");     
+
+      navigate("/admin/settings/general")      
+
     } catch (error) {
       console.log(error)
       return loginFailure({ errorMsg: 'Something went wrong! Try again' })
@@ -73,7 +77,7 @@ function Login() {
     email: yup.string().email("Must be a valid email address").required("Email address is required"),
     password: yup.string().required("Password is required")
   })
- 
+
   return (
     <div className="w-full h-screen lg:flex lg:items-center">
       <img
@@ -97,7 +101,7 @@ function Login() {
           }}
           onSubmit={(values) => {
             setApiReqs({
-              isLoading: true, 
+              isLoading: true,
               errorMsg: null,
               data: {
                 type: 'login',
@@ -123,7 +127,7 @@ function Login() {
                     placeholder="youremail@gmail.com"
                   />
                   <ErrorMessage name="email">
-                    { err => <ErrorMsg1 errorMsg={err} /> }
+                    {err => <ErrorMsg1 errorMsg={err} />}
                   </ErrorMessage>
                 </label>
 
@@ -144,15 +148,15 @@ function Login() {
 
                     {
                       passwordVisible
-                      ?
-                        <FaRegEye color="#6F3DCB" size={20} className="cursor-pointer" onClick={togglePasswordVisibility}/>
-                      :
-                        <FaRegEyeSlash color="#6F3DCB" size={20} className="cursor-pointer" onClick={togglePasswordVisibility}/>
-                    }                
+                        ?
+                        <FaRegEye color="#6F3DCB" size={20} className="cursor-pointer" onClick={togglePasswordVisibility} />
+                        :
+                        <FaRegEyeSlash color="#6F3DCB" size={20} className="cursor-pointer" onClick={togglePasswordVisibility} />
+                    }
                   </div>
                   <ErrorMessage name="password">
-                    { err => <ErrorMsg1 errorMsg={err} /> }
-                  </ErrorMessage>                  
+                    {err => <ErrorMsg1 errorMsg={err} />}
+                  </ErrorMessage>
                 </label>
               </div>
 
@@ -171,7 +175,7 @@ function Login() {
                   Login
                 </button>
               </div>
-            </div>            
+            </div>
           )}
         </Formik>
       </div>

@@ -48,7 +48,7 @@ function InviteUsers() {
         data: {
           receiving_email: requestInfo?.email
         },
-        subject: 'Care-coordinator Invitation',
+        subject: 'Admin Invitation',
         template_id: '351ndgwy98qlzqx8'
       })
 

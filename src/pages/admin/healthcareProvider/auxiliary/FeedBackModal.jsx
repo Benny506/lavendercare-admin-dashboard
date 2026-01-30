@@ -101,7 +101,8 @@ export default function FeedBackModal({ modalProps }) {
             product_ids: products?.map(p => p?.id),
             service_ids: services?.map(s => s?.d),
             provider_ids: providers?.map(p => p?.provider_id),
-            user_id: data?.user_profile?.id
+            user_id: data?.user_profile?.id,
+            title: 'Mental health test feedback'
         }
 
         sendTestFeedBack({

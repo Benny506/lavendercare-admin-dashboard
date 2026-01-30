@@ -40,6 +40,8 @@ export async function adminLogin({ email, password }) {
 
   return {
     data: {
+      user: data.user,
+      session: data.session,
       profile: {
         ...data, ...infoData?.profile
       },
@@ -51,7 +53,17 @@ export async function adminLogin({ email, password }) {
 export async function getAdminDetails({ id }){
 
   try {
-    
+  
+    const { data: roles, error: rolesError } = await supabase
+      .from("roles")
+      .select("*")
+      .eq("role_for", "admin")
+
+    const { data: allPermissions, error: allPermissionsError } = await supabase
+      .from("permissions")
+      .select("*")
+      .eq("perm_for", "admin")      
+
     const { data: allusers, error: allUsersError } = await supabase.rpc('get_all_profiles_with_email')
     const { data: profileData, error: profileError } = await supabase
       .from("admins")
@@ -59,13 +71,20 @@ export async function getAdminDetails({ id }){
       .eq('id', id) 
       .single();
 
+      const { data: permissions, error: permissionsError } = await supabase.rpc("get_my_permissions")
+
     if(
         profileError
         ||
         allUsersError
+        ||
+        permissionsError || allPermissionsError || rolesError
       ){
       console.log("Profile error", profileError)
       console.log("All users error", allUsersError)
+      console.log("permissionsError", permissionsError)
+      console.log("allPermissionsError", allPermissionsError)
+      console.log("rolesError", rolesError)
 
       return { error: "Error getting admin profile", data: null };
     }
@@ -77,7 +96,10 @@ export async function getAdminDetails({ id }){
         profile: profileData,
         providers,
         mothers,
-        vendors
+        vendors,
+        permissions,
+        roles,
+        allPermissions
       },
       error: null
     }   

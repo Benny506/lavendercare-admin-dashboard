@@ -16,6 +16,8 @@ import AddServiceModal from "./AddServiceModal";
 import ServiceHours from "./ServiceHours";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
+import { FaLocationPin } from "react-icons/fa6";
+import ServiceLocation from "./ServiceLocation";
 
 export default function ServiceDetails() {
     const dispatch = useDispatch()
@@ -30,18 +32,18 @@ export default function ServiceDetails() {
     const provider = state?.provider
 
     const [serviceTypeModal, setServiceTypeModal] = useState({ visible: false, hide: null })
-    const [apiReqs, setApiReqs] = useState({ isLoading: false, errorMsg: null, data: null })
     const [service, setService] = useState(null)
+    const [serviceLocationModal, setServiceLocationModal] = useState({ visible: false, hide: null })
     const [editServiceModal, setEditServiceModal] = useState({ step: null })
-    const [days, setDays] = useState({
-        monday: [],
-        tuesday: [],
-        wednesday: [],
-        thursday: [],
-        friday: [],
-        saturday: [],
-        sunday: []
-    })
+    // const [days, setDays] = useState({
+    //     monday: [],
+    //     tuesday: [],
+    //     wednesday: [],
+    //     thursday: [],
+    //     friday: [],
+    //     saturday: [],
+    //     sunday: []
+    // })
 
     useEffect(() => {
         if (!service_id || !provider) {
@@ -68,6 +70,9 @@ export default function ServiceDetails() {
         navigate(-1)
         toast.info("Provider & Service information could not be retrieved")
     }
+
+    const openServiceLocationModal = () => setServiceLocationModal({ visible: true, hide: hideServiceLocationModal })
+    const hideServiceLocationModal = () => setServiceLocationModal({ visible: false, hide: null })
 
     const openServiceTypeModal = ({ info }) => setServiceTypeModal({ visible: true, hide: hideServiceTypeModal, info })
     const hideServiceTypeModal = () => setServiceTypeModal({ visible: false, hide: null })
@@ -118,7 +123,10 @@ export default function ServiceDetails() {
                                 onClick={() => updateService({
                                     callBack: ({ updatedService }) => {
                                         if (updatedService) {
-                                            setService(updatedService)
+                                            setService({
+                                                ...service,
+                                                status: "approved"
+                                            })
                                         }
                                     },
                                     update: {
@@ -136,7 +144,10 @@ export default function ServiceDetails() {
                                 onClick={() => updateService({
                                     callBack: ({ updatedService }) => {
                                         if (updatedService) {
-                                            setService(updatedService)
+                                            setService({
+                                                ...service,
+                                                status: "hidden"
+                                            })
                                         }
                                     },
                                     update: {
@@ -158,7 +169,10 @@ export default function ServiceDetails() {
                             updateService({
                                 callBack: ({ updatedService }) => {
                                     if (updatedService) {
-                                        setService(updatedService)
+                                        setService({
+                                            ...service,
+                                            availability
+                                        })
                                     }
 
                                     setEditServiceModal({ step: null })
@@ -175,7 +189,7 @@ export default function ServiceDetails() {
                 <div className="mb-6">
                     <section className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6 space-y-6">
                         <div className="flex items-center justify-between">
-                            <h2 className="text-2xl font-bold text-gray-900">Service Types</h2>
+                            <h2 className="text-2xl font-bold text-gray-900">Duration && Fees</h2>
                             <Button
                                 variant="ghost"
                                 onClick={() => openServiceTypeModal({ info: null })}
@@ -201,10 +215,16 @@ export default function ServiceDetails() {
                                         </div>
 
                                         <div className="text-sm space-y-1 text-gray-700">
-                                            <p>Duration: {secondsToLabel({ seconds: t.duration })}</p>
                                             <p>
-                                                Price: {t.currency}{" "}
+                                                <span className="" style={{ fontWeight: '900' }}>Duration: {secondsToLabel({ seconds: t.duration })}</span>
+                                            </p>
+                                            <p>
+                                                <span className="" style={{ fontWeight: '900' }}>Price: {t.currency}{" "}</span>
                                                 {formatNumberWithCommas(t.price)}
+                                            </p>
+                                            <p>
+                                                <span className="" style={{ fontWeight: '900' }}>Description: {" "}</span>
+                                                {t?.description || 'Not set'}
                                             </p>
                                         </div>
 
@@ -247,14 +267,89 @@ export default function ServiceDetails() {
                             </div>
                         ) : (
                             <ZeroItems
-                                zeroText="No session types"
+                                zeroText="Duration && Fees not set"
                             />
                         )}
                     </section>
                 </div>
 
+                <Card
+                    title="Location & Fees"
+                    subtitle="Only set this if this service can be rendered physically!"
+                    icon={FaLocationPin}
+                >
+                    <div className="space-y-4">
+
+                        {/* Existing service locations */}
+                        {(service?.locations || []) === 0 && (
+                            <p className="text-sm text-gray-500">
+                                Not set
+                            </p>
+                        )}
+
+                        {(service?.locations || []).map((loc, index) => {
+
+                            return (
+                                <div
+                                    key={index}
+                                    className="flex justify-between flex-wrap gap-3 items-center border border-gray-200 rounded-lg p-3"
+                                >
+                                    <div>
+                                        <p className="text-sm text-gray-500">
+                                            {loc.country} · {loc.state} · {loc.city} · {loc?.address}
+                                        </p>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const canBePhysical = service?.types?.filter(t => !t?.is_virtual)?.[0]
+
+                                            const updated = service?.locations?.filter((_, i) => i !== index);
+
+                                            if (canBePhysical && updated?.length === 0) {
+                                                return toast.info("This service required at least 1 address because it can be rendered physically")
+                                            }
+
+                                            updateService({
+                                                callBack: ({ updatedService }) => {
+                                                    if (updatedService) {
+                                                        setService({ 
+                                                            ...service,
+                                                            locations: updated?.length === 0 ? null : updated
+                                                        })
+                                                    }
+                                                },
+                                                update: {
+                                                    locations: updated?.length === 0 ? null : updated
+                                                },
+                                                service_id: service?.id
+                                            })
+                                        }}
+                                        className="text-sm text-red-500 hover:underline"
+                                    >
+                                        Remove
+                                    </button>
+                                </div>
+                            )
+                        })}
+
+                        {/* Add button */}
+                        <button
+                            type="button"
+                            onClick={openServiceLocationModal}
+                            className="w-full border border-dashed border-primary-400 text-primary-600 py-3 rounded-lg font-semibold hover:bg-primary-50 transition"
+                        >
+                            {
+                                service?.locations?.length === 0 ? 'Click to Set' : 'Click to add more'
+                            }
+                        </button>
+
+                    </div>
+                </Card>
+
                 {/* Details Section */}
-                <section className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6 space-y-6">
+                <section className="mt-6 bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6 space-y-6">
 
                     {/* Header Row */}
                     <div className="flex items-center justify-between">
@@ -269,25 +364,12 @@ export default function ServiceDetails() {
                     </div>
 
                     {/* Content Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-
+                    <div className="grid grid-cols-1 sm:grid-cols-1 gap-6">
                         {/* Description */}
                         <div className="bg-gray-50 rounded-xl p-4 space-y-2">
                             <h3 className="font-semibold text-gray-800">Description</h3>
                             <p className="text-gray-700 text-sm leading-relaxed">{service_details}</p>
                         </div>
-
-                        {/* Location Info */}
-                        <div className="bg-gray-50 rounded-xl p-4 space-y-2">
-                            <h3 className="font-semibold text-gray-800">Location</h3>
-                            <ul className="text-gray-700 text-sm space-y-1">
-                                <li><span className="font-medium">Country:</span> {country?.replaceAll("_", " ")}</li>
-                                <li><span className="font-medium">State:</span> {service?.state?.replaceAll("_", " ")}</li>
-                                <li><span className="font-medium">City:</span> {city?.replaceAll("_", " ")}</li>
-                                <li><span className="font-medium">Specific Location:</span> {location}</li>
-                            </ul>
-                        </div>
-
                     </div>
                 </section>
 
@@ -422,7 +504,10 @@ export default function ServiceDetails() {
                     updateService({
                         callBack: ({ updatedService }) => {
                             if (updatedService) {
-                                setService(updatedService)
+                                setService({
+                                    ...service,
+                                    ...update
+                                })
                             }
 
                             setEditServiceModal({ step: null })
@@ -431,7 +516,31 @@ export default function ServiceDetails() {
                         service_id: service?.id,
                     })
                 }}
-                setApiReqs={setApiReqs}
+            />
+
+            <ServiceLocation
+                isOpen={serviceLocationModal.visible}
+                hide={serviceLocationModal.hide}
+                handleContinueBtnClick={({ requestInfo, info }) => {
+                    hideServiceLocationModal()
+
+                    const updatedLocations = [requestInfo, ...(service?.locations || [])]
+
+                    updateService({
+                        callBack: ({ updatedService }) => {
+                            if (updatedService) {
+                                setService({
+                                    ...service,
+                                    locations: updatedLocations
+                                })
+                            }
+                        },
+                        update: {
+                            locations: updatedLocations
+                        },
+                        service_id: service?.id
+                    })
+                }}
             />
         </div>
     );

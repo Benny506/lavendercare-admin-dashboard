@@ -4,6 +4,8 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import Collapse from "../Collapse";
 import Icons from "../Icons";
 import logoFull from '../../../../assets/logos/logoFull.svg'
+import { useSelector } from "react-redux";
+import { getUserDetailsState } from "../../../../redux/slices/userDetailsSlice";
 
 const sidebarMenu = [
   {
@@ -11,15 +13,25 @@ const sidebarMenu = [
     icon: 'dashboard',
     path: "/admin/dashboard",
     submenu: [],
+    // requiredPermissions: ['super_admin']
   },
   {
     title: "User Management",
     icon: 'userManagement',
     path: "/admin/user-management",
     submenu: [
-      { title: "All Users", path: "/admin/user-management" },
-      // { title: "Activity Logs", path: "/admin/user-management/activity-logs" },
+      { 
+        title: "All Users", 
+        path: "/admin/user-management",
+        requiredPermissions: ['care_coordinator', 'providers.assign']
+      },
+      { 
+          title: "Invite User", 
+          path: "/admin/user-management/invite-user" ,
+          requiredPermissions: ['invite_user']
+      },
     ],
+    requiredPermissions: ['care_coordinator', 'providers.assign', 'invite_user']
   },
   // {
   //   title: "Mothers",
@@ -44,52 +56,64 @@ const sidebarMenu = [
       //   path: "/admin/services/disputes",
       // },
     ],
+    requiredPermissions: ['services.create', 'services.edit', 'services.delete']
   },
   {
     title: "Healthcare Providers",
     icon: 'healthcareProviders',
     path: "/admin/healthcare-provider",
+    requiredPermissions: ['screenings.manage', 'providers.assign', 'providers.approve'],
     submenu: [
-      { title: "View All", path: "/admin/healthcare-provider" },
+      { 
+        title: "View All", 
+        path: "/admin/healthcare-provider", 
+        requiredPermissions: ['providers.assign'] 
+      },
       {
         title: "Review Credentials",
         path: "/admin/healthcare-provider/credentials-review",
+        requiredPermissions: ['providers.approve']
       },
       {
         title: "Mental Health Screening",
         path: "/admin/healthcare-provider/mental-health-screening",
+        requiredPermissions: ['screenings.manage']
       },
-      // {
-      //   title: "Caseloads Summaries",
-      //   path: "/admin/healthcare-provider/caseloads",
-      // },
     ],
   },
   {
     title: "Content",
-    icon: 'content',    
+    icon: 'content',
     path: "/admin/content",
     submenu: [
       { title: "Blog Articles", path: "/admin/content/blog" },
       // { title: "Educational Resources", path: "/admin/content/resource" },
       // { title: "Promotional Banners", path: "/admin/content/promotions" },
     ],
+    requiredPermissions: ['content.create', 'content.edit', 'content.delete']
   },
   {
     title: "Marketplace",
     icon: 'marketPlace',
-    path: "/admin/marketplace",
+    path: "/admin/marketplace",    
     submenu: [
-      { title: "Manage Products", path: "/admin/marketplace/manage-product" },
+      { title: 
+        "Manage Products", 
+        path: "/admin/marketplace/manage-product", 
+        requiredPermissions: ['products.manage'] 
+      },
       {
         title: "Orders",
         path: "/admin/marketplace/orders",
+        requiredPermissions: ['orders.manage']
       },
       {
         title: "Coupons",
         path: "/admin/marketplace/coupons",
-      },      
+        requiredPermissions: ['coupons.manage'] 
+      },
     ],
+    requiredPermissions: ['products.manage', 'orders.manage', 'coupons.manage'],
   },
   // {
   //   title: "Order and Transactions",
@@ -146,26 +170,30 @@ const sidebarMenu = [
       // { title: "Activity Feed", path: "/admin/communities/activity" },
       // { title: "Flagged Content", path: "/admin/communities/flagged" },
     ],
+    requiredPermissions: ['communities.manage']
   },
-  // {
-  //   title: "Settings",
-  //   Icon: ({ size, color }) => (
-  //     <Icons name={"settings"} size={size} color={color} />
-  //   ),
-  //   path: "/admin/settings",
-  //   submenu: [
-  //     { title: "General Settings", path: "/admin/settings/general" },
-  //     { title: "Roles", path: "/admin/settings/roles" },
-  //     { title: "Permissions", path: "/admin/settings/permissions" },
-  //   ],
-  // },
+  {
+    title: "Settings",
+    Icon: ({ size, color }) => (
+      <Icons name={"settings"} size={size} color={color} />
+    ),
+    path: "/admin/settings",
+    submenu: [
+      { title: "General Settings", path: "/admin/settings/general" },
+      { title: "Roles", path: "/admin/settings/roles" },
+      { title: "Permissions", path: "/admin/settings/permissions" },
+    ],
+  },
 ];
 
 function Sidebar() {
   const navigate = useNavigate()
 
   const { pathname } = useLocation();
-  
+
+  const permissions = useSelector(state => getUserDetailsState(state).permissions)
+  const permissionsKeys = permissions?.map(p => p.permission_key);
+
   const [openMenu, setOpenMenu] = useState(null);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
@@ -213,6 +241,13 @@ function Sidebar() {
             const isActive = pathname.startsWith(item.path);
             const isOpen = openMenu === index;
 
+            const reqPermissions = item?.requiredPermissions
+
+            if (reqPermissions) {
+              const allowed = reqPermissions.some(key => permissionsKeys?.includes(key));
+              if (!allowed) return <></>
+            }
+
             return (
               <div key={index}>
                 {/* Main item */}
@@ -234,9 +269,8 @@ function Sidebar() {
 
                   {item.submenu.length > 0 && (
                     <FaChevronDown
-                      className={`transition-transform duration-200 ${
-                        isOpen ? "rotate-180" : ""
-                      }`}
+                      className={`transition-transform duration-200 ${isOpen ? "rotate-180" : ""
+                        }`}
                       size={12}
                     />
                   )}
@@ -245,23 +279,32 @@ function Sidebar() {
                 {/* Submenu */}
                 {item.submenu.length > 0 && isOpen && (
                   <div className="ml-6 mt-1 space-y-1">
-                    {item.submenu.map((sub, i) => (
-                      <NavLink
-                        key={i}
-                        to={sub.path}
-                        end
-                        className={({ isActive }) =>
-                          `block px-4 py-2 text-sm rounded-lg transition
-                          ${
-                            isActive
+                    {item.submenu.map((sub, i) => {
+
+                      const reqPermissions = sub?.requiredPermissions
+
+                      if (reqPermissions) {
+                        const allowed = reqPermissions.some(key => permissionsKeys?.includes(key));
+                        if (!allowed) return <></>
+                      }
+
+                      return (
+                        <NavLink
+                          key={i}
+                          to={sub.path}
+                          end
+                          className={({ isActive }) =>
+                            `block px-4 py-2 text-sm rounded-lg transition
+                          ${isActive
                               ? "bg-white/20 text-white font-medium"
                               : "text-white/80 hover:text-white hover:bg-white/10"
-                          }`
-                        }
-                      >
-                        {sub.title}
-                      </NavLink>
-                    ))}
+                            }`
+                          }
+                        >
+                          {sub.title}
+                        </NavLink>
+                      )
+                    })}
                   </div>
                 )}
               </div>

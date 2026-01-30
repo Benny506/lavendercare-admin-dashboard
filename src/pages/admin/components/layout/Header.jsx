@@ -6,6 +6,7 @@ import { getUserDetailsState } from "../../../../redux/slices/userDetailsSlice";
 function Header() {
 
   const profile = useSelector(state => getUserDetailsState(state).profile)
+  const permissions = useSelector(state => getUserDetailsState(state).permissions)
 
   return (
     <div className="flex items-center py-3 px-[12px] lg:px-[32px] top-0 bg-white z-[500] justify-end">
@@ -47,7 +48,7 @@ function Header() {
             <p className="text-[18px] font-[500] leading-tight">
               { profile?.username }
             </p>
-            <p className="text-[14px] text-gray-400 font-[400]">{profile?.role}</p>
+            <p className="text-[14px] text-gray-400 font-[400]">{permissions?.length} permissions</p>
           </div>
         </div>
       </div>

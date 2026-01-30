@@ -13,6 +13,7 @@ export default function AutoLogin({ children }){
     const { pathname } = useLocation()
 
     const [user, setUser] = useState(null)
+    const [session, setSession] = useState(null)
     const [appLoading, setAppLoading] = useState(true)
 
     // 1. Restore session & subscribe to auth changes
@@ -20,6 +21,7 @@ export default function AutoLogin({ children }){
         supabase.auth.getSession().then(({ data: { session } }) => {
             if(session?.user){
                 setUser(session?.user)
+                setSession(session)
             
             } else{
                 autoLoginError()
@@ -38,7 +40,7 @@ export default function AutoLogin({ children }){
 
     // 2. Fetch related data once we have the user
     useEffect(() => {
-        if (!user) return;
+        if (!user || !session) return;
 
         // console.log(user)
 
@@ -52,13 +54,18 @@ export default function AutoLogin({ children }){
 
             } else {
 
-                const { profile, mothers, vendors, providers } = infoData
+                const { profile, mothers, vendors, providers, permissions, allPermissions, roles } = infoData
 
                 dispatch(setUserDetails({
+                    user,
+                    session,
                     profile: {
                         ...user,
                         ...profile
                     },
+                    permissions,
+                    allPermissions, 
+                    roles
                 }))
                 dispatch(setAdminState({ mothers, vendors, providers }))                
 
@@ -67,7 +74,7 @@ export default function AutoLogin({ children }){
         }
 
         loadProfile()
-    }, [user]) 
+    }, [user, session]) 
     
     const autoLoginError = () => {
         if(!pathname.includes('admin/create-account')){

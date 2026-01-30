@@ -324,7 +324,7 @@ function ServiceProvider() {
                               Service Info
                             </button>
                             <button
-                              onClick={() => navigate('/admin/services/single-provider', { state: { provider: v?.provider } })}
+                              onClick={() => navigate('/admin/healthcare-provider/single-provider', { state: { provider: v?.provider } })}
                               className="bg-purple-100 cursor-pointer text-purple-600 hover:bg-purple-200 px-3 py-1 rounded text-xs w-full sm:w-auto transition"
                             >
                               Business Info

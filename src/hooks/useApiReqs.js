@@ -4,7 +4,7 @@ import supabase from "../database/dbInit";
 import { formatBookings, getAdminState, setAdminState } from "../redux/slices/adminState";
 import { appLoadStart, appLoadStop } from "../redux/slices/appLoadingSlice";
 import { toast } from "react-toastify";
-import { setUserDetails } from "../redux/slices/userDetailsSlice";
+import { getUserDetailsState, setUserDetails } from "../redux/slices/userDetailsSlice";
 import { getPublicImageUrl, requestApi } from "../lib/requestApi";
 import { v4 as uuidv4 } from "uuid";
 import { sendNotifications } from "../lib/notifications";
@@ -24,6 +24,8 @@ export default function useApiReqs() {
     const mentalHealthScreenings = useSelector(state => getAdminState(state).mentalHealthScreenings)
     const vendorServiceCategories = useSelector(state => getAdminState(state).vendorServiceCategories)
     const services = useSelector(state => getAdminState(state).services)
+    const roles = useSelector(state => getUserDetailsState(state).roles)
+    const allPermissions = useSelector(state => getUserDetailsState(state).allPermissions)
 
 
 
@@ -1760,7 +1762,7 @@ export default function useApiReqs() {
                 throw new Error()
             }
 
-            if(userName && user_id){
+            if (userName && user_id) {
                 const { result, errorMsg } = await requestApi({
                     url: 'https://tzsbbbxpdlupybfrgdbs.supabase.co/functions/v1/retrieve-user-email',
                     method: 'POST',
@@ -1769,7 +1771,7 @@ export default function useApiReqs() {
                     }
                 })
 
-                if(!result || !result?.email){
+                if (!result || !result?.email) {
                     console.log(errorMsg)
                     toast.info("Could not send mail to customer! But order-status has been updated in-app")
                 }
@@ -1783,7 +1785,7 @@ export default function useApiReqs() {
                     template_id: '3z0vklovx0vg7qrx'
                 })
 
-                if(!sent.sent){
+                if (!sent.sent) {
                     toast.info("Could not send mail to customer! But order-status has been updated in-app")
                 }
             }
@@ -2175,7 +2177,7 @@ export default function useApiReqs() {
 
 
     //users
-    const fetchUserEmail = async ({ callBack = () => {}, user_id }) => {
+    const fetchUserEmail = async ({ callBack = () => { }, user_id }) => {
         try {
 
             dispatch(appLoadStart())
@@ -2188,21 +2190,21 @@ export default function useApiReqs() {
                 }
             })
 
-            if(!result){
+            if (!result) {
                 console.log(errorMsg)
                 throw new Error()
             }
 
             const { email } = result
 
-            if(!email){
+            if (!email) {
                 return apiReqError({ errorMsg: 'User email could not be retrieved! Try again later' })
             }
 
             dispatch(appLoadStop())
 
             callBack && callBack({ email })
-            
+
         } catch (error) {
             console.log(error)
             toast.error("Error retrieving user email. Try again later!.")
@@ -2211,6 +2213,291 @@ export default function useApiReqs() {
             dispatch(appLoadStop())
         }
     }
+
+
+
+
+
+    //notifications
+    const sendNotification = async ({ callBack = () => { }, notificationInfo }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from('in_app_notifications')
+                .insert(notificationInfo)
+
+            if (error) {
+                console.log(error)
+                throw new Error()
+            }
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({})
+
+            toast.success("Notifications sent!")
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error sendiing notification. Try again later!.")
+
+        } finally {
+            dispatch(appLoadStop())
+        }
+    }
+
+
+
+
+
+    //permissions
+    const getPermissions = async ({ callBack = () => { } }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from('permissions')
+                .select('*')
+                .eq("perm_for", "admin")
+
+            if (error) {
+                console.log(error)
+                throw new Error()
+            }
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ permissions: data })
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error retrieving permissions. Try again later!.")
+
+        } finally {
+            dispatch(appLoadStop())
+        }
+    }
+    const getRoles = async ({ callBack = () => { } }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from("roles")
+                .select("*")
+                .eq("role_for", "admin")
+
+            if (error) {
+                console.log(error)
+                throw new Error()
+            }
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ roles: data })
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error retrieving roles. Try again later!.")
+
+        } finally {
+            dispatch(appLoadStop())
+        }
+    }
+    const createRole = async ({ callBack = () => { }, permIds, name, description }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data: newRole, error: newRoleError } = await supabase
+                .from("roles")
+                .insert({
+                    name,
+                    description,
+                    role_for: 'admin'
+                })
+                .select()
+                .single()
+
+            if (newRoleError) {
+                console.log(newRoleError)
+                throw new Error()
+            }
+
+            const { data: permsForRole, error: permsForRoleError } = await supabase
+                .from('role_permissions')
+                .insert(permIds?.map(permId => {
+                    return {
+                        role_id: newRole?.id,
+                        permission_id: permId,
+                    }
+                }))
+                .select()
+
+            if (permsForRoleError) {
+                await supabase.from("roles").delete().eq("id", newRole?.id)
+            }
+
+            dispatch(setUserDetails({
+                roles: [...(roles || []), newRole]
+            }))
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({})
+
+            toast.success("Role created!")
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error creating roles. Try again later!.")
+
+        } finally {
+            dispatch(appLoadStop())
+        }
+    }
+    const getRoleInfo = async ({ callBack = () => { }, role_id }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data: role, error: roleError } = await supabase
+                .from("roles")
+                .select("*")
+                .single()
+                .eq("id", role_id)
+
+            const { data: permIds, error: permIdsError } = await supabase
+                .from("role_permissions")
+                .select("*")
+                .eq("role_id", role_id)
+
+            if (roleError || permIdsError) {
+                console.log("roleError", roleError)
+                console.log("permIdsError", permIdsError)
+                throw new Error()
+            }
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ role, permIds: permIds?.map(pId => pId?.permission_id) })
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error getting role info. Try again later!.")
+
+        } finally {
+            dispatch(appLoadStop())
+        }
+    }
+    const updateRole = async ({ callBack = () => { }, permIds, name, description, role_id }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data: updatedRole, error: updatedRoleError } = await supabase
+                .from("roles")
+                .update({
+                    name,
+                    description,
+                    role_for: 'admin'
+                })
+                .eq("id", role_id)
+
+            if (updatedRoleError) {
+                console.log(updatedRoleError)
+                throw new Error()
+            }
+
+            const { data: permsForRole, error: permsForRoleError } = await supabase
+                .from('role_permissions')
+                .upsert(
+                    permIds?.map(permId => {
+                        return {
+                            role_id,
+                            permission_id: permId,
+                        }
+                    }),
+                    {
+                        onConflict: ['role_id', 'permission_id']
+                    }
+                )
+                .select()
+
+            if (permsForRoleError) {
+                await supabase.from("roles").delete().eq("id", role_id)
+            }
+
+            dispatch(setUserDetails({
+                roles: roles?.map(r => {
+                    if(r?.id === role_id){
+                        return {
+                            ...r,
+                            ...updateRole
+                        }
+                    }
+
+                    return r
+                })
+            }))
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({})
+
+            toast.success("Role updated!")
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error updating role. Try again later!.")
+
+        } finally {
+            dispatch(appLoadStop())
+        }
+    }
+    const deleteRole = async ({ callBack = () => { }, role_id }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data: deletedRole, error: deletedRoleError } = await supabase
+                .from("roles")
+                .delete()
+                .eq("id", role_id)
+
+            const { data: deletedPerms, error: deletedPermsError } = await supabase
+                .from('role_permissions')
+                .delete()
+                .eq("role_id", role_id)
+                .select()                
+
+            if (deletedRoleError || deletedPermsError) {
+                console.log("deletedRoleError", deletedRoleError)
+                console.log("deletedPermsError", deletedPermsError)
+                throw new Error()
+            }
+
+            dispatch(setUserDetails({
+                roles: roles?.filter(r => r?.id !== role_id)
+            }))
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({})
+
+            toast.success("Role deleted!")
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error deleting role. Try again later!.")
+
+        } finally {
+            dispatch(appLoadStop())
+        }
+    }    
 
 
 
@@ -2349,6 +2636,25 @@ export default function useApiReqs() {
 
 
         //users
-        fetchUserEmail
+        fetchUserEmail,
+
+
+
+
+
+        //notifications
+        sendNotification,
+
+
+
+
+
+        //permissions
+        getPermissions,
+        getRoles,
+        createRole,
+        getRoleInfo,
+        updateRole,
+        deleteRole
     }
 }
