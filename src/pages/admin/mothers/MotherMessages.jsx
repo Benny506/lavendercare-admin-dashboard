@@ -16,6 +16,8 @@ import { toast } from "react-toastify";
 import { appLoadStart, appLoadStop } from "../../../redux/slices/appLoadingSlice";
 import supabase from "../../../database/dbInit";
 import AudioPlayer from "../../../hooks/chatHooks/voiceNotes/AudioPlayer";
+import MediaDisplay from "../components/MediaDisplay";
+import { getPublicImageUrl } from "../../../lib/requestApi";
 
 function MotherMessages() {
     const dispatch = useDispatch()
@@ -276,7 +278,20 @@ function MotherMessages() {
                                                         iAmSender={iAmSender}
                                                     />
                                                 </div>
-                                            ) : (
+                                            ) 
+                                            :
+                                            file_type === 'image' || file_type === 'video'
+                                            ?
+                                            (
+                                                <div>
+                                                    <MediaDisplay 
+                                                        url={getPublicImageUrl({ path: message, bucket_name: 'chat_media' })}
+                                                        type={file_type}
+                                                        align={iAmSender ? 'right' : 'left'}
+                                                    />
+                                                </div>
+                                            )
+                                            : (
                                                 <>
                                                     <p className="text-sm mb-3">{message}</p>
 

@@ -7,7 +7,7 @@ function Header() {
 
   const profile = useSelector(state => getUserDetailsState(state).profile)
   const permissions = useSelector(state => getUserDetailsState(state).permissions)
-
+  
   return (
     <div className="flex items-center py-3 px-[12px] lg:px-[32px] top-0 bg-white z-[500] justify-end">
       <div className="flex gap-1 md:gap-4">

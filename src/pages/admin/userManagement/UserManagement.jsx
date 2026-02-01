@@ -185,11 +185,11 @@ function UserManagement() {
           url: 'https://tzsbbbxpdlupybfrgdbs.supabase.co/functions/v1/suspend-user',
           method: 'POST',
           data: {
-            tableName: user?.role === 'mother' ? 'user_profiles' : user?.role === 'provider' ? 'provider_profiles' : user?.role === 'vendor' ? 'vendor_profiles' : '',
+            tableName: user?.role === 'mother' ? 'user_profiles' : user?.role === 'provider' ? 'providers' : '',
             role: user?.role,
             id: user?.id,
             suspended: user?.suspended,
-            idColumnName: user?.role === 'provider' ? 'provider_id' : 'id'
+            idColumnName: 'id'
           }
         }
       }
