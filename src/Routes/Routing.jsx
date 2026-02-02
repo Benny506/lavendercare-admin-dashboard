@@ -115,7 +115,7 @@ function Routing() {
           {/* COMMUNITIES  */}
           <Route path="/admin" element={
             <PermissionCheck
-              permission_required={['community.manage']}
+              permission_required={['communities.manage']}
             >
               <ProtectedRoute>
                 <Layout />

@@ -1,21 +1,25 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { data, Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import ProfileImg from "../components/ProfileImg";
 import Modal from "../components/ui/Modal";
 import { getUserDetailsState } from "../../../redux/slices/userDetailsSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { useDirectChat } from "../../../hooks/chatHooks/useDirectChat";
 import { dmTopic } from "../../../hooks/chatHooks/dm";
-import { isoToAMPM } from "../../../lib/utils";
+import { formatDate1, isoToAMPM, isToday, isYesterday } from "../../../lib/utils";
 import { IoCheckmark, IoCheckmarkDoneSharp } from "react-icons/io5";
 import { MdMessage } from "react-icons/md";
-import { BsClockHistory } from "react-icons/bs";
+import { BsClockHistory, BsInfoCircle, BsTrash } from "react-icons/bs";
 import { LuMessageCircleWarning, LuRotateCw } from "react-icons/lu";
 import { sendNotifications } from "../../../lib/notifications";
 import { toast } from "react-toastify";
 import { appLoadStart, appLoadStop } from "../../../redux/slices/appLoadingSlice";
 import supabase from "../../../database/dbInit";
 import AudioPlayer from "../../../hooks/chatHooks/voiceNotes/AudioPlayer";
+import { getPublicImageUrl, uploadAsset } from "../../../lib/requestApi";
+import FailedMsgModal from "../components/chat/FailedMsgModal";
+import MediaDisplay from "../components/MediaDisplay";
+import ConfirmModal from "../components/ConfirmModal";
 
 function CommunityChat() {
     const dispatch = useDispatch()
@@ -33,9 +37,12 @@ function CommunityChat() {
 
     const bottomRef = useRef(null)
     const topRef = useRef(null)
+    const fileRef = useRef(null)
 
     const [input, setInput] = useState("");
     const [community, setCommunity] = useState(_community)
+    const [failedMsgModal, setFailedMsgModal] = useState({ visible: false, hide: null })
+    const [confirmDelete, setConfirmDelete] = useState({ visible: false, hide: null })
 
     const meId = profile?.id
     const peerId = community?.id
@@ -43,7 +50,8 @@ function CommunityChat() {
 
     const {
         sendMessage, messages, status, insertSubStatus, updateSubStatus, onlineUsers, loadMessages,
-        canLoadMoreMsgs, bulkMsgsRead, refreshConnection,
+        canLoadMoreMsgs, bulkMsgsRead, refreshConnection, sendTempMedia, updateTempMedia, deleteMessage,
+        retrySend
     } = useDirectChat({
         topic,
         meId,
@@ -72,6 +80,12 @@ function CommunityChat() {
             handleReadUnreadMsgs()
         }
     }, [messages]);
+
+    const openFailedMsgModal = ({ msg }) => setFailedMsgModal({ visible: true, hide: hideFailedMsgModal, msg })
+    const hideFailedMsgModal = () => setFailedMsgModal({ visible: false, hide: null })
+
+    const openConfirmDelete = ({ msg }) => setConfirmDelete({ visible: true, hide: hideConfirmDelete, msg })
+    const hideConfirmDelete = () => setConfirmDelete({ visible: false, hide: null })
 
     const fetchCommunity = async () => {
         try {
@@ -146,6 +160,144 @@ function CommunityChat() {
     };
 
     if (!community) return <></>
+
+    const handleFileChange = (e) => {
+        const MAX_SIZE = 15 * 1024 * 1024; // 15MB
+
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Size check
+        if (file.size > MAX_SIZE) {
+            toast.info("File must be less than 15MB");
+            return;
+        }
+
+        const mime = file.type;
+
+        let type = ''
+        let previewUrl = ''
+
+        // Determine type
+        if (mime.startsWith("image/")) {
+            type = "image"
+
+        } else if (mime.startsWith("video/")) {
+            type = "video"
+
+        } else if (
+            mime === "application/pdf" ||
+            mime === "application/msword"
+            ||
+            mime ===
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        ) {
+            type = "doc"
+            toast.info("Only images, videos, are allowed")
+            return
+
+        } else {
+            toast.info("Only images, videos, are allowed")
+            return;
+        }
+
+        // Store file
+
+        // Create preview URL for media
+
+        const msg = sendTempMedia({
+            file_type: type,
+            text: file,
+        })
+
+        uploadAsset({
+            file: [file],
+            id: topic,
+            bucket_name: 'chat_media',
+            ext: file?.name.split(".").pop()?.toLowerCase() || ""
+        })
+            .then(data => {
+                const { error, filePaths } = data
+
+                const uploadedFile = filePaths?.[0]
+
+                updateTempMedia({
+                    msgId: msg?.id,
+                    failed: !uploadedFile ? true : false,
+                    msgObj: {
+                        ...msg,
+                        message: uploadedFile
+                    },
+                    user_profile: {
+                        id: profile?.id,
+                        username: `Admin ~ ${profile?.username}`
+                    },
+                    community_id: community?.id,
+                })
+            })
+            .catch(err => {
+                console.log(err)
+                updateTempMedia({
+                    msgId: msg?.id,
+                    failed: true,
+                    msgObj: {
+                        ...msg,
+                        message: uploadedFile
+                    },
+                    user_profile: {
+                        id: profile?.id,
+                        username: `Admin ~ ${profile?.username}`
+                    },
+                    community_id: community?.id,
+                })                
+            })
+    };
+
+    const retry = ({ msg }) => {
+        const { file_type, message, id } = msg
+
+        if (file_type === 'text' || (file_type !== 'text' && !typeof message !== 'object')) {
+            sendMessage({
+                text: message, fileType: file_type, community_id: community?.id, oldMsgId: id,
+                user_profile: {
+                    id: profile?.id,
+                    username: `Admin ~ ${profile?.username}`
+                }
+            });
+
+        } else {
+            retrySend({ msgId: msg?.id })
+
+            uploadAsset({
+                file: [message],
+                id: topic,
+                bucket_name: 'chat_media',
+                ext: message?.name.split(".").pop()?.toLowerCase() || "",
+            })
+                .then(({ filePath }) => {
+                    if (!filePath) {
+                        cancelRetrySend({ msgId: msg?.id })
+                        return toast.error('Upload error')
+                    }
+
+                    sendMessage({
+                        text: filePath,
+                        fileType: file_type,
+                        channel_id: meId,
+                        oldMsgId: id,
+                        user_profile: {
+                            id: profile?.id,
+                            username: `Admin ~ ${profile?.username}`
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.log(error)
+                    cancelRetrySend({ msgId: msg?.id })
+                    toast.error('Upload error')
+                })
+        }
+    }
 
     const notifyMother = async () => {
         // try {
@@ -280,68 +432,118 @@ function CommunityChat() {
                                             } rounded-2xl px-4 py-3`}>
                                             {file_type === 'audio' ? (
                                                 <div>
-                                                    <AudioPlayer 
-                                                        channelId={community?.id} 
-                                                        filePath={message} 
-                                                        durationMillis={duration*1000} 
+                                                    <AudioPlayer
+                                                        channelId={community?.id}
+                                                        filePath={message}
+                                                        durationMillis={duration * 1000}
                                                         iAmSender={iAmSender}
                                                     />
                                                 </div>
-                                            ) : (
-                                                <>
-                                                    <p className="text-sm mb-3">{message}</p>
-
-                                                    <div className="flex flex-col items-end justify-end gap-">
-                                                        <p
-                                                            style={{
-                                                                color: iAmSender ? '#FFF' : "_000"
-                                                            }}
-                                                            className="text-xs m-0 p-0"
-                                                        >
-                                                            {isoToAMPM({ isoString: created_at })}
-                                                        </p>
-
-                                                        {
-                                                            iAmSender
-                                                            &&
-                                                            (
-                                                                seen
-                                                                    ?
-                                                                    <IoCheckmarkDoneSharp size={11} color="#FFF" />
-                                                                    :
-                                                                    delivered
-                                                                    &&
-                                                                    <IoCheckmark size={11} color="#FFF" />
-                                                            )
-                                                        }
-                                                    </div>
-                                                </>
-                                            )}
-                                        </div>
-
-                                        <div className="flex items-center justify-end">
-                                            {
-                                                pending
+                                            )
+                                                :
+                                                file_type === 'image' || file_type === 'video'
                                                     ?
-                                                    // <Tooltip>
-                                                    //     <TooltipTrigger asChild>
-                                                    <BsClockHistory color="#6F3DCB" size={15} />
-                                                    // </TooltipTrigger>
-                                                    //     <TooltipContent side="top" sideOffset={5}>
-                                                    //         Pending message. Sending...
-                                                    //     </TooltipContent>
-                                                    // </Tooltip>                                                                    
+                                                    (
+                                                        <div>
+                                                            <MediaDisplay
+                                                                url={
+                                                                    typeof message === 'object'
+                                                                        ?
+                                                                        URL.createObjectURL(message)
+                                                                        :
+                                                                        getPublicImageUrl({ path: message, bucket_name: 'chat_media' })
+                                                                }
+                                                                type={file_type}
+                                                                align={iAmSender ? 'right' : 'left'}
+                                                            />
+                                                        </div>
+                                                    )
                                                     :
-                                                    failed
+                                                    (
+                                                        <div style={{ minWidth: '240px', minHeight: '20px' }}>
+                                                            {
+                                                                message
+                                                                    ?
+                                                                    <p className="text-sm mb-3">{message}</p>
+                                                                    :
+                                                                    <p style={{ fontStyle: 'italic' }} className="text-sm mb-3">Message deleted</p>
+                                                            }
+                                                        </div>
+                                                    )}
+                                            <div className="flex flex-col items-end justify-end">
+                                                <div
+                                                    style={{
+                                                        height: '0.2px',
+                                                        backgroundColor: iAmSender ? 'white' : 'gray',
+                                                        width: '100%'
+                                                    }}
+                                                    className="mb-2 mt-4"
+                                                />
+                                                <p
+                                                    style={{
+                                                        color: iAmSender ? '#FFF' : "_000"
+                                                    }}
+                                                    className="text-xs m-0 p-0"
+                                                >
+                                                    {isoToAMPM({ isoString: created_at })}
+                                                </p>
+                                                <p
+                                                    style={{
+                                                        color: iAmSender ? '#FFF' : "_000"
+                                                    }}
+                                                    className="text-xs m-0 p-0"
+                                                >
+                                                    {isToday(created_at) ? 'Today' : isYesterday(created_at) ? 'Yesteday' : formatDate1({ dateISO: created_at })}
+                                                </p>
+
+                                                {
+                                                    iAmSender
                                                     &&
-                                                    // <Tooltip>
-                                                    //     <TooltipTrigger asChild>
-                                                    <LuMessageCircleWarning color="#c41a2b" size={15} />
-                                                // </TooltipTrigger>
-                                                //     <TooltipContent side="top" sideOffset={5}>
-                                                //         Error sending message
-                                                //     </TooltipContent>
-                                                // </Tooltip>                                                                
+                                                    (
+                                                        seen
+                                                            ?
+                                                            <IoCheckmarkDoneSharp size={11} color="#FFF" />
+                                                            :
+                                                            delivered
+                                                            &&
+                                                            <IoCheckmark size={11} color="#FFF" />
+                                                    )
+                                                }
+                                            </div>
+                                            {
+                                                pending || failed
+                                                    ?
+                                                    <div style={{}} className="flex items-center justify-end mt-3">
+                                                        <div style={{ borderRadius: '5px' }} className="p-1 bg-white">
+                                                            {
+                                                                pending
+                                                                    ?
+                                                                    // <Tooltip>
+                                                                    //     <TooltipTrigger asChild>
+                                                                    <BsClockHistory color="#6F3DCB" size={15} />
+                                                                    // </TooltipTrigger>
+                                                                    //     <TooltipContent side="top" sideOffset={5}>
+                                                                    //         Pending message. Sending...
+                                                                    //     </TooltipContent>
+                                                                    // </Tooltip>                                                                    
+                                                                    :
+                                                                    failed
+                                                                    &&
+                                                                    <div className="flex items-center gap-2">
+                                                                        <LuMessageCircleWarning onClick={() => openFailedMsgModal({ msg })} color="#c41a2b" size={15} />
+                                                                    </div>
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                    :
+                                                    message
+                                                    &&
+                                                    <div style={{}} className="flex items-center justify-end mt-3">
+                                                        <div onClick={() => openConfirmDelete({ msg })} style={{ borderRadius: '5px' }} className="p-1 bg-white">
+                                                            <BsTrash color="#6F3DCB" />
+                                                        </div>
+                                                    </div>
+
                                             }
                                         </div>
                                     </div>
@@ -357,7 +559,26 @@ function CommunityChat() {
                     (status == 'subscribed' && insertSubStatus == 'subscribed' && updateSubStatus == 'subscribed')
                         ?
                         <div className="flex items-center gap-2 mt-auto border-t pt-2">
-                            <button className="text-gray-400">
+                            <input
+                                ref={fileRef}
+                                type="file"
+                                accept="
+                                    image/*,
+                                    video/*
+                                "
+                                style={{ display: "none" }}
+                                onChange={e => {
+                                    handleFileChange(e)
+                                    e.target.value = null
+                                }}
+                            />
+                            <button
+                                onClick={(e) => {
+                                    fileRef?.current?.click?.()
+                                    e.target.value = null
+                                }}
+                                className="text-gray-400"
+                            >
                                 <svg width="20" height="20" fill="none" viewBox="0 0 20 20">
                                     <circle
                                         cx="10"
@@ -398,6 +619,27 @@ function CommunityChat() {
                         </div>
                 }
             </div>
+
+            <FailedMsgModal
+                isOpen={failedMsgModal.visible}
+                onClose={failedMsgModal.hide}
+                onDelete={() => deleteMessage({ msgId: failedMsgModal?.msg?.id, msg: failedMsgModal?.msg })}
+                onResend={() => retry({ msg: failedMsgModal?.msg })}
+            />
+
+            <ConfirmModal
+                modalProps={{
+                    ...confirmDelete,
+                    data: {
+                        yesFunc: () => {
+                            alert("HERE")
+                            deleteMessage({ msgId: confirmDelete?.msg?.id, msg: confirmDelete?.msg })
+                        },
+                        title: 'Delete this message',
+                        msg: 'This action cannot be undone!'
+                    }
+                }}
+            />
         </div>
     );
 }

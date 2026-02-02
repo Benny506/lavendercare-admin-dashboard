@@ -26,7 +26,116 @@ export function useDirectChat({ topic, meId, isAdmin = true, isCommunity = false
   const tableName = isCommunity ? 'community_chat' : isAdmin ? 'admin_mothers_chat' : 'bookings_chats'
   const rpcName = isCommunity ? 'fetch_and_mark_community_chat_messages' : isAdmin ? 'mark_and_get_admin_mother_messages' : 'fetch_and_mark_booking_chat_messages'
 
-  const deleteMessage = async ({ msgId }) => {
+  const sendTempMedia = useCallback(({ file_type, text, duration, toUser }) => {
+
+    try {
+
+      const msg = text
+
+      if (!msg || !file_type) return;
+
+      const tempId = uuidv4();
+
+      const optimisticMessage = {
+        id: tempId,
+        from_user: meId,
+        message: msg,
+        created_at: new Date().toISOString(),
+        delivered_at: null,
+        read_at: null,
+        pending: true,
+        failed: false,
+        file_type,
+        duration: duration ?? null
+      };
+
+      if (!isCommunity) {
+        optimisticMessage.to_user = toUser
+      }
+
+      setMessages((prev) => [...prev, optimisticMessage]);
+
+      return optimisticMessage
+
+    } catch (error) {
+      console.log(error)
+      toast.error("Sending error")
+    }
+
+  }, [meId, topic])
+
+  const updateTempMedia = useCallback(async ({ from_type, msgId, failed, msgObj, user_profile, bookingId, channel_id, community_id }) => {
+    try {
+
+      if (!msgObj) return;
+
+      if (failed) {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === msgId ? { ...msg, pending: false, failed: true } : msg
+          )
+        );
+
+      } else {
+        const msgObjClone = { ...msgObj }
+
+        if (isCommunity) {
+          msgObjClone.from_type = from_type || 'admin'
+        }
+
+        setMessages(prev => prev?.map(msg => {
+          if (msg?.id === msgId) {
+            return msgObjClone
+          }
+
+          return msg
+        }))
+
+        const realMessage = { ...msgObjClone }
+
+        realMessage[isCommunity ? 'community_id' : isAdmin ? 'channel_id' : 'booking_id'] =
+          isCommunity ? community_id : isAdmin ? channel_id : bookingId
+
+        delete realMessage.pending
+        delete realMessage.failed
+
+        let inserted = false
+
+        const { error } = await supabase.from(tableName).insert(realMessage);
+        if (!error) inserted = true;
+
+        else {
+          console.log(error)
+        }
+
+        if (!inserted) {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === tempId ? { ...msg, pending: false, failed: true } : msg
+            )
+          );
+
+        } else {
+          channelRef.current?.send({
+            type: 'broadcast',
+            event: 'sendMsg',
+            payload: user_profile ? { ...realMessage, user_profile } : realMessage
+          })
+        }
+      }
+
+    } catch (error) {
+      console.log(error)
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === msgId ? { ...msg, pending: false, failed: true } : msg
+        )
+      );
+      toast.error("Sending error")
+    }
+  }, [meId, topic])
+
+  const deleteMessage = async ({ msgId, msg }) => {
     try {
 
       const { error } = await supabase
@@ -39,7 +148,17 @@ export function useDirectChat({ topic, meId, isAdmin = true, isCommunity = false
         throw new Error()
       }
 
-      setMessages(prev => prev?.filter(msg => msg?.id !== msgId))
+      const deletedMsg = {
+        id: msgId, from_user: msg?.from_user, created_at: msg?.created_at
+      }
+
+      setMessages(prev => prev?.map(msg => msg?.id === msgId ? deletedMsg : msg))
+
+      channelRef.current?.send({
+        type: 'broadcast',
+        event: 'updateMsg',
+        payload: deletedMsg
+      })
 
     } catch (error) {
       console.log(error)
@@ -47,6 +166,26 @@ export function useDirectChat({ topic, meId, isAdmin = true, isCommunity = false
       return;
     }
   }
+
+  const retrySend = useCallback(({ msgId }) => {
+    setMessages(prev => prev?.map(msg => {
+      if (msg?.id === msgId) {
+        return { ...msg, pending: true, failed: false }
+      }
+
+      return msg
+    }))
+  }, [meId, topic])
+
+  const cancelRetrySend = useCallback(({ msgId }) => {
+    setMessages(prev => prev?.map(msg => {
+      if (msg?.id === msgId) {
+        return { ...msg, pending: false, failed: true }
+      }
+
+      return msg
+    }))
+  }, [meId, topic])
 
   const sendMessage = useCallback(
     async ({ from_type, text, fileType, toUser, bookingId, channel_id, community_id, user_profile, duration, oldMsgId }) => {
@@ -374,6 +513,11 @@ export function useDirectChat({ topic, meId, isAdmin = true, isCommunity = false
       onMsgReceived(msg)
     })
 
+    channel.on('broadcast', { event: 'updateMsg' }, (payload) => {
+      const msg = payload.payload
+      setMessages((prev) => replaceOptimisticMessages(prev || [], msg));
+    })
+
     channel.on('broadcast', { event: 'messageRead' }, (payload) => {
       const msg = payload.payload
       console.log("Message is read")
@@ -585,8 +729,12 @@ export function useDirectChat({ topic, meId, isAdmin = true, isCommunity = false
     bulkMsgsRead,
     refreshConnection,
     cleanup,
+    retrySend,
+    cancelRetrySend,
     loadMessages,
     canLoadMoreMsgs,
-    deleteMessage
+    deleteMessage,
+    sendTempMedia,
+    updateTempMedia
   };
 }

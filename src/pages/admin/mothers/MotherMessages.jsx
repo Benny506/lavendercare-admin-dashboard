@@ -6,10 +6,10 @@ import { getUserDetailsState } from "../../../redux/slices/userDetailsSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { useDirectChat } from "../../../hooks/chatHooks/useDirectChat";
 import { dmTopic } from "../../../hooks/chatHooks/dm";
-import { isoToAMPM } from "../../../lib/utils";
+import { formatDate1, isoToAMPM, isToday, isYesterday } from "../../../lib/utils";
 import { IoCheckmark, IoCheckmarkDoneSharp } from "react-icons/io5";
 import { MdMessage } from "react-icons/md";
-import { BsClockHistory } from "react-icons/bs";
+import { BsClockHistory, BsTrash } from "react-icons/bs";
 import { LuMessageCircleWarning, LuRotateCw } from "react-icons/lu";
 import { sendNotifications } from "../../../lib/notifications";
 import { toast } from "react-toastify";
@@ -17,7 +17,11 @@ import { appLoadStart, appLoadStop } from "../../../redux/slices/appLoadingSlice
 import supabase from "../../../database/dbInit";
 import AudioPlayer from "../../../hooks/chatHooks/voiceNotes/AudioPlayer";
 import MediaDisplay from "../components/MediaDisplay";
-import { getPublicImageUrl } from "../../../lib/requestApi";
+import { getPublicImageUrl, uploadAsset } from "../../../lib/requestApi";
+import { IoIosSend } from "react-icons/io";
+import { FaTrash } from "react-icons/fa";
+import FailedMsgModal from "../components/chat/FailedMsgModal";
+import ConfirmModal from "../components/ConfirmModal";
 
 function MotherMessages() {
     const dispatch = useDispatch()
@@ -35,10 +39,13 @@ function MotherMessages() {
 
     const bottomRef = useRef(null)
     const topRef = useRef(null)
+    const fileRef = useRef(null)
 
     const [showPopup, setShowPopup] = useState(false);
     const [input, setInput] = useState("");
     const [mother, setMother] = useState(mom)
+    const [failedMsgModal, setFailedMsgModal] = useState({ visible: false, hide: null })
+    const [confirmDelete, setConfirmDelete] = useState({ visible: false, hide: null })
 
     const meId = profile?.id
     const peerId = mother?.id
@@ -46,7 +53,8 @@ function MotherMessages() {
 
     const {
         sendMessage, messages, status, insertSubStatus, updateSubStatus, onlineUsers, loadMessages,
-        canLoadMoreMsgs, bulkMsgsRead, refreshConnection
+        canLoadMoreMsgs, bulkMsgsRead, refreshConnection, sendTempMedia, updateTempMedia, retrySend, deleteMessage,
+        cancelRetrySend
     } = useDirectChat({
         topic,
         meId,
@@ -73,6 +81,12 @@ function MotherMessages() {
             handleReadUnreadMsgs()
         }
     }, [messages]);
+
+    const openFailedMsgModal = ({ msg }) => setFailedMsgModal({ visible: true, hide: hideFailedMsgModal, msg })
+    const hideFailedMsgModal = () => setFailedMsgModal({ visible: false, hide: null })
+
+    const openConfirmDelete = ({ msg }) => setConfirmDelete({ visible: true, hide: hideConfirmDelete, msg })
+    const hideConfirmDelete = () => setConfirmDelete({ visible: false, hide: null })
 
     const fetchMom = async () => {
         try {
@@ -145,6 +159,43 @@ function MotherMessages() {
         setInput('');
     };
 
+    const retry = ({ msg }) => {
+        const { file_type, message, id } = msg
+
+        if (file_type === 'text' || (file_type !== 'text' && !typeof message !== 'object')) {
+            sendMessage({ text: message, fileType: file_type, toUser: peerId, channel_id: topic, oldMsgId: id });
+
+        } else {
+            retrySend({ msgId: msg?.id })
+
+            uploadAsset({
+                file: [message],
+                id: topic,
+                bucket_name: 'chat_media',
+                ext: message?.name.split(".").pop()?.toLowerCase() || "",
+            })
+                .then(({ filePath }) => {
+                    if (!filePath) {
+                        cancelRetrySend({ msgId: msg?.id })
+                        return toast.error('Upload error')
+                    }
+
+                    sendMessage({
+                        text: filePath,
+                        fileType: file_type,
+                        toUser: peerId,
+                        channel_id: meId,
+                        oldMsgId: id,
+                    });
+                })
+                .catch(error => {
+                    console.log(error)
+                    cancelRetrySend({ msgId: msg?.id })
+                    toast.error('Upload error')
+                })
+        }
+    }
+
     if (!mother) return <></>
 
     const notifyMother = async () => {
@@ -169,6 +220,90 @@ function MotherMessages() {
             dispatch(appLoadStop())
         }
     }
+
+    const handleFileChange = (e) => {
+        const MAX_SIZE = 15 * 1024 * 1024; // 15MB
+
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Size check
+        if (file.size > MAX_SIZE) {
+            toast.info("File must be less than 15MB");
+            return;
+        }
+
+        const mime = file.type;
+
+        let type = ''
+        let previewUrl = ''
+
+        // Determine type
+        if (mime.startsWith("image/")) {
+            type = "image"
+
+        } else if (mime.startsWith("video/")) {
+            type = "video"
+
+        } else if (
+            mime === "application/pdf" ||
+            mime === "application/msword"
+            ||
+            mime ===
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        ) {
+            toast.info("Only images, videos, are allowed")
+            return;
+
+        } else {
+            toast.info("Only images, videos, are allowrd")
+            return;
+        }
+
+        // Store file
+
+        // Create preview URL for media
+
+        const msg = sendTempMedia({
+            file_type: type,
+            text: file,
+            toUser: peerId
+        })
+
+        uploadAsset({
+            file: [file],
+            id: topic,
+            bucket_name: 'chat_media',
+            ext: file?.name.split(".").pop()?.toLowerCase() || ""
+        })
+            .then(data => {
+                const { error, filePaths } = data
+
+                const uploadedFile = filePaths?.[0]
+
+                updateTempMedia({
+                    msgId: msg?.id,
+                    failed: !uploadedFile ? true : false,
+                    msgObj: {
+                        ...msg,
+                        message: uploadedFile
+                    },
+                    channel_id: topic
+                })
+            })
+            .catch(err => {
+                console.log(err)
+                updateTempMedia({
+                    msgId: msg?.id,
+                    failed: true,
+                    msgObj: {
+                        ...msg,
+                        message: uploadedFile
+                    },
+                    channel_id: topic
+                })
+            })
+    };
 
     return (
         <div className="bg-[#F8F9FB] w-full mt-6 flex flex-col">
@@ -278,74 +413,109 @@ function MotherMessages() {
                                                         iAmSender={iAmSender}
                                                     />
                                                 </div>
-                                            ) 
-                                            :
-                                            file_type === 'image' || file_type === 'video'
-                                            ?
-                                            (
-                                                <div>
-                                                    <MediaDisplay 
-                                                        url={getPublicImageUrl({ path: message, bucket_name: 'chat_media' })}
-                                                        type={file_type}
-                                                        align={iAmSender ? 'right' : 'left'}
-                                                    />
-                                                </div>
                                             )
-                                            : (
-                                                <>
-                                                    <p className="text-sm mb-3">{message}</p>
-
-                                                    <div className="flex flex-col items-end justify-end gap-">
-                                                        <p
-                                                            style={{
-                                                                color: iAmSender ? '#FFF' : "_000"
-                                                            }}
-                                                            className="text-xs m-0 p-0"
-                                                        >
-                                                            {isoToAMPM({ isoString: created_at })}
-                                                        </p>
-
-                                                        {
-                                                            iAmSender
-                                                            &&
-                                                            (
-                                                                seen
-                                                                    ?
-                                                                    <IoCheckmarkDoneSharp size={11} color="#FFF" />
-                                                                    :
-                                                                    delivered
-                                                                    &&
-                                                                    <IoCheckmark size={11} color="#FFF" />
-                                                            )
-                                                        }
-                                                    </div>
-                                                </>
-                                            )}
-                                        </div>
-
-                                        <div className="flex items-center justify-end">
-                                            {
-                                                pending
+                                                :
+                                                file_type === 'image' || file_type === 'video'
                                                     ?
-                                                    // <Tooltip>
-                                                    //     <TooltipTrigger asChild>
-                                                    <BsClockHistory color="#6F3DCB" size={15} />
-                                                    // </TooltipTrigger>
-                                                    //     <TooltipContent side="top" sideOffset={5}>
-                                                    //         Pending message. Sending...
-                                                    //     </TooltipContent>
-                                                    // </Tooltip>                                                                    
-                                                    :
-                                                    failed
+                                                    (
+                                                        <div>
+                                                            <MediaDisplay
+                                                                url={
+                                                                    typeof message === 'object'
+                                                                        ?
+                                                                        URL.createObjectURL(message)
+                                                                        :
+                                                                        getPublicImageUrl({ path: message, bucket_name: 'chat_media' })
+                                                                }
+                                                                type={file_type}
+                                                                align={iAmSender ? 'right' : 'left'}
+                                                            />
+                                                        </div>
+                                                    )
+                                                    : (
+                                                        <div style={{ minWidth: '240px', minHeight: '20px' }}>
+                                                            {
+                                                                message
+                                                                    ?
+                                                                    <p className="text-sm mb-3">{message}</p>
+                                                                    :
+                                                                    <p style={{ fontStyle: 'italic' }} className="text-sm mb-3">Message deleted</p>
+                                                            }
+                                                        </div>
+                                                    )}
+                                            <div className="flex flex-col items-end justify-end">
+                                                <div
+                                                    style={{
+                                                        height: '0.2px',
+                                                        backgroundColor: iAmSender ? 'white' : 'gray',
+                                                        width: '100%'
+                                                    }}
+                                                    className="mb-2 mt-4"
+                                                />
+                                                <p
+                                                    style={{
+                                                        color: iAmSender ? '#FFF' : "_000"
+                                                    }}
+                                                    className="text-xs m-0 p-0"
+                                                >
+                                                    {isoToAMPM({ isoString: created_at })}
+                                                </p>
+                                                <p
+                                                    style={{
+                                                        color: iAmSender ? '#FFF' : "_000"
+                                                    }}
+                                                    className="text-xs m-0 p-0"
+                                                >
+                                                    {isToday(created_at) ? 'Today' : isYesterday(created_at) ? 'Yesteday' : formatDate1({ dateISO: created_at })}
+                                                </p>
+
+                                                {
+                                                    iAmSender
                                                     &&
-                                                    // <Tooltip>
-                                                    //     <TooltipTrigger asChild>
-                                                    <LuMessageCircleWarning color="#c41a2b" size={15} />
-                                                // </TooltipTrigger>
-                                                //     <TooltipContent side="top" sideOffset={5}>
-                                                //         Error sending message
-                                                //     </TooltipContent>
-                                                // </Tooltip>                                                                
+                                                    (
+                                                        seen
+                                                            ?
+                                                            <IoCheckmarkDoneSharp size={11} color="#FFF" />
+                                                            :
+                                                            delivered
+                                                            &&
+                                                            <IoCheckmark size={11} color="#FFF" />
+                                                    )
+                                                }
+                                            </div>
+                                            {
+                                                pending || failed
+                                                    ?
+                                                    <div style={{}} className="flex items-center justify-end mt-3">
+                                                        <div style={{ borderRadius: '5px' }} className="p-1 bg-white">
+                                                            {
+                                                                pending
+                                                                    ?
+                                                                    // <Tooltip>
+                                                                    //     <TooltipTrigger asChild>
+                                                                    <BsClockHistory color="#6F3DCB" size={15} />
+                                                                    // </TooltipTrigger>
+                                                                    //     <TooltipContent side="top" sideOffset={5}>
+                                                                    //         Pending message. Sending...
+                                                                    //     </TooltipContent>
+                                                                    // </Tooltip>                                                                    
+                                                                    :
+                                                                    failed
+                                                                    &&
+                                                                    <div className="flex items-center gap-2">
+                                                                        <LuMessageCircleWarning onClick={() => openFailedMsgModal({ msg })} color="#c41a2b" size={15} />
+                                                                    </div>
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                    :
+                                                    (message && iAmSender)
+                                                    &&
+                                                    <div style={{}} className="flex items-center justify-end mt-3">
+                                                        <div onClick={() => openConfirmDelete({ msg })} style={{ borderRadius: '5px' }} className="p-1 bg-white">
+                                                            <BsTrash color="#6F3DCB" />
+                                                        </div>
+                                                    </div>
                                             }
                                         </div>
                                     </div>
@@ -361,7 +531,26 @@ function MotherMessages() {
                     (status == 'subscribed' && insertSubStatus == 'subscribed' && updateSubStatus == 'subscribed')
                         ?
                         <div className="flex items-center gap-2 mt-auto border-t pt-2">
-                            <button className="text-gray-400">
+                            <input
+                                ref={fileRef}
+                                type="file"
+                                accept="
+                                    image/*,
+                                    video/*
+                                "
+                                style={{ display: "none" }}
+                                onChange={e => {
+                                    handleFileChange(e)
+                                    e.target.value = null
+                                }}
+                            />
+
+                            <button
+                                className="text-gray-400"
+                                onClick={(e) => {
+                                    fileRef?.current?.click?.()
+                                }}
+                            >
                                 <svg width="20" height="20" fill="none" viewBox="0 0 20 20">
                                     <circle
                                         cx="10"
@@ -401,53 +590,27 @@ function MotherMessages() {
                             </div>
                         </div>
                 }
-
-                {/* Right-side Popup Trigger */}
-                <div className="hidden md:block w-0"></div>
-                <div className="absolute top-4 right-4 flex gap-2 z-20">
-                    <button className="bg-purple-100 text-purple-700 px-4 py-2 rounded font-semibold text-xs">
-                        Mark as Resolved
-                    </button>
-                    <button
-                        className="bg-gray-100 px-2 py-2 rounded"
-                        onClick={() => setShowPopup(true)}
-                    >
-                        <svg width="20" height="20" fill="none" viewBox="0 0 20 20">
-                            <circle cx="10" cy="10" r="2" fill="#8B8B8A" />
-                            <circle cx="10" cy="5" r="2" fill="#8B8B8A" />
-                            <circle cx="10" cy="15" r="2" fill="#8B8B8A" />
-                        </svg>
-                    </button>
-                </div>
-                {/* Popup (Image 3) */}
-                {showPopup && (
-                    <Modal
-                        isOpen={true}
-                        onClose={() => setShowPopup(false)}
-                        className="w-full md:w-80 bg-white rounded-t-2xl md:rounded-2xl shadow-lg p-6 m-0 md:mr-8 md:mb-0"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="flex items-center gap-3 mb-4">
-                            <img
-                                src="https://randomuser.me/api/portraits/women/44.jpg"
-                                alt="avatar"
-                                className="w-12 h-12 rounded-full"
-                            />
-                            <div>
-                                <div className="font-semibold">Chinenye Okeke</div>
-                                <div className="text-xs text-gray-500">User Information</div>
-                            </div>
-                        </div>
-                        <div className="text-xs text-gray-500 mb-2">Age: -</div>
-                        <div className="text-xs text-gray-500 mb-2">
-                            Contact: email@example.com
-                        </div>
-                        <div className="text-xs text-gray-500 mb-2">
-                            Phone no: 0801 234 5678
-                        </div>
-                    </Modal>
-                )}
             </div>
+
+            <FailedMsgModal
+                isOpen={failedMsgModal.visible}
+                onClose={failedMsgModal.hide}
+                onDelete={() => deleteMessage({ msgId: failedMsgModal?.msg?.id, msg: failedMsgModal?.msg })}
+                onResend={() => retry({ msg: failedMsgModal?.msg })}
+            />
+
+            <ConfirmModal
+                modalProps={{
+                    ...confirmDelete,
+                    data: {
+                        yesFunc: () => {
+                            deleteMessage({ msgId: confirmDelete?.msg?.id, msg: confirmDelete?.msg })
+                        },
+                        title: 'Delete this message',
+                        msg: 'This action cannot be undone!'
+                    }
+                }}
+            />
         </div>
     );
 }

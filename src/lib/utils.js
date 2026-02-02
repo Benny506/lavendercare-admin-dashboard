@@ -182,6 +182,21 @@ export function formatNumberWithCommas(value) {
   return Number(value).toLocaleString();
 }
 
+export const isToday = (date) => {
+  const dt = DateTime.fromJSDate(new Date(date)).toLocal();
+  return dt.hasSame(DateTime.local(), "day");
+};
+
+/**
+ * Returns true if the date is yesterday (local time)
+ */
+export const isYesterday = (date) => {
+  const dt = DateTime.fromJSDate(new Date(date)).toLocal();
+  const yesterday = DateTime.local().minus({ days: 1 });
+  return dt.hasSame(yesterday, "day");
+};
+
+
 export function formatDate1({ dateISO }) {
   try {
     if (!dateISO || typeof dateISO !== "string") {

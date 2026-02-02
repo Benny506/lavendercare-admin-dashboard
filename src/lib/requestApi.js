@@ -275,7 +275,7 @@ export async function uploadAsset({ file, id, bucket_name, ext }) {
 }
 
 export const getPublicImageUrl = ({ path, bucket_name }) =>
-  path?.startsWith("https")
+  path?.startsWith("http")
     ?
     path
     :
