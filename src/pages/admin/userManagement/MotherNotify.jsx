@@ -162,91 +162,7 @@ function MotherNotify() {
             {/* View Modal */}
             <Modal isOpen={viewModal.open} onClose={() => setViewModal({ open: false, data: null })}>
                 {viewModal.data && (
-                    <div className="p-2">
-                        <div className="flex justify-between items-start mb-6 border-b pb-4">
-                            <div>
-                                <h2 className="text-xl font-bold text-gray-800">{viewModal.data.title || "Notification Details"}</h2>
-                                <p className="text-sm text-gray-500 mt-1">
-                                    ID: <span className="font-mono bg-gray-100 px-1 rounded">{viewModal.data.id}</span>
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Category</label>
-                                    <p className="font-medium text-gray-800 capitalize">{viewModal.data.category}</p>
-                                </div>
-                                <div>
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Type</label>
-                                    <p className="font-medium text-gray-800">{viewModal.data.type || "N/A"}</p>
-                                </div>
-                                <div>
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Created At</label>
-                                    <p className="font-medium text-gray-800">{formatDate1(viewModal.data.created_at)}</p>
-                                </div>
-                                <div>
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Seen At</label>
-                                    <p className="font-medium text-gray-800">
-                                        {viewModal.data.seen_at ? formatDate1(viewModal.data.seen_at) : "Not seen yet"}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Message</label>
-                                <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 text-gray-700 leading-relaxed">
-                                    {viewModal.data.message}
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {viewModal.data.user_id && (
-                                    <div>
-                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Specific User ID</label>
-                                        <p className="font-mono text-sm bg-gray-50 p-2 rounded border border-gray-100 text-gray-600 truncate">
-                                            {viewModal.data.user_id}
-                                        </p>
-                                    </div>
-                                )}
-                                {viewModal.data.test_id && (
-                                    <div>
-                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Test ID</label>
-                                        <p className="font-mono text-sm bg-gray-50 p-2 rounded border border-gray-100 text-gray-600 truncate">
-                                            {viewModal.data.test_id}
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-
-                            {viewModal.data.service_ids && viewModal.data.service_ids.length > 0 && (
-                                <div>
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Service IDs</label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {viewModal.data.service_ids.map((id, idx) => (
-                                            <span key={idx} className="font-mono text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded border border-blue-100">
-                                                {id}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {viewModal.data.product_ids && viewModal.data.product_ids.length > 0 && (
-                                <div>
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Product IDs</label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {viewModal.data.product_ids.map((id, idx) => (
-                                            <span key={idx} className="font-mono text-xs bg-green-50 text-green-600 px-2 py-1 rounded border border-green-100">
-                                                {id}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                    <ViewNotificationDetails notification={viewModal.data} />
                 )}
             </Modal>
 
@@ -265,7 +181,7 @@ function CreateNotificationModal({ isOpen, onClose }) {
         title: "",
         message: "",
         category: "general",
-        type: "",
+        type: "general",
         user_id: "",
         test_id: "",
         service_ids: [],
@@ -347,7 +263,7 @@ function CreateNotificationModal({ isOpen, onClose }) {
                 <div className="p-2">
                     <h2 className="text-xl font-bold text-gray-800 mb-6 border-b pb-4">Create Notification</h2>
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
@@ -368,10 +284,8 @@ function CreateNotificationModal({ isOpen, onClose }) {
                                     onChange={e => setFormData({ ...formData, category: e.target.value })}
                                 >
                                     <option value="general">General</option>
-                                    <option value="alert">Alert</option>
-                                    <option value="info">Info</option>
-                                    <option value="promotion">Promotion</option>
-                                    <option value="reminder">Reminder</option>
+                                    <option value="order">Order</option>
+                                    <option value="appointment">Appointment</option>
                                 </select>
                             </div>
                         </div>
@@ -396,9 +310,7 @@ function CreateNotificationModal({ isOpen, onClose }) {
                                     onChange={e => setFormData({ ...formData, type: e.target.value })}
                                 >
                                     <option value="">Select Type</option>
-                                    <option value="broadcast">Broadcast</option>
-                                    <option value="targeted">Targeted</option>
-                                    <option value="system">System</option>
+                                    <option value="general">General</option>
                                 </select>
                             </div>
 
@@ -492,12 +404,13 @@ function CreateNotificationModal({ isOpen, onClose }) {
                             </button>
                             <button
                                 type="submit"
+                                onClick={handleSubmit}
                                 className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg shadow-md transition-all font-medium"
                             >
                                 Create Notification
                             </button>
                         </div>
-                    </form>
+                    </div>
                 </div>
             </Modal>
 
@@ -540,6 +453,158 @@ function CreateNotificationModal({ isOpen, onClose }) {
                 }}
             />
         </>
+    );
+}
+
+function ViewNotificationDetails({ notification }) {
+    const [user, setUser] = useState(null);
+    const [products, setProducts] = useState([]);
+    const [services, setServices] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                const promises = [];
+
+                if (notification.user_id) {
+                    promises.push(
+                        supabase
+                            .from('user_profiles')
+                            .select('*')
+                            .eq('id', notification.user_id)
+                            .single()
+                            .then(({ data }) => setUser(data))
+                    );
+                }
+
+                if (notification.product_ids?.length > 0) {
+                    promises.push(
+                        supabase
+                            .from('products')
+                            .select('*')
+                            .in('id', notification.product_ids)
+                            .then(({ data }) => setProducts(data || []))
+                    );
+                }
+
+                if (notification.service_ids?.length > 0) {
+                    promises.push(
+                        supabase
+                            .from('services')
+                            .select('*, vendor_profile:provider_id(*)')
+                            .in('id', notification.service_ids)
+                            .then(({ data }) => setServices(data || []))
+                    );
+                }
+
+                await Promise.all(promises);
+
+            } catch (error) {
+                console.error("Error fetching details:", error);
+                toast.error("Failed to load some details");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (notification) {
+            fetchData();
+        }
+    }, [notification]);
+
+    if (loading) {
+        return (
+            <div className="p-12 flex flex-col items-center justify-center text-gray-500">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mb-4"></div>
+                <p>Loading details...</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="p-2">
+            <div className="flex justify-between items-start mb-6 border-b pb-4">
+                <div>
+                    <h2 className="text-xl font-bold text-gray-800">{notification.title || "Notification Details"}</h2>
+                    <p className="text-sm text-gray-500 mt-1">
+                        ID: <span className="font-mono bg-gray-100 px-1 rounded">{notification.id}</span>
+                    </p>
+                </div>
+            </div>
+
+            <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Category</label>
+                        <p className="font-medium text-gray-800 capitalize">{notification.category}</p>
+                    </div>
+                    <div>
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Type</label>
+                        <p className="font-medium text-gray-800">{notification.type || "N/A"}</p>
+                    </div>
+                    <div>
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Created At</label>
+                        <p className="font-medium text-gray-800">{formatDate1({ dateISO: notification.created_at })}</p>
+                    </div>
+                    <div>
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Seen At</label>
+                        <p className="font-medium text-gray-800">
+                            {notification.seen_at ? formatDate1(notification.seen_at) : "Not seen yet"}
+                        </p>
+                    </div>
+                </div>
+
+                <div>
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Message</label>
+                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 text-gray-700 leading-relaxed">
+                        {notification.message}
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {user && (
+                        <div>
+                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2">Specific User</label>
+                            <div className="max-w-xs">
+                                <MotherCardSmall mother={user} showDelete={false} />
+                            </div>
+                        </div>
+                    )}
+                    {notification.test_id && (
+                        <div>
+                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Test ID</label>
+                            <p className="font-mono text-sm bg-gray-50 p-2 rounded border border-gray-100 text-gray-600 truncate">
+                                {notification.test_id}
+                            </p>
+                        </div>
+                    )}
+                </div>
+
+                {services.length > 0 && (
+                    <div>
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2">Services</label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {services.map((service) => (
+                                <ServiceCardSmall key={service.id} service={service} showDelete={false} />
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {products.length > 0 && (
+                    <div>
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2">Products</label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {products.map((product) => (
+                                <ProductCardSmall key={product.id} product={product} showDelete={false} />
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
     );
 }
 

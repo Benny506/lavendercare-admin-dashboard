@@ -3,6 +3,7 @@ import useApiReqs from "../../../hooks/useApiReqs"
 import Modal from "./ui/Modal"
 import ZeroItems from "./ZeroItems"
 import { FaUserAlt } from "react-icons/fa"
+import { getPublicImageUrl } from "../../../lib/requestApi"
 
 export default function MothersModal({ modalProps, onMotherSelected = () => { }, selectedMotherId = null }) {
 
@@ -79,7 +80,7 @@ export default function MothersModal({ modalProps, onMotherSelected = () => { },
                                 >
                                     {mother.profile_img ? (
                                         <img
-                                            src={mother.profile_img}
+                                            src={getPublicImageUrl({ path: mother.profile_img, bucket_name: 'user_profiles' })}
                                             alt={mother.name}
                                             className="w-16 h-16 rounded-full object-cover"
                                         />

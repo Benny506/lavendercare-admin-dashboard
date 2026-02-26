@@ -7,10 +7,11 @@ const ServiceCardSmall = ({ service, showDelete = true, onDelete }) => {
 
 
     const { service_name, service_category } = service;
-    const business_name = service?.vendor_profile?.business_name;
+    const vendor = service?.vendor_profile || service?.provider;
+    const business_name = vendor?.business_name;
 
-    const profile_img = service?.vendor_profile?.profile_img
-        ? getPublicImageUrl({ path: service.vendor_profile.profile_img, bucket_name: 'user_profiles' })
+    const profile_img = vendor?.profile_img
+        ? getPublicImageUrl({ path: vendor.profile_img, bucket_name: 'user_profiles' })
         : null;
 
     return (
