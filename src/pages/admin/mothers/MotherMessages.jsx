@@ -8,8 +8,8 @@ import { useDirectChat } from "../../../hooks/chatHooks/useDirectChat";
 import { dmTopic } from "../../../hooks/chatHooks/dm";
 import { formatDate1, isoToAMPM, isToday, isYesterday } from "../../../lib/utils";
 import { IoCheckmark, IoCheckmarkDoneSharp } from "react-icons/io5";
-import { MdMessage } from "react-icons/md";
-import { BsClockHistory, BsTrash } from "react-icons/bs";
+import { MdKeyboardVoice, MdMessage } from "react-icons/md";
+import { BsClockHistory, BsRecord2, BsTrash } from "react-icons/bs";
 import { LuMessageCircleWarning, LuRotateCw } from "react-icons/lu";
 import { sendNotifications } from "../../../lib/notifications";
 import { toast } from "react-toastify";
@@ -22,6 +22,9 @@ import { IoIosSend } from "react-icons/io";
 import { FaTrash } from "react-icons/fa";
 import FailedMsgModal from "../components/chat/FailedMsgModal";
 import ConfirmModal from "../components/ConfirmModal";
+import { useAudioRecorder } from "../../../hooks/chatHooks/useAudioRecorder";
+import { FaMicrophone } from "react-icons/fa";
+
 
 function MotherMessages() {
     const dispatch = useDispatch()
@@ -46,6 +49,10 @@ function MotherMessages() {
     const [mother, setMother] = useState(mom)
     const [failedMsgModal, setFailedMsgModal] = useState({ visible: false, hide: null })
     const [confirmDelete, setConfirmDelete] = useState({ visible: false, hide: null })
+
+    const [recordingDuration, setRecordingDuration] = useState(0); // seconds
+    const isRecordingCancelled = useRef(false);
+    const recordingDurationRef = useRef(0);
 
     const meId = profile?.id
     const peerId = mother?.id
@@ -147,6 +154,123 @@ function MotherMessages() {
             dispatch(appLoadStop())
         }
     }
+
+    const formatDuration = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    const handleVoiceNoteStop = async (blobUrl, blob) => {
+        let audioBlob = blob;
+        if (!audioBlob && blobUrl) {
+            try {
+                const res = await fetch(blobUrl);
+                audioBlob = await res.blob();
+            } catch (e) {
+                console.error("Failed to fetch blob from url", e);
+                return;
+            }
+        }
+        if (!audioBlob) return;
+
+        // Check if recording was cancelled
+        if (isRecordingCancelled.current) {
+            isRecordingCancelled.current = false;
+            return;
+        }
+
+        // Get Duration
+        const getDuration = (blob) => {
+            return new Promise((resolve) => {
+                const audio = document.createElement("audio");
+                const objectUrl = URL.createObjectURL(blob);
+                audio.src = objectUrl;
+                audio.onloadedmetadata = () => {
+                    const duration = audio.duration;
+                    URL.revokeObjectURL(objectUrl);
+                    resolve(duration); // in seconds
+                };
+                audio.onerror = () => {
+                    resolve(null);
+                }
+            });
+        };
+
+        const duration = await getDuration(audioBlob) || recordingDurationRef.current;
+
+        const type = 'audio'
+
+        // Determine correct extension based on blob type
+        const extension = 'wav';
+        const mimeType = 'audio/wav';
+
+        // Use the correct mime type for the File constructor
+        const file = new File([audioBlob], `voice_note_${Date.now()}.${extension}`, { type: mimeType });
+
+        const msg = sendTempMedia({
+            file_type: type,
+            text: file,
+            duration: duration,
+            toUser: peerId
+        })
+
+        uploadAsset({
+            file: [file],
+            id: topic,
+            bucket_name: 'voice_notes',
+            ext: extension
+        })
+            .then(data => {
+                const { error, filePaths } = data
+
+                const uploadedFile = filePaths?.[0]
+
+                updateTempMedia({
+                    msgId: msg?.id,
+                    failed: !uploadedFile ? true : false,
+                    msgObj: {
+                        ...msg,
+                        message: uploadedFile
+                    },
+                    channel_id: topic
+                })
+            })
+            .catch(err => {
+                console.log(err)
+                toast.error("Failed to upload voice note");
+                updateTempMedia({
+                    msgId: msg?.id,
+                    failed: true,
+                    msgObj: {
+                        ...msg,
+                        message: null
+                    },
+                    channel_id: topic
+                })
+            })
+    }
+
+    const { status: recordingStatus, startRecording, stopRecording, mediaBlobUrl, error: recorderError } = useAudioRecorder({ onStop: handleVoiceNoteStop });
+
+    useEffect(() => {
+        if (recorderError) {
+            toast.error(recorderError);
+        }
+    }, [recorderError]);
+
+    useEffect(() => {
+        let interval;
+        if (recordingStatus === "recording") {
+            setRecordingDuration(0);
+            recordingDurationRef.current = 0;
+            interval = setInterval(() => {
+                setRecordingDuration((prev) => prev + 1);
+                recordingDurationRef.current += 1;
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [recordingStatus]);
 
     const sendNow = () => {
         if (!input.trim()) return;
@@ -394,23 +518,26 @@ function MotherMessages() {
                             const delivered = delivered_at ? true : false
 
                             return (
-                                <div key={msg.id} className={`flex ${iAmSender ? 'justify-end' : 'justify-start'}`}>
+                                <div style={{ }} key={msg.id} className={`flex ${iAmSender ? 'justify-end' : 'justify-start'}`}>
                                     <div
                                         style={{
-                                            width: file_type === 'audio' ? '80%' : 'auto'
+                                            width: file_type === 'audio' ? '80%' : 'auto',
+                                            maxWidth: '80%',
+                                            display: 'flex', flexDirection: 'row',
+                                            alignItems: 'center',
+                                            justifyContent: iAmSender ? 'flex-end' : 'flex-start'
                                         }}
                                     >
-                                        <div className={`max-w-xs ${iAmSender
+                                        <div style={{ width: '100%' }} className={`max-w-xs ${iAmSender
                                             ? 'bg-purple-600 text-white'
                                             : 'bg-gray-100 text-gray-900'
                                             } rounded-2xl px-4 py-3`}>
                                             {file_type === 'audio' ? (
-                                                <div>
+                                                <div style={{ width: '100%' }}>
                                                     <AudioPlayer
                                                         channelId={topic}
                                                         filePath={message}
                                                         durationMillis={duration * 1000}
-                                                        iAmSender={iAmSender}
                                                     />
                                                 </div>
                                             )
@@ -567,27 +694,72 @@ function MotherMessages() {
                                     />
                                 </svg>
                             </button>
-                            <input
-                                value={input}
-                                onChange={e => setInput(e.target.value)}
-                                className="flex-1 border rounded px-3 py-2 text-sm"
-                                placeholder="Type a message..."
-                            />
-                            <button
-                                onClick={sendNow}
-                                className="cursor-pointer bg-purple-600 text-white px-4 py-2 rounded"
-                            >
-                                Send
-                            </button>
+                            {
+                                recordingStatus !== 'recording'
+                                &&
+                                <textarea
+                                    value={input}
+                                    onChange={e => setInput(e.target.value)}
+                                    className="flex-1 border rounded px-3 py-2 text-sm"
+                                    placeholder="Type a message..."
+                                />
+                            }
+                            {
+                                recordingStatus === 'recording'
+                                    ?
+                                    <div className="flex items-center gap-3 w-full bg-white p-3 rounded-lg shadow-sm">
+                                        <div className="flex-1 flex items-center justify-between bg-gray-100 rounded-md px-4 py-2 text-red-500 animate-pulse">
+                                            <div className="flex items-center gap-2">
+                                                <FaMicrophone className="w-4 h-4" />
+                                                <span className="text-sm font-medium">Recording...</span>
+                                            </div>
+                                            <span className="text-sm font-mono">{formatDuration(recordingDuration)}</span>
+                                        </div>
+                                        <button
+                                            className="cursor-pointer p-2 hover:bg-gray-100 rounded-full"
+                                            onClick={() => { isRecordingCancelled.current = true; stopRecording(); }}
+                                        >
+                                            <FaTrash className="w-5 h-5 text-gray-500 hover:text-red-500" />
+                                        </button>
+                                        <button
+                                            onClick={stopRecording}
+                                            className="h-10 w-10 p-0 rounded-full bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center"
+                                        >
+                                            <IoIosSend className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                    :
+                                    <div className="flex items-center gap-2">
+                                        <div
+                                            onClick={startRecording}
+                                            style={{ borderRadius: '100%' }}
+                                            className="bg-[#7b3fe4] p-3"
+                                        >
+                                            <MdKeyboardVoice size={20} color="#FFF" />
+                                        </div>
+                                        <button
+                                            onClick={sendNow}
+                                            className="cursor-pointer bg-purple-600 text-white px-4 py-2 rounded"
+                                        >
+                                            Send
+                                        </button>
+                                    </div>
+                            }
                         </div>
                         :
-                        <div className="flex items-center justify-center">
+                        <div className="flex items-center justify-center gap-4">
                             <div
                                 onClick={refreshConnection}
-                                className="text-center font-medium bg-purple-600 text-white m-3 py-3 px-7 cursor-pointer rounded-lg"
+                                className="text-center font-medium bg-purple-600 text-white py-3 px-7 cursor-pointer rounded-lg"
                             >
                                 Want to send a msg?
                             </div>
+                            <button
+                                onClick={startRecording}
+                                className="h-12 w-12 rounded-full bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center shadow-lg transition-transform hover:scale-105"
+                            >
+                                <FaMicrophone className="w-5 h-5" />
+                            </button>
                         </div>
                 }
             </div>

@@ -19,6 +19,7 @@ export default function useApiReqs() {
     const providers = useSelector(state => getAdminState(state).providers)
     const bookings = useSelector(state => getAdminState(state).bookings)
     const products = useSelector(state => getAdminState(state).products)
+    const thirdPartyProducts = useSelector(state => getAdminState(state).thirdPartyProducts)
     const productCategories = useSelector(state => getAdminState(state).productCategories)
     const providerSpecialties = useSelector(state => getAdminState(state).providerSpecialties)
     const mentalHealthScreenings = useSelector(state => getAdminState(state).mentalHealthScreenings)
@@ -442,6 +443,41 @@ export default function useApiReqs() {
             console.log(error)
             callBack && callBack({ mother: null })
             toast.error("Error loading single mother")
+            dispatch(appLoadStop())
+        }
+    }
+    const fetchMothers = async ({ callBack = () => { } }) => {
+        try {
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from("user_profiles")
+                .select(`
+                    id, 
+                    name, 
+                    email, 
+                    country, 
+                    state, 
+                    is_pregnant, 
+                    profile_img, 
+                    username, 
+                    city
+                `)
+                .order("created_at", { ascending: false })
+
+            if (error) {
+                console.log(error)
+                throw new Error()
+            }
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ mothers: data })
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error fetching mothers")
             dispatch(appLoadStop())
         }
     }
@@ -920,6 +956,7 @@ export default function useApiReqs() {
                 .select(`
                     *
                 `)
+                .is("business_entity_id", null)
                 .order("created_at", { ascending: false, nullsFirst: false })
                 .limit(limit)
                 .range(from, to);
@@ -953,6 +990,54 @@ export default function useApiReqs() {
             dispatch(appLoadStop())
         }
     }
+    const fetchThirdPartyProducts = async ({ callBack = () => { } }) => {
+        try {
+
+            const limit = 1000;
+            const from = [] || (thirdPartyProducts?.length || 0);
+            const to = from + limit - 1;
+
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from('products')
+                .select(`
+                    *
+                `)
+                .not("business_entity_id", 'is', null)
+                .order("created_at", { ascending: false, nullsFirst: false })
+                .limit(limit)
+                .range(from, to);
+
+            if (error) {
+                console.log(error)
+                throw new Error()
+            }
+
+            if (data?.length === 0) {
+                dispatch(appLoadStop())
+                // toast.info("All products loaded")
+
+                callBack && callBack({ canLoadMore: false })
+
+                return;
+            }
+
+            dispatch(setAdminState({
+                // products: [...products, ...data]
+                thirdPartyProducts: [...thirdPartyProducts, ...data]
+            }))
+
+            dispatch(appLoadStop())
+
+            callBack && callBack({ canLoadMore: true, thirdPartyProducts: data })
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error fetching third party products")
+            dispatch(appLoadStop())
+        }
+    }    
     const fetchSingleProduct = async ({ callBack = () => { }, product_id }) => {
         try {
 
@@ -1275,7 +1360,7 @@ export default function useApiReqs() {
             dispatch(appLoadStop())
         }
     }
-    const updateProduct = async ({ callBack = () => { }, product_id, update }) => {
+    const updateProduct = async ({ callBack = () => { }, product_id, update, is_third_party }) => {
         try {
 
             if (!product_id || !update) throw new Error();
@@ -1294,7 +1379,7 @@ export default function useApiReqs() {
                 throw new Error()
             }
 
-            const updatedProducts = products?.map(p => {
+            const updatedProducts = (is_third_party ? thirdPartyProducts : products)?.map(p => {
                 if (p?.id === product_id) {
                     return {
                         ...p,
@@ -1307,7 +1392,7 @@ export default function useApiReqs() {
 
             dispatch(appLoadStop())
 
-            dispatch(setAdminState({ products: updatedProducts }))
+            dispatch(setAdminState({ [is_third_party ? 'thirdPartyProducts' : 'products']: updatedProducts }))
 
             callBack && callBack({ update })
 
@@ -2541,7 +2626,7 @@ export default function useApiReqs() {
 
         //mothers
         fetchSingleMother,
-
+        fetchMothers,
 
 
 
@@ -2577,6 +2662,7 @@ export default function useApiReqs() {
 
         //products
         fetchProducts,
+        fetchThirdPartyProducts,
         fetchProductCategories,
         addProductCategory,
         deleteProductCategory,

@@ -166,7 +166,6 @@ function AddProduct() {
             .from("products")
             .insert({
               ...requestBody,
-              uploaded_by: 'admin'
             })
             .select()
             .single()

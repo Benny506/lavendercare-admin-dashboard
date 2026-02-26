@@ -13,7 +13,7 @@ const sidebarMenu = [
     icon: 'dashboard',
     path: "/admin/dashboard",
     submenu: [],
-    // requiredPermissions: ['super_admin']
+    // requiredPermissions: ['admin_roles.manage']
   },
   {
     title: "User Management",
@@ -30,8 +30,13 @@ const sidebarMenu = [
           path: "/admin/user-management/invite-user" ,
           requiredPermissions: ['invite_user']
       },
+      {
+        title: "Notifications",
+        path: "/admin/user-management/notifications",
+        requiredPermissions: ['admin_roles.manage']
+      },
     ],
-    requiredPermissions: ['care_coordinator', 'providers.assign', 'invite_user']
+    requiredPermissions: ['care_coordinator', 'providers.assign', 'invite_user', 'admin_roles.manage']
   },
   // {
   //   title: "Mothers",
@@ -96,12 +101,17 @@ const sidebarMenu = [
     title: "Marketplace",
     icon: 'marketPlace',
     path: "/admin/marketplace",    
-    submenu: [
-      { title: 
-        "Manage Products", 
+    submenu: [      
+      { 
+        title: "Manage Products", 
         path: "/admin/marketplace/manage-product", 
         requiredPermissions: ['products.manage'] 
       },
+      { 
+        title: "Third Party Products", 
+        path: "/admin/marketplace/third-party-products", 
+        requiredPermissions: ['products.manage'] 
+      },      
       {
         title: "Orders",
         path: "/admin/marketplace/orders",

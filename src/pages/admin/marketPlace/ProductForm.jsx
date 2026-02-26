@@ -409,11 +409,47 @@ export default function ProductForm({
                                 icon={MdPublish}
                             >
                                 <div className="flex flex-col gap-3">
+                                    {
+                                        (product?.id && product?.business_entity_id)
+                                        &&
+                                        <button
+                                            onClick={() => {
+                                                const is_approved = !productInfo.is_approved;
+                                                updateProduct({
+                                                    callBack: ({ update }) => {
+                                                        setProductInfo({
+                                                            ...productInfo,
+                                                            ...update
+                                                        })
+                                                    },
+                                                    product_id: productInfo.id,
+                                                    update: {
+                                                        is_approved
+                                                    },
+                                                });
+                                            }}
+                                            className={`w-full rounded-lg py-2 font-semibold ${productInfo?.is_approved
+                                                ? "bg-gray-200"
+                                                : "bg-[#703dcb] text-white"
+                                                }`}
+                                        >
+                                            {productInfo?.is_approved
+                                                ? "Unapprove"
+                                                : "Approve"}
+                                        </button>
+                                    }
+
                                     {product_id && (
                                         <button
                                             onClick={() => {
                                                 const visible = !productInfo.product_visibility;
                                                 updateProductVisibility({
+                                                    callback: ({ }) => {
+                                                        setProductInfo({
+                                                            ...productInfo,
+                                                            product_visibility: visible
+                                                        })
+                                                    },
                                                     product_id: productInfo.id,
                                                     product_visibility: visible,
                                                 });

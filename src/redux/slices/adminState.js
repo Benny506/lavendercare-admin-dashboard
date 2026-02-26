@@ -18,7 +18,7 @@ export const formatBookings = ({ bookings = [] }) => {
     const sortedWithPriority = sortByStatusPriority(bookingsWithCorrectStatus)
 
     return sortedWithPriority
-}   
+}
 
 
 const adminState = createSlice({
@@ -34,11 +34,12 @@ const adminState = createSlice({
         highRiskAlerts: [],
         bookings: [],
         products: [],
+        thirdPartyProducts: [],
         productCategories: []
     },
     reducers: {
         setAdminState: (state, action) => {
-            if(action?.payload?.mothers){
+            if (action?.payload?.mothers) {
                 state.mothers = action.payload?.mothers?.map(m => {
                     return {
                         ...m,
@@ -47,16 +48,16 @@ const adminState = createSlice({
                 })
             }
 
-            if(action?.payload?.vendors){
+            if (action?.payload?.vendors) {
                 state.vendors = action.payload?.vendors?.map(v => {
                     return {
                         ...v,
                         role: 'vendor'
                     }
                 })
-            }       
-            
-            if(action?.payload?.providers){
+            }
+
+            if (action?.payload?.providers) {
                 state.providers = action.payload?.providers?.map(p => {
                     return {
                         ...p,
@@ -64,36 +65,40 @@ const adminState = createSlice({
                         id: p?.id || p?.provider_id
                     }
                 })
-            }   
-            
-            if(action?.payload?.services){
+            }
+
+            if (action?.payload?.services) {
                 state.services = action?.payload?.services
             }
 
-            if(action?.payload?.mentalHealthScreenings){
+            if (action?.payload?.mentalHealthScreenings) {
                 state.mentalHealthScreenings = action?.payload?.mentalHealthScreenings
-            }     
-            
-            if(action.payload?.bookings){
+            }
+
+            if (action.payload?.bookings) {
                 state.bookings = formatBookings({ bookings: action?.payload?.bookings })
-            }       
-            
-            if(action.payload?.products){
+            }
+
+            if (action.payload?.products) {
                 state.products = action.payload?.products
-            }   
-            
-            if(action?.payload?.productCategories){
+            }
+
+            if (action.payload?.thirdPartyProducts) {
+                state.thirdPartyProducts = action.payload?.thirdPartyProducts
+            }
+
+            if (action?.payload?.productCategories) {
                 state.productCategories = action?.payload?.productCategories
             }
 
-            if(action?.payload?.providerSpecialties){
+            if (action?.payload?.providerSpecialties) {
                 state.providerSpecialties = action?.payload?.providerSpecialties
             }
 
-            if(action?.payload?.vendorServiceCategories){
+            if (action?.payload?.vendorServiceCategories) {
                 state.vendorServiceCategories = action?.payload?.vendorServiceCategories
             }
-        },                
+        },
     }
 })
 

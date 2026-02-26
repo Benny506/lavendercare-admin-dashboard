@@ -52,6 +52,7 @@ import MotherMessages from "../pages/admin/mothers/MotherMessages";
 import AllMothers from "../pages/admin/mothers/AllMothers";
 import BookingInformation from "../pages/admin/userManagement/BookingInformation";
 import MotherProfile from "../pages/admin/userManagement/MotherProfile";
+import MotherNotify from "../pages/admin/userManagement/MotherNotify";
 import SingleVendor from "../pages/admin/serviceProvider/SingleVendor";
 import ServiceDetails from "../pages/admin/serviceProvider/auxiliary/ServiceDetails";
 import CreateCommunity from "../pages/admin/communities/CreateCommunity";
@@ -74,6 +75,7 @@ import Coupons from "../pages/admin/marketPlace/coupons/Coupons";
 import CouponForm from "../pages/admin/marketPlace/coupons/CouponForm";
 import CouponStats from "../pages/admin/marketPlace/coupons/CouponStats";
 import PermissionCheck from "../pages/admin/components/permissions/PermissionCheck";
+import ThirdPartyProducts from "../pages/admin/marketPlace/ThirdPartyProducts";
 
 function Routing() {
 
@@ -142,6 +144,7 @@ function Routing() {
             </PermissionCheck>
           }>
             <Route path="/admin/marketplace/manage-product" element={<Product />} />
+            <Route path="/admin/marketplace/third-party-products" element={<ThirdPartyProducts />} />
             <Route path="/admin/marketplace/manage-product/product-variants" element={<VariantCombinations />} />
             <Route path="/admin/marketplace/add-product" element={<AddProduct />} />
             <Route path="/admin/marketplace/edit-product" element={<AddProduct />} />
@@ -325,6 +328,16 @@ function Routing() {
                   permission_required={['invite_user']}
                 >
                   <InviteUsers />
+                </PermissionCheck>
+              }
+            />
+            <Route
+              path="/admin/user-management/notifications"
+              element={
+                <PermissionCheck
+                  permission_required={['admin_roles.manage']}
+                >
+                  <MotherNotify />
                 </PermissionCheck>
               }
             />
