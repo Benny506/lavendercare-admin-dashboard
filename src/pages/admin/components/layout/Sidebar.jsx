@@ -102,28 +102,33 @@ const sidebarMenu = [
     icon: 'marketPlace',
     path: "/admin/marketplace",    
     submenu: [      
-      { 
-        title: "Manage Products", 
-        path: "/admin/marketplace/manage-product", 
-        requiredPermissions: ['products.manage'] 
-      },
-      { 
-        title: "Third Party Products", 
-        path: "/admin/marketplace/third-party-products", 
-        requiredPermissions: ['products.manage'] 
-      },      
-      {
-        title: "Orders",
-        path: "/admin/marketplace/orders",
-        requiredPermissions: ['orders.manage']
-      },
+      // { 
+      //   title: "Manage Products", 
+      //   path: "/admin/marketplace/manage-product", 
+      //   requiredPermissions: ['products.manage'] 
+      // },
+      // { 
+      //   title: "Third Party Products", 
+      //   path: "/admin/marketplace/third-party-products", 
+      //   requiredPermissions: ['products.manage'] 
+      // },      
+      // {
+      //   title: "Orders",
+      //   path: "/admin/marketplace/orders",
+      //   requiredPermissions: ['orders.manage']
+      // },
       {
         title: "Coupons",
         path: "/admin/marketplace/coupons",
         requiredPermissions: ['coupons.manage'] 
       },
+      {
+        title: "Ads",
+        path: "/admin/marketplace/ads",
+        requiredPermissions: ['ads.manage']
+      },
     ],
-    requiredPermissions: ['products.manage', 'orders.manage', 'coupons.manage'],
+    requiredPermissions: ['products.manage', 'orders.manage', 'coupons.manage', 'ads.manage'],
   },
   // {
   //   title: "Order and Transactions",

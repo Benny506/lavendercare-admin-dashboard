@@ -76,6 +76,9 @@ import CouponForm from "../pages/admin/marketPlace/coupons/CouponForm";
 import CouponStats from "../pages/admin/marketPlace/coupons/CouponStats";
 import PermissionCheck from "../pages/admin/components/permissions/PermissionCheck";
 import ThirdPartyProducts from "../pages/admin/marketPlace/ThirdPartyProducts";
+import AdsList from "../pages/admin/marketPlace/ads/AdsList";
+import CreateAd from "../pages/admin/marketPlace/ads/CreateAd";
+import EditAd from "../pages/admin/marketPlace/ads/EditAd";
 
 function Routing() {
 
@@ -133,44 +136,6 @@ function Routing() {
 
 
 
-          {/* PRODUCTS  */}
-          <Route path="/admin" element={
-            <PermissionCheck
-              permission_required={['products.manage']}
-            >
-              <ProtectedRoute>
-                <Layout />
-              </ProtectedRoute>
-            </PermissionCheck>
-          }>
-            <Route path="/admin/marketplace/manage-product" element={<Product />} />
-            <Route path="/admin/marketplace/third-party-products" element={<ThirdPartyProducts />} />
-            <Route path="/admin/marketplace/manage-product/product-variants" element={<VariantCombinations />} />
-            <Route path="/admin/marketplace/add-product" element={<AddProduct />} />
-            <Route path="/admin/marketplace/edit-product" element={<AddProduct />} />
-          </Route>
-
-
-
-
-
-          {/* ORDERS */}
-          <Route path="/admin" element={
-            <PermissionCheck
-              permission_required={['orders.manage']}
-            >
-              <ProtectedRoute>
-                <Layout />
-              </ProtectedRoute>
-            </PermissionCheck>
-          }>
-            <Route path="/admin/marketplace/orders" element={<Orders />} />
-          </Route>
-
-
-
-
-
           {/* COUPONS  */}
           <Route path="/admin" element={
             <PermissionCheck
@@ -185,6 +150,21 @@ function Routing() {
             <Route path="/admin/marketplace/coupons/create" element={<CouponForm />} />
             <Route path="/admin/marketplace/coupons/edit" element={<CouponForm />} />
             <Route path="/admin/marketplace/coupons/single-coupon-stats" element={<CouponStats />} />
+          </Route>
+
+          {/* ADS */}
+          <Route path="/admin" element={
+            <PermissionCheck
+              permission_required={['ads.manage']}
+            >
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            </PermissionCheck>
+          }>
+            <Route path="/admin/marketplace/ads" element={<AdsList />} />
+            <Route path="/admin/marketplace/ads/create" element={<CreateAd />} />
+            <Route path="/admin/marketplace/ads/edit" element={<EditAd />} />
           </Route>
 
 
