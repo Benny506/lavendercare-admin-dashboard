@@ -19,7 +19,7 @@ import AudioPlayer from "../../../hooks/chatHooks/voiceNotes/AudioPlayer";
 import { getPublicImageUrl, uploadAsset } from "../../../lib/requestApi";
 import FailedMsgModal from "../components/chat/FailedMsgModal";
 import MediaDisplay from "../components/MediaDisplay";
-import ConfirmModal from "../components/ConfirmModal";
+import ConfirmModal from "../components/ConfirmModal"; 
 
 function CommunityChat() {
     const dispatch = useDispatch()
@@ -149,7 +149,7 @@ function CommunityChat() {
     const sendNow = () => {
         if (!input.trim()) return;
         sendMessage({
-            text: input.trim(),
+            text: input,
             community_id: community?.id,
             user_profile: {
                 id: profile?.id,
@@ -464,7 +464,7 @@ function CommunityChat() {
                                                             {
                                                                 message
                                                                     ?
-                                                                    <p className="text-sm mb-3">{message}</p>
+                                                                    <p className="text-sm mb-3 whitespace-pre-wrap">{message}</p>
                                                                     :
                                                                     <p style={{ fontStyle: 'italic' }} className="text-sm mb-3">Message deleted</p>
                                                             }
@@ -595,7 +595,7 @@ function CommunityChat() {
                                     />
                                 </svg>
                             </button>
-                            <input
+                            <textarea
                                 value={input}
                                 onChange={e => setInput(e.target.value)}
                                 className="flex-1 border rounded px-3 py-2 text-sm"
@@ -632,7 +632,6 @@ function CommunityChat() {
                     ...confirmDelete,
                     data: {
                         yesFunc: () => {
-                            alert("HERE")
                             deleteMessage({ msgId: confirmDelete?.msg?.id, msg: confirmDelete?.msg })
                         },
                         title: 'Delete this message',

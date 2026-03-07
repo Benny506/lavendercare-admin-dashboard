@@ -194,7 +194,7 @@ export function useDirectChat({ topic, meId, isAdmin = true, isCommunity = false
 
       try {
 
-        const msg = text?.trim()
+        const msg = text
 
         if (!msg) return;
 

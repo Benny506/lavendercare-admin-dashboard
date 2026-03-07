@@ -274,8 +274,9 @@ function MotherMessages() {
 
     const sendNow = () => {
         if (!input.trim()) return;
+
         sendMessage({
-            text: input.trim(),
+            text: input,
             toUser: peerId,
             channel_id: topic,
             user_notification_token: mother?.notification_token
@@ -564,7 +565,7 @@ function MotherMessages() {
                                                             {
                                                                 message
                                                                     ?
-                                                                    <p className="text-sm mb-3">{message}</p>
+                                                                    <p className="text-sm mb-3 whitespace-pre-wrap">{message}</p>
                                                                     :
                                                                     <p style={{ fontStyle: 'italic' }} className="text-sm mb-3">Message deleted</p>
                                                             }
