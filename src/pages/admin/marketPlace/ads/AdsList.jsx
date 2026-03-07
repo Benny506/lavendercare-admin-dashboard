@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaPlus, FaSearch, FaPause, FaPlay, FaEdit, FaEye, FaTimes } from 'react-icons/fa';
+import { FaPlus, FaSearch, FaPause, FaPlay, FaEdit, FaEye, FaTimes, FaChartBar } from 'react-icons/fa';
 import { useDispatch } from 'react-redux';
 import { appLoadStart, appLoadStop } from '../../../../redux/slices/appLoadingSlice';
 import { toast } from 'react-toastify';
@@ -217,6 +217,19 @@ export default function AdsList() {
                                 </div>
 
                                 <div className="flex gap-2 pt-2 border-t border-gray-50">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            navigate(`/admin/marketplace/ads/${ad.id}/analytics`);
+                                        }}
+                                        className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-white bg-[#6F3DCB] hover:bg-[#5b32a8] transition text-sm font-medium shadow-md shadow-purple-100"
+                                        type="button"
+                                    >
+                                        <FaChartBar /> Analytics
+                                    </button>
+                                </div>
+
+                                <div className="flex gap-2 pt-2 mt-2">
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();

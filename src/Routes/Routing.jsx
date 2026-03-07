@@ -79,6 +79,7 @@ import ThirdPartyProducts from "../pages/admin/marketPlace/ThirdPartyProducts";
 import AdsList from "../pages/admin/marketPlace/ads/AdsList";
 import CreateAd from "../pages/admin/marketPlace/ads/CreateAd";
 import EditAd from "../pages/admin/marketPlace/ads/EditAd";
+import AdAnalytics from "../pages/admin/marketPlace/ads/AdAnalytics";
 
 function Routing() {
 
@@ -165,6 +166,7 @@ function Routing() {
             <Route path="/admin/marketplace/ads" element={<AdsList />} />
             <Route path="/admin/marketplace/ads/create" element={<CreateAd />} />
             <Route path="/admin/marketplace/ads/edit" element={<EditAd />} />
+            <Route path="/admin/marketplace/ads/:id/analytics" element={<AdAnalytics />} />
           </Route>
 
 

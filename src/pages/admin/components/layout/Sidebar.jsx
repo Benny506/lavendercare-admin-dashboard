@@ -102,11 +102,11 @@ const sidebarMenu = [
     icon: 'marketPlace',
     path: "/admin/marketplace",    
     submenu: [      
-      // { 
-      //   title: "Manage Products", 
-      //   path: "/admin/marketplace/manage-product", 
-      //   requiredPermissions: ['products.manage'] 
-      // },
+      { 
+        title: "Products Inventory", 
+        path: "https://product-inventory.lavendercare.co/#/catalog", 
+        requiredPermissions: ['products.manage'] 
+      },
       // { 
       //   title: "Third Party Products", 
       //   path: "/admin/marketplace/third-party-products", 
@@ -306,7 +306,8 @@ function Sidebar() {
                       return (
                         <NavLink
                           key={i}
-                          to={sub.path}
+                          to={sub.path?.startsWith('http') ? '' : sub.path}
+                          onClick={() => sub.path?.startsWith('http') ? window.open(sub.path, '_blank') : navigate(sub.path)}
                           end
                           className={({ isActive }) =>
                             `block px-4 py-2 text-sm rounded-lg transition
