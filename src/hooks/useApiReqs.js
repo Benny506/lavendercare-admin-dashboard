@@ -2649,7 +2649,8 @@ export default function useApiReqs() {
                     template_id: 'z3m5jgr07xdgdpyo',
                     data: {
                         title: is_approved ? "Approval!" : "Revoked!",
-                        message: is_approved ? "Your pharmacy has been approved!" : "Your pharmacy approval has been revoked!"
+                        message: is_approved ? "Your pharmacy has been approved!" : "Your pharmacy approval has been revoked!",
+                        btn_link: "https://pharmacy.lavendercare.co/"
                     }
                 })
             }
@@ -2661,6 +2662,85 @@ export default function useApiReqs() {
         } catch (error) {
             console.log(error)
             toast.error("Error updating pharmacy status. Try again later!")
+        } finally {
+            dispatch(appLoadStop())
+        }
+    }
+
+    //stores
+    const fetchStores = async ({ callBack = () => { } }) => {
+        try {
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from('store_profile')
+                .select('*')
+                .order('created_at', { ascending: false })
+
+            if (error) {
+                console.log(error)
+                throw new Error()
+            }
+
+            dispatch(appLoadStop())
+            callBack && callBack({ stores: data })
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error fetching stores. Try again later!")
+        } finally {
+            dispatch(appLoadStop())
+        }
+    }
+
+    const approveStore = async ({ callBack = () => { }, store_id, is_approved }) => {
+        try {
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from('store_profile')
+                .update({ is_approved })
+                .eq('id', store_id)
+                .select()
+                .single()
+
+            if (error) {
+                console.log(error)
+                throw new Error()
+            }
+
+            const { business_entity_id } = data
+
+            const { data: entity, error: entityError } = await supabase
+                .from("business_entities")
+                .select("*")
+                .single()
+                .eq("id", business_entity_id)
+
+            if(entityError){
+                console.log("entityError", entityError)
+            }
+
+            if(entity){
+                await sendEmail({
+                    to_id: entity?.user_id,
+                    subject: is_approved ? "Approval!" : "Revoked!",
+                    template_id: 'z3m5jgr07xdgdpyo',
+                    data: {
+                        title: is_approved ? "Approval!" : "Revoked!",
+                        message: is_approved ? "Your store has been approved!" : "Your store approval has been revoked!",
+                        btn_link: "https://product-inventory.lavendercare.co/"
+                    }
+                })
+            }
+
+            dispatch(appLoadStop())
+            callBack && callBack({ store: data })
+            toast.success(is_approved ? "Store approved!" : "Store approval revoked!")
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error updating store status. Try again later!")
         } finally {
             dispatch(appLoadStop())
         }
@@ -2831,6 +2911,14 @@ export default function useApiReqs() {
 
         //pharmacies
         fetchPharmacies,
-        approvePharmacy
+        approvePharmacy,
+
+
+
+
+
+        //stores
+        fetchStores,
+        approveStore
     }
 }

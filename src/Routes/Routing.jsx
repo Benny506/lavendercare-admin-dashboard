@@ -81,6 +81,7 @@ import CreateAd from "../pages/admin/marketPlace/ads/CreateAd";
 import EditAd from "../pages/admin/marketPlace/ads/EditAd";
 import AdAnalytics from "../pages/admin/marketPlace/ads/AdAnalytics";
 import Pharmacies from "../pages/admin/pharmacies/Pharmacies";
+import Stores from "../pages/admin/stores/Stores";
 
 function Routing() {
 
@@ -384,6 +385,17 @@ function Routing() {
                 </PermissionCheck>
               }
             />
+
+            <Route
+              path="/admin/eco-system/stores"
+              element={
+                <PermissionCheck
+                  permission_required={['admin_roles.manage']}
+                >
+                  <Stores />
+                </PermissionCheck>
+              }
+            />            
           </Route>
 
 
