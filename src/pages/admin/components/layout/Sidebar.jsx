@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { FaChevronDown, FaChevronUp, FaTimes } from "react-icons/fa";
+import { FaChevronDown, FaChevronUp, FaLayerGroup, FaTimes } from "react-icons/fa";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import Collapse from "../Collapse";
 import Icons from "../Icons";
@@ -20,15 +20,15 @@ const sidebarMenu = [
     icon: 'userManagement',
     path: "/admin/user-management",
     submenu: [
-      { 
-        title: "All Users", 
+      {
+        title: "All Users",
         path: "/admin/user-management",
         requiredPermissions: ['care_coordinator', 'providers.assign']
       },
-      { 
-          title: "Invite User", 
-          path: "/admin/user-management/invite-user" ,
-          requiredPermissions: ['invite_user']
+      {
+        title: "Invite User",
+        path: "/admin/user-management/invite-user",
+        requiredPermissions: ['invite_user']
       },
       {
         title: "Notifications",
@@ -69,10 +69,10 @@ const sidebarMenu = [
     path: "/admin/healthcare-provider",
     requiredPermissions: ['screenings.manage', 'providers.assign', 'providers.approve'],
     submenu: [
-      { 
-        title: "View All", 
-        path: "/admin/healthcare-provider", 
-        requiredPermissions: ['providers.assign'] 
+      {
+        title: "View All",
+        path: "/admin/healthcare-provider",
+        requiredPermissions: ['providers.assign']
       },
       {
         title: "Review Credentials",
@@ -100,12 +100,12 @@ const sidebarMenu = [
   {
     title: "Marketplace",
     icon: 'marketPlace',
-    path: "/admin/marketplace",    
-    submenu: [      
-      { 
-        title: "Products Inventory", 
-        path: "https://product-inventory.lavendercare.co/#/catalog", 
-        requiredPermissions: ['products.manage'] 
+    path: "/admin/marketplace",
+    submenu: [
+      {
+        title: "Products Inventory",
+        path: "https://product-inventory.lavendercare.co/#/catalog",
+        requiredPermissions: ['products.manage']
       },
       // { 
       //   title: "Third Party Products", 
@@ -120,7 +120,7 @@ const sidebarMenu = [
       {
         title: "Coupons",
         path: "/admin/marketplace/coupons",
-        requiredPermissions: ['coupons.manage'] 
+        requiredPermissions: ['coupons.manage']
       },
       {
         title: "Ads",
@@ -188,6 +188,18 @@ const sidebarMenu = [
     requiredPermissions: ['communities.manage']
   },
   {
+    title: "Eco-System",
+    Icon: () => <FaLayerGroup />,
+    path: "/admin/eco-system",
+    submenu: [
+      { title: "Pharmacies", path: "/admin/eco-system/pharmacies" },
+      // { title: "Moderators", path: "/admin/communities/moderators" },
+      // { title: "Activity Feed", path: "/admin/communities/activity" },
+      // { title: "Flagged Content", path: "/admin/communities/flagged" },
+    ],
+    requiredPermissions: ['admin_roles.manage']
+  },
+  {
     title: "Settings",
     Icon: ({ size, color }) => (
       <Icons name={"settings"} size={size} color={color} />
@@ -253,6 +265,7 @@ function Sidebar() {
         {/* Nav */}
         <nav className="mt-6 px-3 space-y-1">
           {sidebarMenu.map((item, index) => {
+            const { Icon } = item
             const isActive = pathname.startsWith(item.path);
             const isOpen = openMenu === index;
 
@@ -273,10 +286,18 @@ function Sidebar() {
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition
                   ${isActive ? "bg-white text-[#6F3DCB]" : "text-white hover:bg-white/10"}`}
                 >
-                  <Icons
-                    name={item.icon}
-                    color={isActive ? "#6F3DCB" : "#FFF"}
-                  />
+                  {
+                    Icon
+                      ?
+                      <Icon
+                        color={isActive ? "#6F3DCB" : "#FFF"}
+                      />
+                      :
+                      <Icons
+                        name={item.icon}
+                        color={isActive ? "#6F3DCB" : "#FFF"}
+                      />
+                  }
 
                   <span className="flex-1 text-sm font-medium text-left">
                     {item.title}

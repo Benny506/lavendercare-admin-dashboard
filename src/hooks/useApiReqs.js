@@ -2588,6 +2588,88 @@ export default function useApiReqs() {
 
 
 
+    //pharmacies
+    const fetchPharmacies = async ({ callBack = () => { } }) => {
+        try {
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from('pharmacy_profile')
+                .select('*')
+                .order('created_at', { ascending: false })
+
+            if (error) {
+                console.log(error)
+                throw new Error()
+            }
+
+            dispatch(appLoadStop())
+            callBack && callBack({ pharmacies: data })
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error fetching pharmacies. Try again later!")
+        } finally {
+            dispatch(appLoadStop())
+        }
+    }
+
+    const approvePharmacy = async ({ callBack = () => { }, pharmacy_id, is_approved }) => {
+        try {
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from('pharmacy_profile')
+                .update({ is_approved })
+                .eq('id', pharmacy_id)
+                .select()
+                .single()
+
+            if (error) {
+                console.log(error)
+                throw new Error()
+            }
+
+            const { business_entity_id } = data
+
+            const { data: entity, error: entityError } = await supabase
+                .from("business_entities")
+                .select("*")
+                .single()
+                .eq("id", business_entity_id)
+
+            if(entityError){
+                console.log("entityError", entityError)
+            }
+
+            if(entity){
+                await sendEmail({
+                    to_id: entity?.user_id,
+                    subject: is_approved ? "Approval!" : "Revoked!",
+                    template_id: 'z3m5jgr07xdgdpyo',
+                    data: {
+                        title: is_approved ? "Approval!" : "Revoked!",
+                        message: is_approved ? "Your pharmacy has been approved!" : "Your pharmacy approval has been revoked!"
+                    }
+                })
+            }
+
+            dispatch(appLoadStop())
+            callBack && callBack({ pharmacy: data })
+            toast.success(is_approved ? "Pharmacy approved!" : "Pharmacy approval revoked!")
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error updating pharmacy status. Try again later!")
+        } finally {
+            dispatch(appLoadStop())
+        }
+    }
+
+
+
+
+
     const apiReqError = ({ errorMsg }) => {
         toast.error(errorMsg)
         dispatch(appLoadStop())
@@ -2741,6 +2823,14 @@ export default function useApiReqs() {
         createRole,
         getRoleInfo,
         updateRole,
-        deleteRole
+        deleteRole,
+
+
+
+
+
+        //pharmacies
+        fetchPharmacies,
+        approvePharmacy
     }
 }
