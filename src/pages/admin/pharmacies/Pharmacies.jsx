@@ -12,6 +12,8 @@ import ZeroItems from "../components/ZeroItems";
 import ConfirmModal from "../components/ConfirmModal";
 import { isoToDateTime } from "../../../lib/utils";
 
+// NEXT -> Products Inventory reset password flow -> User seeing approved stores and buying from them too
+
 function Pharmacies() {
   const dispatch = useDispatch();
   const { fetchPharmacies, approvePharmacy } = useApiReqs();
