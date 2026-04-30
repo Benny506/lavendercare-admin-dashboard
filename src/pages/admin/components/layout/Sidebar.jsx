@@ -194,6 +194,7 @@ const sidebarMenu = [
     submenu: [
       { title: "Pharmacies", path: "/admin/eco-system/pharmacies" },
       { title: "Stores", path: "/admin/eco-system/stores" },
+      { title: "Hospitals", path: "/admin/eco-system/hospitals" },
       // { title: "Moderators", path: "/admin/communities/moderators" },
       // { title: "Activity Feed", path: "/admin/communities/activity" },
       // { title: "Flagged Content", path: "/admin/communities/flagged" },

@@ -2750,6 +2750,95 @@ export default function useApiReqs() {
 
 
 
+    //hospitals
+    const fetchHospitals = async ({ callBack = () => { } }) => {
+        try {
+            dispatch(appLoadStart())
+
+            const { data, error } = await supabase
+                .from('hospitals')
+                .select(`
+                    *,
+                    hospital_locations (*)
+                `)
+                .order('created_at', { ascending: false })
+
+            if (error) {
+                console.log(error)
+                throw new Error()
+            }
+
+            dispatch(appLoadStop())
+            callBack && callBack({ hospitals: data })
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error fetching hospitals. Try again later!")
+        } finally {
+            dispatch(appLoadStop())
+        }
+    }
+
+    const updateHospitalVerification = async ({ callBack = () => { }, hospital_id, is_verified }) => {
+        try {
+            dispatch(appLoadStart())
+
+            console.log("Updating hospital verification:", { hospital_id, is_verified });
+
+            const { data, error } = await supabase
+                .from('hospitals')
+                .update({ is_verified })
+                .eq('id', hospital_id)
+                .select()
+                .single()
+
+            if (error) {
+                console.error("Supabase update error:", error);
+                throw error
+            }
+
+            dispatch(appLoadStop())
+            callBack && callBack({ hospital: data })
+            toast.success(is_verified ? "Hospital verified!" : "Hospital verification revoked!")
+
+        } catch (error) {
+            console.log(error)
+            toast.error("Error updating hospital verification. Try again later!")
+        } finally {
+            dispatch(appLoadStop())
+        }
+    }
+
+    const onboardHospital = async ({ callBack = () => { }, values }) => {
+        try {
+            dispatch(appLoadStart())
+
+            const { data: sessionData } = await supabase.auth.getSession()
+            const token = sessionData?.session?.access_token
+
+            const { result, responseStatus, errorMsg, realErrorMsg } = await requestApi({
+                url: `https://tzsbbbxpdlupybfrgdbs.supabase.co/functions/v1/hospital-onboarding`,
+                method: "POST",
+                data: values,
+                token
+            })
+
+            if (!responseStatus) {
+                toast.error(realErrorMsg || "Onboarding failed. Please try again.")
+                return
+            }
+
+            toast.success("Hospital created successfully!")
+            callBack && callBack(result)
+
+        } catch (error) {
+            console.log(error)
+            toast.error("An error occurred during onboarding.")
+        } finally {
+            dispatch(appLoadStop())
+        }
+    }
+
     const apiReqError = ({ errorMsg }) => {
         toast.error(errorMsg)
         dispatch(appLoadStop())
@@ -2919,6 +3008,12 @@ export default function useApiReqs() {
 
         //stores
         fetchStores,
-        approveStore
+        approveStore,
+
+
+        //hospitals
+        fetchHospitals,
+        updateHospitalVerification,
+        onboardHospital
     }
 }
