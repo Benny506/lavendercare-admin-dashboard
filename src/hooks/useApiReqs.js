@@ -2757,10 +2757,7 @@ export default function useApiReqs() {
 
             const { data, error } = await supabase
                 .from('hospitals')
-                .select(`
-                    *,
-                    hospital_locations (*)
-                `)
+                .select('*')
                 .order('created_at', { ascending: false })
 
             if (error) {

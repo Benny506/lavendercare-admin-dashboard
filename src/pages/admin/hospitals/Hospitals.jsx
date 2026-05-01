@@ -185,7 +185,6 @@ function Hospitals() {
               {pageItems.length > 0 ? (
                 pageItems.map((hospital) => {
                   const logo = hospital?.logo_url ? hospital?.logo_url : null;
-                  const mainLocation = hospital?.hospital_locations?.find(l => l.is_main) || hospital?.hospital_locations?.[0] || {};
                   
                   return (
                     <tr key={hospital.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => openHospitalModal(hospital)}>
@@ -196,7 +195,7 @@ function Hospitals() {
                         {hospital.hospital_name}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {mainLocation.city || 'N/A'}, {mainLocation.state || ''}
+                        {hospital.city || 'N/A'}{hospital.state ? `, ${hospital.state}` : ''}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {isoToDateTime({ isoString: hospital.created_at })}
@@ -267,19 +266,13 @@ function Hospitals() {
                 <DetailItem label="Phone" value={selectedHospital.phone_number} />
                 <DetailItem label="Website" value={selectedHospital.website_link} />
               </div>
-              <div className="space-y-4">
-                <h5 className="font-semibold text-gray-700 border-bottom pb-2">Location Details</h5>
-                {(() => {
-                  const loc = selectedHospital?.hospital_locations?.find(l => l.is_main) || selectedHospital?.hospital_locations?.[0] || {};
-                  return (
-                    <>
-                      <DetailItem label="Address" value={loc.address} />
-                      <DetailItem label="City/State" value={loc.city && loc.state ? `${loc.city}, ${loc.state}` : (loc.city || loc.state)} />
-                    </>
-                  );
-                })()}
-                <DetailItem label="Status" value={selectedHospital.status} />
-              </div>
+                <div className="space-y-4">
+                  <h5 className="font-semibold text-gray-700 border-bottom pb-2">Location Details</h5>
+                  <DetailItem label="Address" value={selectedHospital.address} />
+                  <DetailItem label="City/State" value={selectedHospital.city && selectedHospital.state ? `${selectedHospital.city}, ${selectedHospital.state}` : (selectedHospital.city || selectedHospital.state)} />
+                  <DetailItem label="Country" value={selectedHospital.country} />
+                  <DetailItem label="Status" value={selectedHospital.status} />
+                </div>
             </div>
 
             <div className="mt-8 flex justify-end gap-3">
@@ -342,6 +335,9 @@ const AddHospitalModal = ({ isOpen, onClose, onSuccess, onboardHospital }) => {
     password: "",
     hospital_phone: "",
     address: "",
+    city: "",
+    state: "",
+    country: "Nigeria",
     website_link: "",
     official_email: "",
     slug: ""
@@ -372,6 +368,9 @@ const AddHospitalModal = ({ isOpen, onClose, onSuccess, onboardHospital }) => {
           password: "",
           hospital_phone: "",
           address: "",
+          city: "",
+          state: "",
+          country: "Nigeria",
           website_link: "",
           official_email: "",
           slug: ""
@@ -464,16 +463,54 @@ const AddHospitalModal = ({ isOpen, onClose, onSuccess, onboardHospital }) => {
             </div>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-gray-700 uppercase">Official Address</label>
-            <textarea 
-              required
-              name="address"
-              value={formData.address}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 outline-none h-20"
-              placeholder="123 Hospital Way, Health City"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-700 uppercase">City</label>
+              <input 
+                required
+                name="city"
+                value={formData.city}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 outline-none"
+                placeholder="Lagos"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-700 uppercase">State</label>
+              <input 
+                required
+                name="state"
+                value={formData.state}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 outline-none"
+                placeholder="Lagos State"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-700 uppercase">Country</label>
+              <input 
+                required
+                name="country"
+                value={formData.country}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 outline-none"
+                placeholder="Nigeria"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-700 uppercase">Official Address</label>
+              <input 
+                required
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 outline-none"
+                placeholder="123 Hospital Way"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
