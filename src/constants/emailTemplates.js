@@ -27,7 +27,7 @@ export const EMAIL_NOTIFY_MOTHER = `
             <h1 class="title">Chat Invitation</h1>
             <p class="message">
                 Hello <span class="accent">{{name}}</span>,<br><br>
-                A care-coordinator from <span class="accent">LavenderCare</span> wants to chat with you regarding your healthcare journey.
+                A provider from <span class="accent">LavenderCare</span> wants to chat with you regarding your healthcare journey.
             </p>
             <div style="text-align: center; margin-top: 32px;">
                 <a href="https://lavendercare.co/app" class="button">Open LavenderCare App</a>

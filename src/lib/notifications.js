@@ -1,13 +1,3 @@
-// await sendNotifications({
-//     tokens: [user[0].notification_token],
-//     sound: scheduleData?.sound || null,
-//     title: `⏰ ${schedule_nature} reminder: ${scheduleData.schedule_title}`,
-//     body: `You're to be at ${locationData.title} in the next ${offset}mins`,
-//     data: {
-//         locationData, scheduleData
-//     }
-// });
-
 import { requestApi } from "./requestApi";
 
 export const sendNotifications = async ({ tokens, title, body, data }) => {
@@ -17,20 +7,20 @@ export const sendNotifications = async ({ tokens, title, body, data }) => {
             url: 'https://tzsbbbxpdlupybfrgdbs.supabase.co/functions/v1/send-notification',
             method: 'POST',
             data: {
-                tokens, 
-                title, 
-                body, 
+                tokens,
+                title,
+                body,
                 data
             }
         })
 
-        if(errorMsg){
+        if (errorMsg) {
             console.log(errorMsg)
         }
 
         console.log("Notification result", result)
         return;
-        
+
     } catch (error) {
         console.log(error)
         return;

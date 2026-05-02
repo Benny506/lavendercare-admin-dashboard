@@ -291,7 +291,6 @@ export function useDirectChat({ topic, meId, peerId, dbChannelId: providedDbChan
           })
 
           if (!isCommunity) {
-            console.log(user_profile)
             notifyMother({
               msg: file_type === 'text' ? msg : 'Sent a voice note',
               mother: user_profile
