@@ -6,6 +6,7 @@ import Icons from "../Icons";
 import logoFull from '../../../../assets/logos/logoFull.svg'
 import { useSelector } from "react-redux";
 import { getUserDetailsState } from "../../../../redux/slices/userDetailsSlice";
+import { useAdminChat } from "../../../../contexts/AdminChatContext";
 
 const sidebarMenu = [
   {
@@ -34,6 +35,12 @@ const sidebarMenu = [
         title: "Notifications",
         path: "/admin/user-management/notifications",
         requiredPermissions: ['admin_roles.manage']
+      },
+      {
+        title: "Messages",
+        path: "/admin/mothers/mother-inbox",
+        requiredPermissions: ['care_coordinator'],
+        showBadge: true
       },
     ],
     requiredPermissions: ['care_coordinator', 'providers.assign', 'invite_user', 'admin_roles.manage']
@@ -217,6 +224,7 @@ const sidebarMenu = [
 
 function Sidebar() {
   const navigate = useNavigate()
+  const { totalUnreadCount } = useAdminChat();
 
   const { pathname } = useLocation();
 
@@ -248,7 +256,8 @@ function Sidebar() {
       <aside
         className={`fixed lg:sticky top-0 left-0 h-screen w-[280px] bg-[#6F3DCB] z-[1000]
         transform transition-transform duration-300
-        ${isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
+        ${isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+        flex flex-col`}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
@@ -265,7 +274,7 @@ function Sidebar() {
         </div>
 
         {/* Nav */}
-        <nav className="mt-6 px-3 space-y-1">
+        <nav className="mt-6 px-3 space-y-1 flex-1 overflow-y-auto pb-10 custom-scrollbar">
           {sidebarMenu.map((item, index) => {
             const { Icon } = item
             const isActive = pathname.startsWith(item.path);
@@ -303,6 +312,9 @@ function Sidebar() {
 
                   <span className="flex-1 text-sm font-medium text-left">
                     {item.title}
+                    {item.submenu.some(sub => sub.showBadge) && totalUnreadCount > 0 && (
+                      <span className="inline-block ml-2 w-2 h-2 bg-red-500 rounded-full" title="New messages" />
+                    )}
                   </span>
 
                   {item.submenu.length > 0 && (
@@ -340,7 +352,14 @@ function Sidebar() {
                             }`
                           }
                         >
-                          {sub.title}
+                          <div className="flex items-center justify-between w-full pr-2">
+                            <span>{sub.title}</span>
+                            {sub.showBadge && totalUnreadCount > 0 && (
+                              <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                                {totalUnreadCount}
+                              </span>
+                            )}
+                          </div>
                         </NavLink>
                       )
                     })}

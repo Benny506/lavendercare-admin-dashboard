@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import ProfileImg from "../components/ProfileImg";
 import Modal from "../components/ui/Modal";
@@ -24,6 +24,8 @@ import FailedMsgModal from "../components/chat/FailedMsgModal";
 import ConfirmModal from "../components/ConfirmModal";
 import { useAudioRecorder } from "../../../hooks/chatHooks/useAudioRecorder";
 import { FaMicrophone } from "react-icons/fa";
+import { supaAdmin } from "../../../contexts/AdminChatContext";
+import { EMAIL_NOTIFY_MOTHER } from "../../../constants/emailTemplates";
 
 
 function MotherMessages() {
@@ -54,12 +56,12 @@ function MotherMessages() {
     const isRecordingCancelled = useRef(false);
     const recordingDurationRef = useRef(0);
 
-    const meId = profile?.id
+    const meId = supaAdmin.id
     const peerId = mother?.id
-    const topic = peerId //Mother_id is the topic!
+    const topic = dmTopic(meId, peerId)
 
     const {
-        sendMessage, messages, status, insertSubStatus, updateSubStatus, onlineUsers, loadMessages,
+        sendMessage, messages, status, onlineUsers, loadMessages,
         canLoadMoreMsgs, bulkMsgsRead, refreshConnection, sendTempMedia, updateTempMedia, retrySend, deleteMessage,
         cancelRetrySend
     } = useDirectChat({
@@ -82,12 +84,26 @@ function MotherMessages() {
     }, [])
 
     useEffect(() => {
-        if (messages?.length > 0) {
-            bottomRef?.current?.scrollIntoView({ behaviour: 'smooth' })
+        refreshConnection()
+    }, [mother_id])
 
+    const handleReadUnreadMsgs = useCallback(() => {
+        if (!messages || messages.length === 0) return;
+        const unReadMsgsIds = messages
+            .filter(msg => (!msg?.read_at && msg?.to_user === meId))
+            .map(msg => msg?.id)
+
+        if (unReadMsgsIds?.length > 0) {
+            bulkMsgsRead(unReadMsgsIds)
+        }
+    }, [messages, meId, bulkMsgsRead]);
+
+    useEffect(() => {
+        if (messages?.length > 0) {
+            bottomRef?.current?.scrollIntoView({ behavior: 'smooth' })
             handleReadUnreadMsgs()
         }
-    }, [messages]);
+    }, [messages?.length, handleReadUnreadMsgs]);
 
     const openFailedMsgModal = ({ msg }) => setFailedMsgModal({ visible: true, hide: hideFailedMsgModal, msg })
     const hideFailedMsgModal = () => setFailedMsgModal({ visible: false, hide: null })
@@ -123,13 +139,6 @@ function MotherMessages() {
         }
     }
 
-    const handleReadUnreadMsgs = () => {
-        const unReadMsgsIds = (messages || [])?.filter(msg => (!msg?.read_at && msg?.to_user === meId)).map(msg => msg?.id)
-
-        if (unReadMsgsIds?.length > 0) {
-            bulkMsgsRead(unReadMsgsIds)
-        }
-    }
 
     const loadMoreMessages = async () => {
         try {
@@ -233,7 +242,8 @@ function MotherMessages() {
                         ...msg,
                         message: uploadedFile
                     },
-                    channel_id: topic
+                    channel_id: topic,
+                    user_profile: mother
                 })
             })
             .catch(err => {
@@ -246,7 +256,8 @@ function MotherMessages() {
                         ...msg,
                         message: null
                     },
-                    channel_id: topic
+                    channel_id: topic,
+                    user_profile: mother
                 })
             })
     }
@@ -279,7 +290,7 @@ function MotherMessages() {
             text: input,
             toUser: peerId,
             channel_id: topic,
-            user_notification_token: mother?.notification_token
+            user_profile: mother
         });
         setInput('');
     };
@@ -288,7 +299,7 @@ function MotherMessages() {
         const { file_type, message, id } = msg
 
         if (file_type === 'text' || (file_type !== 'text' && !typeof message !== 'object')) {
-            sendMessage({ text: message, fileType: file_type, toUser: peerId, channel_id: topic, oldMsgId: id });
+            sendMessage({ text: message, fileType: file_type, toUser: peerId, channel_id: topic, oldMsgId: id, user_profile: mother });
 
         } else {
             retrySend({ msgId: msg?.id })
@@ -311,7 +322,8 @@ function MotherMessages() {
                         toUser: peerId,
                         channel_id: meId,
                         oldMsgId: id,
-                    });
+                        user_profile: mother
+                    })
                 })
                 .catch(error => {
                     console.log(error)
@@ -321,30 +333,44 @@ function MotherMessages() {
         }
     }
 
-    if (!mother) return <></>
+    const notifyMotherEmail = async () => {
 
-    const notifyMother = async () => {
         try {
             dispatch(appLoadStart())
 
-            await sendNotifications({
-                tokens: [mother?.notification_token],
-                // sound: null,
-                title: `Incoming message from lavendercare healthcare admin`,
-                body: `New message detected`,
-                data: {}
+            const { data: customerEmail, error: customerEmailError } = await supabase.rpc('get_user_email', { p_user_id: mother?.id });
+
+            if (customerEmailError) throw customerEmailError;
+
+            if (!customerEmail) throw new Error("User Not Found!");
+
+            const logoUrl = `https://tzsbbbxpdlupybfrgdbs.supabase.co/storage/v1/object/public/public_assets/logo.svg`;
+            const htmlContent = EMAIL_NOTIFY_MOTHER
+                .replace("{{name}}", mother?.name || "Mother")
+                .replace("{{logoUrl}}", logoUrl);
+
+            const { data, error } = await supabase.functions.invoke('send-patient-email', {
+                body: {
+                    toEmail: customerEmail,
+                    patientName: mother?.name || "Mother",
+                    subject: "Chat Request from LavenderCare",
+                    htmlContent: htmlContent
+                }
             });
 
-            toast.success("Mother notified!")
+            if (error) throw error;
+
+            toast.success("Notification email sent to mother!")
 
         } catch (error) {
-            console.log(error)
-            toast.error("Error notifying mother. Messages have been sent though, she can view them on her lavendercare app")
-
+            console.error("Error sending notification email:", error);
+            toast.error("Failed to send notification email.")
         } finally {
             dispatch(appLoadStop())
         }
     }
+
+    if (!mother) return <></>
 
     const handleFileChange = (e) => {
         const MAX_SIZE = 15 * 1024 * 1024; // 15MB
@@ -413,8 +439,9 @@ function MotherMessages() {
                         ...msg,
                         message: uploadedFile
                     },
-                    channel_id: topic
-                })
+                    channel_id: topic,
+                    user_profile: mother
+                }).then()
             })
             .catch(err => {
                 console.log(err)
@@ -425,7 +452,8 @@ function MotherMessages() {
                         ...msg,
                         message: uploadedFile
                     },
-                    channel_id: topic
+                    channel_id: topic,
+                    user_profile: mother
                 })
             })
     };
@@ -455,7 +483,7 @@ function MotherMessages() {
                             </svg>
                         </Link>
                         <ProfileImg
-                            profile_img={mother?.profile_img}
+                            profile_img={getPublicImageUrl({ path: mother?.profile_img, bucket_name: 'user_profiles' })}
                             name={mother?.name}
                             size="10"
                         />
@@ -469,12 +497,21 @@ function MotherMessages() {
                         </div>
                     </div>
 
-                    <button
-                        onClick={notifyMother}
-                        className="text-sm bg-purple-600 hover:bg-purple-700 text-white cursor-pointer rounded-lg px-3 py-1"
-                    >
-                        Notify mother
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={refreshConnection}
+                            className="p-2 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 transition-colors"
+                            title="Reload Chat"
+                        >
+                            <LuRotateCw size={18} />
+                        </button>
+                        <button
+                            onClick={notifyMotherEmail}
+                            className="text-sm bg-purple-600 hover:bg-purple-700 text-white cursor-pointer rounded-lg px-3 py-1.5 font-medium transition-colors"
+                        >
+                            Notify mother
+                        </button>
+                    </div>
                 </div>
 
                 <div className="max-h-[60vh] h-[60vh] min-h-[60vh] flex-1 p-6 flex flex-col gap-4 overflow-y-auto">
@@ -519,7 +556,7 @@ function MotherMessages() {
                             const delivered = delivered_at ? true : false
 
                             return (
-                                <div style={{ }} key={msg.id} className={`flex ${iAmSender ? 'justify-end' : 'justify-start'}`}>
+                                <div style={{}} key={msg.id} className={`flex ${iAmSender ? 'justify-end' : 'justify-start'}`}>
                                     <div
                                         style={{
                                             width: file_type === 'audio' ? '80%' : 'auto',
@@ -551,7 +588,7 @@ function MotherMessages() {
                                                                 url={
                                                                     typeof message === 'object'
                                                                         ?
-                                                                        URL.createObjectURL(message)
+                                                                        message instanceof File || message instanceof Blob ? URL.createObjectURL(message) : message
                                                                         :
                                                                         getPublicImageUrl({ path: message, bucket_name: 'chat_media' })
                                                                 }
@@ -656,7 +693,7 @@ function MotherMessages() {
                 </div>
 
                 {
-                    (status == 'subscribed' && insertSubStatus == 'subscribed' && updateSubStatus == 'subscribed')
+                    (status == 'subscribed')
                         ?
                         <div className="flex items-center gap-2 mt-auto border-t pt-2">
                             <input

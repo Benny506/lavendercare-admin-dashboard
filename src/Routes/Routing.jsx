@@ -48,6 +48,7 @@ import UserEngagement from "../pages/admin/analytics/UserEngagement";
 import ProviderVendor from "../pages/admin/analytics/ProviderVendor";
 import CustomReport from "../pages/admin/analytics/CustomReport";
 
+import MotherInbox from "../pages/admin/mothers/MotherInbox";
 import MotherMessages from "../pages/admin/mothers/MotherMessages";
 import AllMothers from "../pages/admin/mothers/AllMothers";
 import BookingInformation from "../pages/admin/userManagement/BookingInformation";
@@ -111,6 +112,8 @@ function Routing() {
             </PermissionCheck>
           }>
             <Route index element={<Blog />} />
+            <Route path="mothers/mother-inbox" element={<MotherInbox />} />
+            <Route path="mothers/mother-messages" element={<MotherMessages />} />
             <Route path="/admin/content/blog" element={<Blog />} />
             <Route path="/admin/content/new-blog" element={<NewBlog />} />
             <Route path="/admin/content/edit-blog" element={<NewBlog />} />

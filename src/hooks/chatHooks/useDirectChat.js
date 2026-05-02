@@ -5,20 +5,68 @@ import { v4 as uuidv4 } from 'uuid';
 import { appLoadStart, appLoadStop } from '../../redux/slices/appLoadingSlice';
 import { getMessages, setChannelIds } from '../../redux/slices/messagesSlice';
 import { toast } from 'react-toastify';
+import { sendNotifications } from '../../lib/notifications';
 
-export function useDirectChat({ topic, meId, isAdmin = true, isCommunity = false }) {
-  const dispatch = useDispatch()
+const notifyMother = async ({ msg, mother }) => {
+  try {
+
+    let token = mother?.notification_token
+    const mother_id = mother?.id
+
+    if (!token) {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('notification_token')
+        .eq('id', mother_id)
+        .single()
+
+      if (error) {
+        console.log(error)
+        return
+      }
+
+      if (data) {
+        token = data?.notification_token
+      }
+    }
+
+    if (!token) {
+      return
+    }
+
+    return await sendNotifications({
+      tokens: [token],
+      // sound: null,
+      title: `Care-Coordinator Message`,
+      body: msg,
+      data: {
+        notification_type: "care-coordinator-chat"
+      }
+    });
+
+
+  } catch (error) {
+    console.log(error)
+    // toast.error("Error notifying mother. Messages have been sent though, she can view them on her lavendercare app")
+  }
+}
+
+export function useDirectChat({ topic, meId, peerId, dbChannelId: providedDbChannelId, isAdmin = true, isCommunity = false }) {
+  // console.log("DEBUG: useDirectChat hook called with:", { topic, meId, peerId });
+  const dispatch = useDispatch();
+
+  // 1. Database ID must be a UUID.
+  const dbChannelId = providedDbChannelId || peerId;
+
+  // 2. Realtime Topic can be a string with a prefix to avoid intertwining broadcasts across apps.
+  const realtimeTopic = topic;
 
   const channelRef = useRef(null);
-  const insertSubRef = useRef(null);
-  const updateSubRef = useRef(null);
   const msgsRef = useRef(null)
 
   const savedMsgs = useSelector(state => getMessages(state).channelIds[topic])
 
   const [status, setStatus] = useState('connecting');
-  const [insertSubStatus, setInsertSubStatus] = useState('connecting')
-  const [updateSubStatus, setUpdateSubStatus] = useState('connecting')
   const [messages, setMessages] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [canLoadMoreMsgs, setCanLoadMoreMsgs] = useState(true)
@@ -27,15 +75,11 @@ export function useDirectChat({ topic, meId, isAdmin = true, isCommunity = false
   const rpcName = isCommunity ? 'fetch_and_mark_community_chat_messages' : isAdmin ? 'mark_and_get_admin_mother_messages' : 'fetch_and_mark_booking_chat_messages'
 
   const sendTempMedia = useCallback(({ file_type, text, duration, toUser }) => {
-
     try {
-
       const msg = text
-
       if (!msg || !file_type) return;
 
       const tempId = uuidv4();
-
       const optimisticMessage = {
         id: tempId,
         from_user: meId,
@@ -54,19 +98,15 @@ export function useDirectChat({ topic, meId, isAdmin = true, isCommunity = false
       }
 
       setMessages((prev) => [...prev, optimisticMessage]);
-
       return optimisticMessage
-
     } catch (error) {
       console.log(error)
       toast.error("Sending error")
     }
-
   }, [meId, topic])
 
   const updateTempMedia = useCallback(async ({ from_type, msgId, failed, msgObj, user_profile, bookingId, channel_id, community_id }) => {
     try {
-
       if (!msgObj) return;
 
       if (failed) {
@@ -75,10 +115,8 @@ export function useDirectChat({ topic, meId, isAdmin = true, isCommunity = false
             msg.id === msgId ? { ...msg, pending: false, failed: true } : msg
           )
         );
-
       } else {
         const msgObjClone = { ...msgObj }
-
         if (isCommunity) {
           msgObjClone.from_type = from_type || 'admin'
         }
@@ -87,23 +125,19 @@ export function useDirectChat({ topic, meId, isAdmin = true, isCommunity = false
           if (msg?.id === msgId) {
             return msgObjClone
           }
-
           return msg
         }))
 
         const realMessage = { ...msgObjClone }
-
-        realMessage[isCommunity ? 'community_id' : isAdmin ? 'channel_id' : 'booking_id'] =
-          isCommunity ? community_id : isAdmin ? channel_id : bookingId
+        const dbIdKey = isCommunity ? 'community_id' : isAdmin ? 'channel_id' : 'booking_id';
+        realMessage[dbIdKey] = dbChannelId;
 
         delete realMessage.pending
         delete realMessage.failed
 
         let inserted = false
-
         const { error } = await supabase.from(tableName).insert(realMessage);
         if (!error) inserted = true;
-
         else {
           console.log(error)
         }
@@ -111,19 +145,24 @@ export function useDirectChat({ topic, meId, isAdmin = true, isCommunity = false
         if (!inserted) {
           setMessages((prev) =>
             prev.map((msg) =>
-              msg.id === tempId ? { ...msg, pending: false, failed: true } : msg
+              msg.id === msgId ? { ...msg, pending: false, failed: true } : msg
             )
           );
-
         } else {
           channelRef.current?.send({
             type: 'broadcast',
             event: 'sendMsg',
             payload: user_profile ? { ...realMessage, user_profile } : realMessage
           })
+
+          if (!isCommunity) {
+            notifyMother({
+              msg: 'Sent a media file',
+              mother: user_profile
+            })
+          }
         }
       }
-
     } catch (error) {
       console.log(error)
       setMessages((prev) =>
@@ -133,11 +172,10 @@ export function useDirectChat({ topic, meId, isAdmin = true, isCommunity = false
       );
       toast.error("Sending error")
     }
-  }, [meId, topic])
+  }, [meId, topic, tableName, isAdmin, isCommunity])
 
   const deleteMessage = async ({ msgId, msg }) => {
     try {
-
       const { error } = await supabase
         .from(tableName)
         .delete()
@@ -160,10 +198,11 @@ export function useDirectChat({ topic, meId, isAdmin = true, isCommunity = false
         payload: deletedMsg
       })
 
+      return true
+
     } catch (error) {
       console.log(error)
       toast.error('Cant seem to delete messages at this time')
-      return;
     }
   }
 
@@ -172,7 +211,6 @@ export function useDirectChat({ topic, meId, isAdmin = true, isCommunity = false
       if (msg?.id === msgId) {
         return { ...msg, pending: true, failed: false }
       }
-
       return msg
     }))
   }, [meId, topic])
@@ -182,24 +220,18 @@ export function useDirectChat({ topic, meId, isAdmin = true, isCommunity = false
       if (msg?.id === msgId) {
         return { ...msg, pending: false, failed: true }
       }
-
       return msg
     }))
   }, [meId, topic])
 
   const sendMessage = useCallback(
     async ({ from_type, text, fileType, toUser, bookingId, channel_id, community_id, user_profile, duration, oldMsgId }) => {
-
       const file_type = fileType || 'text'
-
       try {
-
         const msg = text
-
         if (!msg) return;
 
         const tempId = uuidv4();
-
         const optimisticMessage = {
           id: tempId,
           from_user: meId,
@@ -221,17 +253,15 @@ export function useDirectChat({ topic, meId, isAdmin = true, isCommunity = false
           optimisticMessage.from_type = from_type || 'admin'
         }
 
+        const dbIdKey = isCommunity ? 'community_id' : isAdmin ? 'channel_id' : 'booking_id';
         const realMessage = {
           ...optimisticMessage,
-          [isCommunity ? 'community_id' : isAdmin ? 'channel_id' : 'booking_id']:
-            isCommunity ? community_id : isAdmin ? channel_id : bookingId
+          [dbIdKey]: dbChannelId
         }
 
         delete realMessage.pending
         delete realMessage.failed
 
-        // Optimistic UI update
-        // setMessages((prev) => [...prev, optimisticMessage]);
         setMessages((prev) => [...prev, optimisticMessage]);
 
         let attempts = 0;
@@ -242,7 +272,6 @@ export function useDirectChat({ topic, meId, isAdmin = true, isCommunity = false
           attempts++;
           const { error } = await supabase.from(tableName).insert(realMessage);
           if (!error) inserted = true;
-
           else {
             console.log("ERROR ON COUNT", attempts, error)
           }
@@ -254,46 +283,47 @@ export function useDirectChat({ topic, meId, isAdmin = true, isCommunity = false
               msg.id === tempId ? { ...msg, pending: false, failed: true } : msg
             )
           );
-
         } else {
           channelRef.current?.send({
             type: 'broadcast',
             event: 'sendMsg',
             payload: user_profile ? { ...realMessage, user_profile } : realMessage
           })
-        }
 
+          if (!isCommunity) {
+            console.log(user_profile)
+            notifyMother({
+              msg: file_type === 'text' ? msg : 'Sent a voice note',
+              mother: user_profile
+            })
+          }
+        }
       } catch (error) {
         console.log(error)
         toast.error('Error sending chat message')
-
       } finally {
         if (oldMsgId) {
           deleteMessage({ msgId: oldMsgId })
         }
       }
     },
-    [meId, topic]
+    [meId, topic, tableName, isAdmin, isCommunity, dbChannelId]
   );
 
-  // mark a message as delivered
   const messageDelivered = async (messageId, read_at) => {
     const { data, error } = await supabase
       .from(tableName)
       .update({ delivered_at: new Date().toISOString() })
       .eq("id", messageId)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) {
+    if (error || !data) {
       console.error("msgDelivered error:", error);
       return null;
     }
 
-    const payload = {
-      ...data
-    }
-
+    const payload = { ...data }
     if (read_at) {
       payload.read_at = read_at
     }
@@ -303,20 +333,18 @@ export function useDirectChat({ topic, meId, isAdmin = true, isCommunity = false
       event: 'messageDelivered',
       payload
     })
-
-    return payload; // updated message
+    return payload;
   }
 
-  // mark a message as read
   const messageRead = async (messageId) => {
     const { data, error } = await supabase
       .from(tableName)
       .update({ read_at: new Date().toISOString() })
       .eq("id", messageId)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) {
+    if (error || !data) {
       console.error("msgRead error:", error);
       return null;
     }
@@ -326,13 +354,14 @@ export function useDirectChat({ topic, meId, isAdmin = true, isCommunity = false
       event: 'messageRead',
       payload: data
     })
-
-    return data; // updated message
+    return data;
   }
 
   const bulkMsgsRead = async (msgsIds) => {
-
     const read_at = new Date().toISOString()
+
+    // 1. Immediately update local state to prevent the UI useEffect from re-triggering mark-as-read
+    setMessages(prev => markMessagesRead(prev || [], msgsIds, read_at));
 
     const { data, error } = await supabase
       .from(tableName)
@@ -348,66 +377,50 @@ export function useDirectChat({ topic, meId, isAdmin = true, isCommunity = false
     channelRef.current?.send({
       type: 'broadcast',
       event: 'bulkMsgsRead',
-      payload: {
-        msgsIds,
-        read_at
-      }
+      payload: { msgsIds, read_at }
     })
-
-    markMessagesRead(messages, msgsIds, read_at)
-
-    return data; // updated messages
+    return data;
   }
 
-  const onMsgReceived = (msg) => {
+  const onMsgReceived = useCallback((msg) => {
     if (msg?.to_user === meId) {
-
       const msgId = msg?.id
-      const msgDelivered = messages.find(m => (m?.id == msgId) && m?.delivered_at)
-
-      if (!msgDelivered) {
+      // Use ref to avoid dependency on messages state
+      const alreadyDelivered = msgsRef.current?.find(m => (m?.id == msgId) && m?.delivered_at)
+      if (!alreadyDelivered) {
         messageDelivered(msg?.id, msg?.read_at)
       }
     }
-  }
+  }, [meId]) // Removed messages dependency
 
-  const onMsgRead = (msg) => {
-    // if (msg?.to_user === meId && false) {
+  const onMsgRead = useCallback((msg) => {
     if (msg?.to_user === meId) {
-
       const msgId = msg?.id
-      const msgRead = messages.find(m => (m?.id == msgId) && m?.read_at)
-
-      if (!msgRead) {
+      // Use ref to avoid dependency on messages state
+      const alreadyRead = msgsRef.current?.find(m => (m?.id == msgId) && m?.read_at)
+      if (!alreadyRead) {
         messageRead(msg?.id)
       }
     }
-  }
+  }, [meId]) // Removed messages dependency
 
-  const onMsgsLoaded = (by_id, timestamp) => {
-    if (by_id == meId && msgsRef.current?.length > 0) return;
+  const onMsgsLoaded = useCallback((by_id, timestamp) => {
+    if (by_id === meId) return;
+    setMessages(prev => {
+      const updated = prev.map(msg => {
+        if (msg.to_user === by_id && (!msg.delivered_at || !msg.read_at)) {
+          return {
+            ...msg,
+            delivered_at: msg.delivered_at || timestamp,
+            read_at: msg.read_at || timestamp
+          };
+        }
+        return msg;
+      });
+      return dedupeMessages(updated);
+    });
+  }, [meId])
 
-    console.log("Messages loaded by other user")
-
-    //all msgs sent to "by_id" that aren't read/delivered are now read/delivered at timestamp  
-
-    const updatedMsgs = [...msgsRef.current].reverse();
-
-    for (let i = 0; i < updatedMsgs.length; i++) {
-      const msg = updatedMsgs[i];
-      if (msg.to_user === by_id && (!msg.delivered_at || !msg.read_at)) {
-        updatedMsgs[i] = {
-          ...msg,
-          delivered_at: msg.delivered_at || timestamp,
-          read_at: msg.read_at || timestamp
-        };
-      }
-    }
-
-    setMessages(dedupeMessages(updatedMsgs))
-  }
-
-  // helper: dedupe messages by id
   const dedupeMessages = (msgs) => {
     const seen = new Set();
     return msgs.filter((msg) => {
@@ -420,315 +433,168 @@ export function useDirectChat({ topic, meId, isAdmin = true, isCommunity = false
   const replaceOptimisticMessages = (msgs, newMsg) => {
     const idx = msgs.findIndex((msg) => msg.id === newMsg.id);
     if (idx !== -1) {
-      // Replace optimistic message
       const updated = [...msgs];
       updated[idx] = { ...newMsg, pending: false, failed: false };
       return updated;
     }
-
-    const replacedMsgs = [...msgs, { ...newMsg, pending: false, failed: false }];
-    // const replacedMsgs = [{ ...newMsg, pending: false, failed: false }, ...msgs];
-
-    return dedupeMessages(replacedMsgs)
+    return dedupeMessages([...msgs, { ...newMsg, pending: false, failed: false }]);
   }
 
   const markMessagesRead = (msgs, ids, readAt) => {
     if (!ids?.length) return msgs;
-
-    const idSet = new Set(ids); // faster lookup
-
-    return msgs.map(msg => {
-      if (idSet.has(msg.id)) {
-        return { ...msg, read_at: readAt };
-      }
-      return msg;
-    });
+    const idSet = new Set(ids);
+    return msgs.map(msg => idSet.has(msg.id) ? { ...msg, read_at: readAt } : msg);
   };
 
-  const loadMessages = async ({ msgLoadedTimeStamp, last_loaded_at, isRefreshing = false }) => {
+  const loadMessages = useCallback(async ({ msgLoadedTimeStamp, last_loaded_at, isRefreshing = false, isOlder = false }) => {
+    if (!dbChannelId) return;
 
-    if (!isRefreshing) {
-      if (savedMsgs && savedMsgs?.length > 0) {
-        const lastSavedMsg = savedMsgs[savedMsgs?.length - 1]
-        const lastSavedMsg_createdAt = lastSavedMsg?.created_at
-
-        //no msg, first time loading!
-        if (!last_loaded_at) {
-          return afterMsgsLoaded(savedMsgs)
-        }
-      }
-    }
-
-    // console.log("Loading msgs")
-
+    // Core RPC loading logic only. Redux initial load is handled separately in useEffect.
     const { data, error } = await supabase
       .rpc(rpcName, {
-        [isCommunity ? 'c_id' : isAdmin ? 'ad_channel_id' : 'p_booking_id']: topic,
+        [isCommunity ? 'c_id' : isAdmin ? 'ad_channel_id' : 'p_booking_id']: dbChannelId,
         [isCommunity ? 'c_user_id' : isAdmin ? 'ad_user_id' : 'p_user_id']: meId,
         [isCommunity ? 'c_timestamp' : isAdmin ? 'ad_timestamp' : 'p_timestamp']: msgLoadedTimeStamp,
         last_loaded_at,
-        _limit: 1000
+        _limit: 50
       });
 
-    // console.log("Loaded last 5 from", new Date(last_loaded_at).toTimeString())
-
-    if (!error) {
-      if (data.length === 0) {
-        setCanLoadMoreMsgs(false)
-      }
-
-      afterMsgsLoaded(data)
-      return
+    if (!error && data) {
+      if (data.length === 0) setCanLoadMoreMsgs(false);
+      const normalized = [...data].reverse();
+      setMessages(prev => dedupeMessages(isOlder ? [...normalized, ...prev] : [...prev, ...normalized]));
     }
+  }, [dbChannelId, meId, rpcName, isCommunity, isAdmin]);
 
-    console.log(error)
-  };
-  const afterMsgsLoaded = (_msgs, { isOlder = false } = {}) => {
-    console.log("running afterMsgsLoaded")
-    const msgs = [..._msgs].reverse(); // normalize to ASC
-
-    setMessages((prev) =>
-      dedupeMessages(
-        isOlder
-          ? [...msgs, ...(prev || [])] // prepend if fetching older
-          : [...(prev || []), ...msgs] // append if fetching newer
-      )
-    );
-  };
-
-  const setup = useCallback(({ topic, meId, tableName, isAdmin, msgLoadedTimeStamp }) => {
-    // Presence + broadcast channel
-
+  const setup = useCallback(({ topic, meId, msgLoadedTimeStamp }) => {
     if (channelRef.current) supabase.removeChannel(channelRef.current);
-    if (insertSubRef.current) supabase.removeChannel(insertSubRef.current);
-    if (updateSubRef.current) supabase.removeChannel(updateSubRef.current);
 
     const channel = supabase.channel(topic, {
       config: { broadcast: { self: true, ack: true }, presence: { key: meId } },
     });
 
-    channel.on('broadcast', { event: 'sendMsg' }, (payload) => {
-      const msg = payload.payload
-      setMessages((prev) => replaceOptimisticMessages(prev || [], msg));
-      onMsgReceived(msg)
-    })
-
-    channel.on('broadcast', { event: 'updateMsg' }, (payload) => {
-      const msg = payload.payload
-      setMessages((prev) => replaceOptimisticMessages(prev || [], msg));
-    })
-
-    channel.on('broadcast', { event: 'messageRead' }, (payload) => {
-      const msg = payload.payload
-      console.log("Message is read")
-      setMessages((prev) => replaceOptimisticMessages(prev || [], msg));
-    })
-
-    channel.on('broadcast', { event: 'bulkMsgsRead' }, (payload) => {
-      const msgsIds = payload.payload?.msgsIds
-      const read_at = payload.payload?.read_at
-      setMessages((prev) => markMessagesRead(prev || [], msgsIds, read_at));
-    })
-
-    channel.on('broadcast', { event: 'messageDelivered' }, (payload) => {
-      const msg = payload.payload
-      setMessages((prev) => replaceOptimisticMessages(prev || [], msg));
-      if (!isAdmin && !isCommunity) {
-        console.log("running from channel")
-        onMsgRead(msg)
-      }
-    })
-
-    channel.on('broadcast', { event: 'messagesLoaded' }, (payload) => {
-      console.log("Receiving msgs loaded!!!")
-      const { by_id, timestamp } = payload.payload
-      onMsgsLoaded(by_id, timestamp)
-    })
-
-    channel.on('presence', { event: 'sync' }, () => {
-      const presenceState = channel.presenceState();
-      const users = Object.keys(presenceState).map((key) => key);
-      setOnlineUsers(users);
-    });
-    channel.on('presence', { event: 'join' }, ({ key }) => {
-      setOnlineUsers((prev) => {
-        if (prev.includes(key)) return prev;
-        return [...prev, key];
+    channel
+      .on('broadcast', { event: 'sendMsg' }, (payload) => {
+        const msg = payload.payload;
+        setMessages((prev) => replaceOptimisticMessages(prev || [], msg));
+        onMsgReceived(msg);
+      })
+      .on('broadcast', { event: 'updateMsg' }, (payload) => {
+        const msg = payload.payload;
+        setMessages((prev) => replaceOptimisticMessages(prev || [], msg));
+      })
+      .on('broadcast', { event: 'messageRead' }, (payload) => {
+        const msg = payload.payload;
+        setMessages((prev) => replaceOptimisticMessages(prev || [], msg));
+      })
+      .on('broadcast', { event: 'bulkMsgsRead' }, (payload) => {
+        const { msgsIds, read_at } = payload.payload;
+        setMessages((prev) => markMessagesRead(prev || [], msgsIds, read_at));
+      })
+      .on('broadcast', { event: 'messageDelivered' }, (payload) => {
+        const msg = payload.payload;
+        setMessages((prev) => replaceOptimisticMessages(prev || [], msg));
+        if (!isAdmin && !isCommunity) onMsgRead(msg);
+      })
+      .on('broadcast', { event: 'messagesLoaded' }, (payload) => {
+        const { by_id, timestamp } = payload.payload;
+        onMsgsLoaded(by_id, timestamp);
+      })
+      .on('presence', { event: 'sync' }, () => {
+        const presenceState = channel.presenceState();
+        setOnlineUsers(Object.keys(presenceState));
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: tableName,
+        filter: isCommunity ? `community_id=eq.${dbChannelId}` : isAdmin ? `channel_id=eq.${dbChannelId}` : `booking_id=eq.${dbChannelId}`,
+      }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          const newMsg = payload.new;
+          setMessages((prev) => replaceOptimisticMessages(prev || [], newMsg));
+          onMsgReceived(newMsg);
+        } else if (payload.eventType === 'UPDATE') {
+          const updatedMsg = payload.new;
+          setMessages((prev) => replaceOptimisticMessages(prev || [], updatedMsg));
+        } else if (payload.eventType === 'DELETE') {
+          setMessages(prev => prev.filter(m => m.id !== payload.old.id));
+        }
+      })
+      .subscribe(async (subStatus) => {
+        if (subStatus === 'SUBSCRIBED') {
+          setStatus('subscribed');
+          channel.send({
+            type: 'broadcast',
+            event: 'messagesLoaded',
+            payload: { by_id: meId, timestamp: msgLoadedTimeStamp }
+          });
+          await channel.track({ online_at: new Date().toISOString() });
+        } else {
+          setStatus('error');
+        }
       });
-    });
-    channel.on('presence', { event: 'leave' }, ({ key }) => {
-      setOnlineUsers((prev) => prev.filter((u) => u !== key));
-    });
-
-    channel.subscribe(async (subStatus) => {
-      if (subStatus === 'SUBSCRIBED') {
-        setStatus('subscribed');
-        channel.send({
-          type: 'broadcast',
-          event: 'messagesLoaded',
-          payload: {
-            by_id: meId,
-            timestamp: msgLoadedTimeStamp
-          }
-        })
-        await channel.track({ online_at: new Date().toISOString() });
-      } else if (subStatus === 'CLOSED' || subStatus === 'CHANNEL_ERROR') {
-        setStatus('error');
-        // retry after delay
-        // setTimeout(() => {
-        //   supabase.removeChannel(channel);
-        //   setup();
-        // }, 2000);
-      }
-    });
 
     channelRef.current = channel;
-
-    // Insert subscription
-    const insertSubscription = supabase
-      .channel('realtime-bookings-chats')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: tableName,
-          filter: isCommunity ? `community_id=eq.${topic}` : isAdmin ? `channel_id=eq.${topic}` : `booking_id=eq.${topic}`,
-        },
-        (payload) => {
-          const newMsg = payload.new;
-          setMessages((prev) => replaceOptimisticMessages(prev || [], newMsg));
-          onMsgReceived(newMsg)
-        }
-      )
-      .subscribe(status => {
-        if (status === 'SUBSCRIBED') {
-          setInsertSubStatus('subscribed');
-          return
-        }
-        if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-          setInsertSubStatus('error');
-          // setTimeout(() => {
-          //   supabase.removeChannel(insertSubscription);
-          //   setup();
-          // }, 2000);
-        } else {
-          setInsertSubStatus('error');
-        }
-      });
-
-    // Update subscription
-    const updateSubscription = supabase
-      .channel('realtime-bookings-chats-update')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: tableName,
-          filter: isCommunity ? `community_id=eq.${topic}` : isAdmin ? `channel_id=eq.${topic}` : `booking_id=eq.${topic}`,
-        },
-        (payload) => {
-          const newMsg = payload.new;
-          setMessages((prev) => replaceOptimisticMessages(prev || [], newMsg));
-          // if (!isAdmin && !isCommunity) {
-          //   console.log("Running from realtime")
-          //   onMsgRead(newMsg)
-          // }
-        }
-      )
-      .subscribe(status => {
-        console.log("Update Real-Time status", status)
-        if (status === 'SUBSCRIBED') {
-          setUpdateSubStatus('subscribed');
-          return
-        }
-        if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-          setUpdateSubStatus('error');
-          // setTimeout(() => {
-          //   supabase.removeChannel(updateSubscription);
-          //   setup();
-          // }, 2000);
-        } else {
-          setUpdateSubStatus('error');
-        }
-      });
-
-    insertSubRef.current = insertSubscription;
-    updateSubRef.current = updateSubscription
-  }, [])
+  }, [meId, tableName, isAdmin, isCommunity, onMsgReceived, onMsgRead, onMsgsLoaded, dbChannelId]);
 
   const refreshConnection = () => {
     dispatch(appLoadStart())
-
     const msgLoadedTimeStamp = new Date().toISOString()
-
-    setup({ topic, meId, tableName, isAdmin, msgLoadedTimeStamp });
-
-    const timer = setTimeout(() => {
+    setup({ topic: realtimeTopic, meId, msgLoadedTimeStamp });
+    setTimeout(() => {
       dispatch(appLoadStop())
-
-      const msgLoadedTimeStamp = new Date().toISOString()
-
       loadMessages({ msgLoadedTimeStamp, isRefreshing: true })
-
-      clearTimeout(timer)
-    }, 3000)
+    }, 1500)
   };
 
+  // 1. Sync messages state to Redux (Only when messages actually change)
   useEffect(() => {
+    if (!messages.length || !realtimeTopic) return;
     const reversed = [...messages]?.reverse()
     msgsRef.current = reversed
 
-    const channelId = topic
-    dispatch(setChannelIds({
-      channelId,
-      messages: reversed
-    }))
-  }, [messages])
+    // Deep-ish equality check to avoid Redux sync loop
+    const currentSaved = savedMsgs || [];
+    const hasLengthChange = currentSaved.length !== reversed.length;
+    // Check if the last message metadata changed (like read status)
+    const hasMetaChange = reversed.length > 0 && currentSaved.length > 0 &&
+      (reversed[0].read_at !== currentSaved[0].read_at ||
+        reversed[0].delivered_at !== currentSaved[0].delivered_at);
 
+    if (hasLengthChange || hasMetaChange) {
+      dispatch(setChannelIds({ channelId: realtimeTopic, messages: reversed }))
+    }
+  }, [messages, realtimeTopic, dispatch]); // savedMsgs omitted
+
+  // 2. Main Setup: Runs only on Mount or Topic change
   useEffect(() => {
-    if (!topic || !meId) return;
-
-    setStatus('connecting');
-    setInsertSubStatus('connecting');
-    setUpdateSubStatus('connecting')
-
+    if (!realtimeTopic || !meId) return;
     const msgLoadedTimeStamp = new Date().toISOString()
 
-    loadMessages({ msgLoadedTimeStamp })
+    // Initial data hydration: Priority Redux > RPC
+    if (savedMsgs?.length > 0) {
+      setMessages(dedupeMessages([...savedMsgs].reverse()));
+    } else {
+      loadMessages({ msgLoadedTimeStamp });
+    }
 
-    setup({ topic, meId, tableName, isAdmin, msgLoadedTimeStamp });
+    setup({ topic: realtimeTopic, meId, msgLoadedTimeStamp });
 
     return () => {
-      cleanup()
+      if (channelRef.current) supabase.removeChannel(channelRef.current);
+      setMessages([]);
+      setOnlineUsers([]);
     };
-  }, [topic, meId]);
-
-  const cleanup = () => {
-    if (channelRef.current) supabase.removeChannel(channelRef.current);
-    if (insertSubRef.current) supabase.removeChannel(insertSubRef.current);
-    if (updateSubRef.current) supabase.removeChannel(updateSubRef.current);
-    channelRef.current = null;
-    insertSubRef.current = null;
-    updateSubRef.current = null;
-    setMessages([]);
-    setOnlineUsers([]);
-  };
-
-
+  }, [realtimeTopic, meId, setup]); // loadMessages removed
 
   return {
     sendMessage,
     messages,
     status,
-    insertSubStatus,
-    updateSubStatus,
     onlineUsers,
-    onMsgRead,
     bulkMsgsRead,
     refreshConnection,
-    cleanup,
     retrySend,
     cancelRetrySend,
     loadMessages,
