@@ -70,6 +70,7 @@ export function useDirectChat({ topic, meId, peerId, dbChannelId: providedDbChan
   const [messages, setMessages] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [canLoadMoreMsgs, setCanLoadMoreMsgs] = useState(true)
+  const [profileCache, setProfileCache] = useState({}); // Cache for user profiles
 
   const tableName = isCommunity ? 'community_chat' : isAdmin ? 'admin_mothers_chat' : 'bookings_chats'
   const rpcName = isCommunity ? 'fetch_and_mark_community_chat_messages' : isAdmin ? 'mark_and_get_admin_mother_messages' : 'fetch_and_mark_booking_chat_messages'
@@ -105,7 +106,7 @@ export function useDirectChat({ topic, meId, peerId, dbChannelId: providedDbChan
     }
   }, [meId, topic])
 
-  const updateTempMedia = useCallback(async ({ from_type, msgId, failed, msgObj, user_profile, bookingId, channel_id, community_id }) => {
+  const updateTempMedia = useCallback(async ({ from_type, msgId, failed, msgObj, user_profile, bookingId, channel_id, community_id, notify_members }) => {
     try {
       if (!msgObj) return;
 
@@ -131,6 +132,10 @@ export function useDirectChat({ topic, meId, peerId, dbChannelId: providedDbChan
         const realMessage = { ...msgObjClone }
         const dbIdKey = isCommunity ? 'community_id' : isAdmin ? 'channel_id' : 'booking_id';
         realMessage[dbIdKey] = dbChannelId;
+
+        if (isCommunity && notify_members) {
+          realMessage.notify_members = true;
+        }
 
         delete realMessage.pending
         delete realMessage.failed
@@ -225,7 +230,7 @@ export function useDirectChat({ topic, meId, peerId, dbChannelId: providedDbChan
   }, [meId, topic])
 
   const sendMessage = useCallback(
-    async ({ from_type, text, fileType, toUser, bookingId, channel_id, community_id, user_profile, duration, oldMsgId }) => {
+    async ({ from_type, text, fileType, toUser, bookingId, channel_id, community_id, user_profile, duration, oldMsgId, notify_members }) => {
       const file_type = fileType || 'text'
       try {
         const msg = text
@@ -259,6 +264,17 @@ export function useDirectChat({ topic, meId, peerId, dbChannelId: providedDbChan
           [dbIdKey]: dbChannelId
         }
 
+        if (isCommunity) {
+          realMessage.chat_type = 'community';
+          realMessage.from_type = 'admin';
+          if (notify_members) {
+            realMessage.notify_members = true;
+          }
+        } else if (!isAdmin) {
+          realMessage.chat_type = 'direct';
+          realMessage.from_type = 'user';
+        }
+
         delete realMessage.pending
         delete realMessage.failed
 
@@ -270,6 +286,9 @@ export function useDirectChat({ topic, meId, peerId, dbChannelId: providedDbChan
 
         while (attempts < maxAttempts && !inserted) {
           attempts++;
+          if (!dbChannelId) {
+            console.error("CRITICAL: dbChannelId is missing in sendMessage", { isAdmin, isCommunity, topic });
+          }
           const { error } = await supabase.from(tableName).insert(realMessage);
           if (!error) inserted = true;
           else {
@@ -292,7 +311,7 @@ export function useDirectChat({ topic, meId, peerId, dbChannelId: providedDbChan
 
           if (!isCommunity) {
             notifyMother({
-              msg: file_type === 'text' ? msg : 'Sent a voice note',
+              msg: file_type === 'text' ? msg : 'Sent a reference',
               mother: user_profile
             })
           }
@@ -362,15 +381,35 @@ export function useDirectChat({ topic, meId, peerId, dbChannelId: providedDbChan
     // 1. Immediately update local state to prevent the UI useEffect from re-triggering mark-as-read
     setMessages(prev => markMessagesRead(prev || [], msgsIds, read_at));
 
-    const { data, error } = await supabase
-      .from(tableName)
-      .update({ read_at })
-      .in("id", msgsIds)
-      .select("id")
+    if (isCommunity) {
+      // For communities, we update the member's last_read_at instead of global message read_at
+      if (!dbChannelId) {
+        console.error("CRITICAL: dbChannelId is missing in bulkMsgsRead (Community)", { topic });
+      }
 
-    if (error) {
-      console.error("bulkMsgsRead error:", error);
-      return null;
+      const { error } = await supabase
+        .from('community_members')
+        .update({
+          last_read_at: read_at
+        })
+        .eq('community_id', dbChannelId)
+        .eq('user_id', meId);
+
+      if (error) {
+        console.error("bulkMsgsRead community error:", error);
+        return null;
+      }
+    } else {
+      const { data, error } = await supabase
+        .from(tableName)
+        .update({ read_at })
+        .in("id", msgsIds)
+        .select("id")
+
+      if (error) {
+        console.error("bulkMsgsRead error:", error);
+        return null;
+      }
     }
 
     channelRef.current?.send({
@@ -378,7 +417,7 @@ export function useDirectChat({ topic, meId, peerId, dbChannelId: providedDbChan
       event: 'bulkMsgsRead',
       payload: { msgsIds, read_at }
     })
-    return data;
+    return msgsIds;
   }
 
   const onMsgReceived = useCallback((msg) => {
@@ -420,6 +459,54 @@ export function useDirectChat({ topic, meId, peerId, dbChannelId: providedDbChan
     });
   }, [meId])
 
+  const fetchAndCacheProfile = useCallback(async (userId) => {
+    if (!userId || profileCache[userId]) return profileCache[userId];
+
+    let { data, error } = await supabase
+      .from('user_profiles')
+      .select('id, username, profile_img')
+      .eq('id', userId)
+      .maybeSingle();
+
+    // console.log(data)
+
+    if (!data) {
+      // Fallback to admins table
+      const { data: adminData, error: adminError } = await supabase
+        .from('admins')
+        .select('id, username')
+        .eq('id', userId)
+        .maybeSingle();
+
+      // console.log(adminData, adminError)
+
+      if (adminData) {
+        data = {
+          ...adminData,
+          profile_img: null,
+          type: 'admin'
+        };
+      }
+    }
+
+    if (data) {
+      setProfileCache(prev => ({ ...prev, [userId]: data }));
+      return data;
+    }
+    return null;
+  }, [profileCache]);
+
+  const enrichMessage = useCallback(async (msg) => {
+    if (msg.user_profile) {
+      if (msg.from_user && !profileCache[msg.from_user]) {
+        setProfileCache(prev => ({ ...prev, [msg.from_user]: msg.user_profile }));
+      }
+      return msg;
+    }
+    const profile = await fetchAndCacheProfile(msg.from_user);
+    return { ...msg, user_profile: profile };
+  }, [fetchAndCacheProfile, profileCache]);
+
   const dedupeMessages = (msgs) => {
     const seen = new Set();
     return msgs.filter((msg) => {
@@ -432,8 +519,9 @@ export function useDirectChat({ topic, meId, peerId, dbChannelId: providedDbChan
   const replaceOptimisticMessages = (msgs, newMsg) => {
     const idx = msgs.findIndex((msg) => msg.id === newMsg.id);
     if (idx !== -1) {
+      // Replace optimistic message, preserve UI state like user_profile
       const updated = [...msgs];
-      updated[idx] = { ...newMsg, pending: false, failed: false };
+      updated[idx] = { ...updated[idx], ...newMsg, pending: false, failed: false };
       return updated;
     }
     return dedupeMessages([...msgs, { ...newMsg, pending: false, failed: false }]);
@@ -473,8 +561,8 @@ export function useDirectChat({ topic, meId, peerId, dbChannelId: providedDbChan
     });
 
     channel
-      .on('broadcast', { event: 'sendMsg' }, (payload) => {
-        const msg = payload.payload;
+      .on('broadcast', { event: 'sendMsg' }, async (payload) => {
+        const msg = await enrichMessage(payload.payload);
         setMessages((prev) => replaceOptimisticMessages(prev || [], msg));
         onMsgReceived(msg);
       })
@@ -508,9 +596,9 @@ export function useDirectChat({ topic, meId, peerId, dbChannelId: providedDbChan
         schema: 'public',
         table: tableName,
         filter: isCommunity ? `community_id=eq.${dbChannelId}` : isAdmin ? `channel_id=eq.${dbChannelId}` : `booking_id=eq.${dbChannelId}`,
-      }, (payload) => {
+      }, async (payload) => {
         if (payload.eventType === 'INSERT') {
-          const newMsg = payload.new;
+          const newMsg = await enrichMessage(payload.new);
           setMessages((prev) => replaceOptimisticMessages(prev || [], newMsg));
           onMsgReceived(newMsg);
         } else if (payload.eventType === 'UPDATE') {
@@ -600,6 +688,8 @@ export function useDirectChat({ topic, meId, peerId, dbChannelId: providedDbChan
     canLoadMoreMsgs,
     deleteMessage,
     sendTempMedia,
-    updateTempMedia
+    updateTempMedia,
+    insertSubStatus: status,
+    updateSubStatus: status
   };
 }

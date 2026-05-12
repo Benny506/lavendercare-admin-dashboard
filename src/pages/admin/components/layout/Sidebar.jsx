@@ -7,6 +7,7 @@ import logoFull from '../../../../assets/logos/logoFull.svg'
 import { useSelector } from "react-redux";
 import { getUserDetailsState } from "../../../../redux/slices/userDetailsSlice";
 import { useAdminChat } from "../../../../contexts/AdminChatContext";
+import { useAdminCommunityChat } from "../../../../contexts/AdminCommunityChatContext";
 
 const sidebarMenu = [
   {
@@ -186,7 +187,7 @@ const sidebarMenu = [
     icon: 'communities',
     path: "/admin/communities",
     submenu: [
-      { title: "All Communities", path: "/admin/communities/all-communities" },
+      { title: "All Communities", path: "/admin/communities/all-communities", showBadge: true },
       { title: "Create Community", path: "/admin/communities/create" },
       // { title: "Moderators", path: "/admin/communities/moderators" },
       // { title: "Activity Feed", path: "/admin/communities/activity" },
@@ -225,6 +226,7 @@ const sidebarMenu = [
 function Sidebar() {
   const navigate = useNavigate()
   const { totalUnreadCount } = useAdminChat();
+  const { allCommunitiesUnread } = useAdminCommunityChat();
 
   const { pathname } = useLocation();
 
@@ -312,7 +314,7 @@ function Sidebar() {
 
                   <span className="flex-1 text-sm font-medium text-left">
                     {item.title}
-                    {item.submenu.some(sub => sub.showBadge) && totalUnreadCount > 0 && (
+                    {item.submenu.some(sub => sub.showBadge) && (item.title === 'Communities' ? allCommunitiesUnread : totalUnreadCount) > 0 && (
                       <span className="inline-block ml-2 w-2 h-2 bg-red-500 rounded-full" title="New messages" />
                     )}
                   </span>
@@ -354,9 +356,9 @@ function Sidebar() {
                         >
                           <div className="flex items-center justify-between w-full pr-2">
                             <span>{sub.title}</span>
-                            {sub.showBadge && totalUnreadCount > 0 && (
+                            {sub.showBadge && (item.title === 'Communities' ? allCommunitiesUnread : totalUnreadCount) > 0 && (
                               <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                                {totalUnreadCount}
+                                {item.title === 'Communities' ? allCommunitiesUnread : totalUnreadCount}
                               </span>
                             )}
                           </div>

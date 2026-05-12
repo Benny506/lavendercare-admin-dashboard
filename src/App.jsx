@@ -5,8 +5,10 @@ import AppLoading from "./pages/admin/components/appLoading/AppLoading";
 import AppCrash from "./pages/admin/appCrash/AppCrash";
 import { ErrorBoundary } from "react-error-boundary"
 import { AdminChatProvider } from "./contexts/AdminChatContext";
+import { AdminCommunityChatProvider } from "./contexts/AdminCommunityChatContext";
 import { Provider } from "react-redux";
 import store from "./redux/store";
+import SubtleLoader from "./pages/admin/components/appLoading/SubtleLoader";
 
 function App() {
 
@@ -14,11 +16,14 @@ function App() {
     <ErrorBoundary fallback={<AppCrash />}>
       <Provider store={store}>
         <AdminChatProvider>
-          <AppLoading />
+          <AdminCommunityChatProvider>
+            <AppLoading />
+            <SubtleLoader />
 
-          <ToastContainer />
+            <ToastContainer />
 
-          <Routing />
+            <Routing />
+          </AdminCommunityChatProvider>
         </AdminChatProvider>
       </Provider>
     </ErrorBoundary>

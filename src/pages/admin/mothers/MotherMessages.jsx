@@ -26,6 +26,9 @@ import { useAudioRecorder } from "../../../hooks/chatHooks/useAudioRecorder";
 import { FaMicrophone } from "react-icons/fa";
 import { supaAdmin } from "../../../contexts/AdminChatContext";
 import { EMAIL_NOTIFY_MOTHER } from "../../../constants/emailTemplates";
+import GlobalServicePicker from "../components/chat/GlobalServicePicker";
+import ChatServiceCard from "../components/chat/ChatServiceCard";
+import { MdOutlineLocalOffer } from "react-icons/md";
 
 
 function MotherMessages() {
@@ -51,6 +54,7 @@ function MotherMessages() {
     const [mother, setMother] = useState(mom)
     const [failedMsgModal, setFailedMsgModal] = useState({ visible: false, hide: null })
     const [confirmDelete, setConfirmDelete] = useState({ visible: false, hide: null })
+    const [showServicePicker, setShowServicePicker] = useState(false);
 
     const [recordingDuration, setRecordingDuration] = useState(0); // seconds
     const isRecordingCancelled = useRef(false);
@@ -295,10 +299,21 @@ function MotherMessages() {
         setInput('');
     };
 
+    const handleServiceSelect = (service) => {
+        setShowServicePicker(false);
+        sendMessage({
+            text: JSON.stringify(service),
+            fileType: 'service',
+            toUser: peerId,
+            channel_id: topic,
+            user_profile: mother
+        });
+    };
+
     const retry = ({ msg }) => {
         const { file_type, message, id } = msg
 
-        if (file_type === 'text' || (file_type !== 'text' && !typeof message !== 'object')) {
+        if (file_type === 'text' || (file_type !== 'text' && typeof message !== 'object')) {
             sendMessage({ text: message, fileType: file_type, toUser: peerId, channel_id: topic, oldMsgId: id, user_profile: mother });
 
         } else {
@@ -506,6 +521,13 @@ function MotherMessages() {
                             <LuRotateCw size={18} />
                         </button>
                         <button
+                            onClick={() => setShowServicePicker(true)}
+                            className="text-sm bg-purple-50 hover:bg-purple-100 text-purple-600 cursor-pointer rounded-lg px-3 py-1.5 font-medium transition-colors border border-purple-100 flex items-center gap-1.5"
+                        >
+                            <MdOutlineLocalOffer size={16} />
+                            Reference Service
+                        </button>
+                        <button
                             onClick={notifyMotherEmail}
                             className="text-sm bg-purple-600 hover:bg-purple-700 text-white cursor-pointer rounded-lg px-3 py-1.5 font-medium transition-colors"
                         >
@@ -566,39 +588,42 @@ function MotherMessages() {
                                             justifyContent: iAmSender ? 'flex-end' : 'flex-start'
                                         }}
                                     >
-                                        <div style={{ width: '100%' }} className={`max-w-xs ${iAmSender
-                                            ? 'bg-purple-600 text-white'
-                                            : 'bg-gray-100 text-gray-900'
-                                            } rounded-2xl px-4 py-3`}>
-                                            {file_type === 'audio' ? (
-                                                <div style={{ width: '100%' }}>
-                                                    <AudioPlayer
-                                                        channelId={topic}
-                                                        filePath={message}
-                                                        durationMillis={duration * 1000}
-                                                    />
-                                                </div>
-                                            )
-                                                :
-                                                file_type === 'image' || file_type === 'video'
-                                                    ?
-                                                    (
-                                                        <div>
-                                                            <MediaDisplay
-                                                                url={
-                                                                    typeof message === 'object'
-                                                                        ?
-                                                                        message instanceof File || message instanceof Blob ? URL.createObjectURL(message) : message
-                                                                        :
-                                                                        getPublicImageUrl({ path: message, bucket_name: 'chat_media' })
-                                                                }
-                                                                type={file_type}
-                                                                align={iAmSender ? 'right' : 'left'}
-                                                            />
-                                                        </div>
-                                                    )
-                                                    : (
-                                                        <div style={{ minWidth: '240px', minHeight: '20px' }}>
+                                        {file_type === 'service' ? (
+                                            <ChatServiceCard service={message} iAmSender={iAmSender} />
+                                        ) : (
+                                            <div style={{ width: '100%' }} className={`max-w-xs ${iAmSender
+                                                ? 'bg-purple-600 text-white'
+                                                : 'bg-gray-100 text-gray-900'
+                                                } rounded-2xl px-4 py-3`}>
+                                                {file_type === 'audio' ? (
+                                                    <div style={{ width: '100%' }}>
+                                                        <AudioPlayer
+                                                            channelId={topic}
+                                                            filePath={message}
+                                                            durationMillis={duration * 1000}
+                                                        />
+                                                    </div>
+                                                )
+                                                    :
+                                                    file_type === 'image' || file_type === 'video'
+                                                        ?
+                                                        (
+                                                            <div>
+                                                                <MediaDisplay
+                                                                    url={
+                                                                        typeof message === 'object'
+                                                                            ?
+                                                                            message instanceof File || message instanceof Blob ? URL.createObjectURL(message) : message
+                                                                            :
+                                                                            getPublicImageUrl({ path: message, bucket_name: 'chat_media' })
+                                                                    }
+                                                                    type={file_type}
+                                                                    align={iAmSender ? 'right' : 'left'}
+                                                                />
+                                                            </div>
+                                                        )
+                                                        : (
+                                                            <div style={{ minWidth: '240px', minHeight: '20px' }}>
                                                             {
                                                                 message
                                                                     ?
@@ -683,14 +708,16 @@ function MotherMessages() {
                                                     </div>
                                             }
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
-                            )
+                            </div>
+                        )
                         })
                     )}
 
                     <div ref={bottomRef} />
                 </div>
+
 
                 {
                     (status == 'subscribed')
@@ -810,16 +837,17 @@ function MotherMessages() {
             />
 
             <ConfirmModal
-                modalProps={{
-                    ...confirmDelete,
-                    data: {
-                        yesFunc: () => {
-                            deleteMessage({ msgId: confirmDelete?.msg?.id, msg: confirmDelete?.msg })
-                        },
-                        title: 'Delete this message',
-                        msg: 'This action cannot be undone!'
-                    }
+                modalProps={confirmDelete}
+                onConfirm={() => {
+                    deleteMessage({ msgId: confirmDelete.msg.id, msg: confirmDelete.msg })
+                    hideConfirmDelete()
                 }}
+            />
+
+            <GlobalServicePicker 
+                isOpen={showServicePicker}
+                onClose={() => setShowServicePicker(false)}
+                onSelect={handleServiceSelect}
             />
         </div>
     );

@@ -14,12 +14,16 @@ import { LuMessageCircleWarning, LuRotateCw } from "react-icons/lu";
 import { sendNotifications } from "../../../lib/notifications";
 import { toast } from "react-toastify";
 import { appLoadStart, appLoadStop } from "../../../redux/slices/appLoadingSlice";
+import { subtleLoadStart, subtleLoadStop } from "../../../redux/slices/subtleLoaderSlice";
 import supabase from "../../../database/dbInit";
 import AudioPlayer from "../../../hooks/chatHooks/voiceNotes/AudioPlayer";
 import { getPublicImageUrl, uploadAsset } from "../../../lib/requestApi";
 import FailedMsgModal from "../components/chat/FailedMsgModal";
 import MediaDisplay from "../components/MediaDisplay";
-import ConfirmModal from "../components/ConfirmModal"; 
+import ConfirmModal from "../components/ConfirmModal";
+import GlobalServicePicker from "../components/chat/GlobalServicePicker";
+import ChatServiceCard from "../components/chat/ChatServiceCard";
+import { MdOutlineLocalOffer } from "react-icons/md";
 
 function CommunityChat() {
     const dispatch = useDispatch()
@@ -41,12 +45,14 @@ function CommunityChat() {
 
     const [input, setInput] = useState("");
     const [community, setCommunity] = useState(_community)
+    const [shouldNotify, setShouldNotify] = useState(false);
     const [failedMsgModal, setFailedMsgModal] = useState({ visible: false, hide: null })
     const [confirmDelete, setConfirmDelete] = useState({ visible: false, hide: null })
+    const [showServicePicker, setShowServicePicker] = useState(false);
 
     const meId = profile?.id
     const peerId = community?.id
-    const topic = community?.id //community_id is the topic!
+    const topic = `community:${community?.id}` // community_id is the topic with prefix!
 
     const {
         sendMessage, messages, status, insertSubStatus, updateSubStatus, onlineUsers, loadMessages,
@@ -57,7 +63,7 @@ function CommunityChat() {
         meId,
         peerId,
         isCommunity: true,
-        isAdmin: false
+        isAdmin: true
     })
 
     const peerOnline = onlineUsers.includes(peerId)
@@ -71,7 +77,24 @@ function CommunityChat() {
                 fetchCommunity()
             }
         }
-    }, [])
+    }, [community_id])
+
+    useEffect(() => {
+        if (community_id) {
+            handleRefresh()
+        }
+    }, [community_id])
+
+    const handleRefresh = async () => {
+        try {
+            dispatch(subtleLoadStart('Refreshing chat...'))
+            await refreshConnection()
+        } catch (error) {
+            console.error(error)
+        } finally {
+            dispatch(subtleLoadStop())
+        }
+    }
 
     useEffect(() => {
         if (messages?.length > 0) {
@@ -93,7 +116,7 @@ function CommunityChat() {
             dispatch(appLoadStart())
 
             const { data, error } = await supabase
-                .from("communities")
+                .from("community")
                 .select("*")
                 .single()
                 .eq("id", community_id)
@@ -115,7 +138,7 @@ function CommunityChat() {
     }
 
     const handleReadUnreadMsgs = () => {
-        const unReadMsgsIds = (messages || [])?.filter(msg => (!msg?.read_at && msg?.to_user === meId)).map(msg => msg?.id)
+        const unReadMsgsIds = (messages || [])?.filter(msg => (!msg?.read_at && msg?.from_user !== meId)).map(msg => msg?.id)
 
         if (unReadMsgsIds?.length > 0) {
             bulkMsgsRead(unReadMsgsIds)
@@ -154,9 +177,26 @@ function CommunityChat() {
             user_profile: {
                 id: profile?.id,
                 username: `Admin ~ ${profile?.username}`
-            }
+            },
+            notify_members: shouldNotify
         });
         setInput('');
+        setShouldNotify(false);
+    };
+
+    const handleServiceSelect = (service) => {
+        setShowServicePicker(false);
+        sendMessage({
+            text: JSON.stringify(service),
+            fileType: 'service',
+            community_id: community?.id,
+            user_profile: {
+                id: profile?.id,
+                username: `Admin ~ ${profile?.username}`
+            },
+            notify_members: shouldNotify
+        });
+        setShouldNotify(false);
     };
 
     if (!community) return <></>
@@ -233,7 +273,9 @@ function CommunityChat() {
                         username: `Admin ~ ${profile?.username}`
                     },
                     community_id: community?.id,
+                    notify_members: shouldNotify
                 })
+                setShouldNotify(false);
             })
             .catch(err => {
                 console.log(err)
@@ -249,14 +291,14 @@ function CommunityChat() {
                         username: `Admin ~ ${profile?.username}`
                     },
                     community_id: community?.id,
-                })                
+                })
             })
     };
 
     const retry = ({ msg }) => {
         const { file_type, message, id } = msg
 
-        if (file_type === 'text' || (file_type !== 'text' && !typeof message !== 'object')) {
+        if (file_type === 'text' || (file_type !== 'text' && typeof message !== 'object')) {
             sendMessage({
                 text: message, fileType: file_type, community_id: community?.id, oldMsgId: id,
                 user_profile: {
@@ -356,6 +398,21 @@ function CommunityChat() {
                     >
                         Notify community
                     </button> */}
+
+                    <button
+                        onClick={() => setShowServicePicker(true)}
+                        className="text-sm bg-purple-50 hover:bg-purple-100 text-purple-600 cursor-pointer rounded-lg px-3 py-1.5 font-medium transition-colors border border-purple-100 flex items-center gap-1.5"
+                    >
+                        <MdOutlineLocalOffer size={16} />
+                        Reference Service
+                    </button>
+                    <button
+                        onClick={handleRefresh}
+                        className="p-2 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 transition-colors"
+                        title="Reload Chat"
+                    >
+                        <LuRotateCw size={18} />
+                    </button>
                 </div>
 
                 <div className="max-h-[60vh] h-[60vh] min-h-[60vh] flex-1 p-6 flex flex-col gap-4 overflow-y-auto">
@@ -399,21 +456,15 @@ function CommunityChat() {
                             const seen = read_at ? true : false
                             const delivered = delivered_at ? true : false
 
-                            const lastMsgIndex = messages?.length - 1
-
-                            const nextMsg = index !== lastMsgIndex && messages[index + 1]
-
                             return (
                                 <div key={msg.id} className={`flex ${iAmSender ? 'justify-end' : 'justify-start'}`}>
                                     <div
                                         style={{
-                                            width: file_type === 'audio' ? '80%' : 'auto'
+                                            width: (file_type === 'audio') ? '80%' : 'auto'
                                         }}
                                     >
                                         {
-                                            profile?.username
-                                            &&
-                                            (!nextMsg || (nextMsg && nextMsg?.from_user != user_profile?.id))
+                                            (user_profile?.username)
                                             &&
                                             <p className="text-[12px]" style={
                                                 {
@@ -422,7 +473,7 @@ function CommunityChat() {
                                                     textAlign: iAmSender ? 'right' : 'left'
                                                 }
                                             }>
-                                                ~{user_profile?.username === profile?.username ? 'You' : user_profile?.username}
+                                                ~{user_profile?.id === meId ? 'You' : user_profile?.username} {user_profile?.type === 'admin' && '~Admin'}
                                             </p>
                                         }
 
@@ -458,18 +509,22 @@ function CommunityChat() {
                                                             />
                                                         </div>
                                                     )
-                                                    :
-                                                    (
-                                                        <div style={{ minWidth: '240px', minHeight: '20px' }}>
-                                                            {
-                                                                message
-                                                                    ?
-                                                                    <p className="text-sm mb-3 whitespace-pre-wrap">{message}</p>
-                                                                    :
-                                                                    <p style={{ fontStyle: 'italic' }} className="text-sm mb-3">Message deleted</p>
-                                                            }
-                                                        </div>
-                                                    )}
+                                                    : file_type === 'service'
+                                                        ? (
+                                                            <ChatServiceCard service={message} iAmSender={iAmSender} />
+                                                        )
+                                                        :
+                                                        (
+                                                            <div style={{ minWidth: '240px', minHeight: '20px' }}>
+                                                                {
+                                                                    message
+                                                                        ?
+                                                                        <p className="text-sm mb-3 whitespace-pre-wrap">{message}</p>
+                                                                        :
+                                                                        <p style={{ fontStyle: 'italic' }} className="text-sm mb-3">Message deleted</p>
+                                                                }
+                                                            </div>
+                                                        )}
                                             <div className="flex flex-col items-end justify-end">
                                                 <div
                                                     style={{
@@ -495,20 +550,6 @@ function CommunityChat() {
                                                 >
                                                     {isToday(created_at) ? 'Today' : isYesterday(created_at) ? 'Yesteday' : formatDate1({ dateISO: created_at })}
                                                 </p>
-
-                                                {
-                                                    iAmSender
-                                                    &&
-                                                    (
-                                                        seen
-                                                            ?
-                                                            <IoCheckmarkDoneSharp size={11} color="#FFF" />
-                                                            :
-                                                            delivered
-                                                            &&
-                                                            <IoCheckmark size={11} color="#FFF" />
-                                                    )
-                                                }
                                             </div>
                                             {
                                                 pending || failed
@@ -555,58 +596,73 @@ function CommunityChat() {
                     <div ref={bottomRef} />
                 </div>
 
+
                 {
                     (status == 'subscribed' && insertSubStatus == 'subscribed' && updateSubStatus == 'subscribed')
                         ?
-                        <div className="flex items-center gap-2 mt-auto border-t pt-2">
-                            <input
-                                ref={fileRef}
-                                type="file"
-                                accept="
+                        <div className="flex flex-col gap-2 mt-auto border-t pt-2">
+                            <div className="flex items-center gap-2 px-2">
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only peer"
+                                        checked={shouldNotify}
+                                        onChange={(e) => setShouldNotify(e.target.checked)}
+                                    />
+                                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                                    <span className="ml-2 text-xs font-medium text-gray-600">Notify Members</span>
+                                </label>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    ref={fileRef}
+                                    type="file"
+                                    accept="
                                     image/*,
                                     video/*
                                 "
-                                style={{ display: "none" }}
-                                onChange={e => {
-                                    handleFileChange(e)
-                                    e.target.value = null
-                                }}
-                            />
-                            <button
-                                onClick={(e) => {
-                                    fileRef?.current?.click?.()
-                                    e.target.value = null
-                                }}
-                                className="text-gray-400"
-                            >
-                                <svg width="20" height="20" fill="none" viewBox="0 0 20 20">
-                                    <circle
-                                        cx="10"
-                                        cy="10"
-                                        r="9"
-                                        stroke="#BDBDBD"
-                                        strokeWidth="2"
-                                    />
-                                    <path
-                                        d="M7 10h6M10 7v6"
-                                        stroke="#BDBDBD"
-                                        strokeWidth="2"
-                                        strokeLinecap="round"
-                                    />
-                                </svg>
-                            </button>
-                            <textarea
-                                value={input}
-                                onChange={e => setInput(e.target.value)}
-                                className="flex-1 border rounded px-3 py-2 text-sm"
-                                placeholder="Type a message..."
-                            />
-                            <button
-                                onClick={sendNow}
-                                className="cursor-pointer bg-purple-600 text-white px-4 py-2 rounded"
-                            >
-                                Send
-                            </button>
+                                    style={{ display: "none" }}
+                                    onChange={e => {
+                                        handleFileChange(e)
+                                        e.target.value = null
+                                    }}
+                                />
+                                <button
+                                    onClick={(e) => {
+                                        fileRef?.current?.click?.()
+                                        e.target.value = null
+                                    }}
+                                    className="text-gray-400"
+                                >
+                                    <svg width="20" height="20" fill="none" viewBox="0 0 20 20">
+                                        <circle
+                                            cx="10"
+                                            cy="10"
+                                            r="9"
+                                            stroke="#BDBDBD"
+                                            strokeWidth="2"
+                                        />
+                                        <path
+                                            d="M7 10h6M10 7v6"
+                                            stroke="#BDBDBD"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                        />
+                                    </svg>
+                                </button>
+                                <textarea
+                                    value={input}
+                                    onChange={e => setInput(e.target.value)}
+                                    className="flex-1 border rounded px-3 py-2 text-sm"
+                                    placeholder="Type a message..."
+                                />
+                                <button
+                                    onClick={sendNow}
+                                    className="cursor-pointer bg-purple-600 text-white px-4 py-2 rounded"
+                                >
+                                    Send
+                                </button>
+                            </div>
                         </div>
                         :
                         <div className="flex items-center justify-center">
@@ -627,17 +683,10 @@ function CommunityChat() {
                 onResend={() => retry({ msg: failedMsgModal?.msg })}
             />
 
-            <ConfirmModal
-                modalProps={{
-                    ...confirmDelete,
-                    data: {
-                        yesFunc: () => {
-                            deleteMessage({ msgId: confirmDelete?.msg?.id, msg: confirmDelete?.msg })
-                        },
-                        title: 'Delete this message',
-                        msg: 'This action cannot be undone!'
-                    }
-                }}
+            <GlobalServicePicker
+                isOpen={showServicePicker}
+                onClose={() => setShowServicePicker(false)}
+                onSelect={handleServiceSelect}
             />
         </div>
     );

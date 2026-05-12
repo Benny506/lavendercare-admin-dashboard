@@ -27,6 +27,7 @@ export default function useApiReqs() {
     const services = useSelector(state => getAdminState(state).services)
     const roles = useSelector(state => getUserDetailsState(state).roles)
     const allPermissions = useSelector(state => getUserDetailsState(state).allPermissions)
+    const communities = useSelector(state => getAdminState(state).communities)
 
 
 
@@ -486,6 +487,38 @@ export default function useApiReqs() {
 
 
     //vendors
+    const searchGlobalApprovedServices = async ({ searchTerm = '', callBack = () => { } }) => {
+        try {
+            dispatch(appLoadStart());
+
+            let query = supabase
+                .from('services')
+                .select(`
+                    *,
+                    service_types ( * ),
+                    provider: providers ( id, username, profile_img )
+                `)
+                .eq('status', 'approved');
+
+            if (searchTerm) {
+                query = query.ilike('service_name', `%${searchTerm}%`);
+            }
+
+            const { data, error } = await query.limit(50);
+
+            if (error) throw error;
+
+            callBack && callBack({ services: data || [] });
+            return data || [];
+        } catch (error) {
+            console.log(error);
+            toast.error("Error searching services");
+            return [];
+        } finally {
+            dispatch(appLoadStop());
+        }
+    };
+
     const fetchServices = async ({ callBack = () => { } }) => {
         try {
 
@@ -1037,7 +1070,7 @@ export default function useApiReqs() {
             toast.error("Error fetching third party products")
             dispatch(appLoadStop())
         }
-    }    
+    }
     const fetchSingleProduct = async ({ callBack = () => { }, product_id }) => {
         try {
 
@@ -2518,7 +2551,7 @@ export default function useApiReqs() {
 
             dispatch(setUserDetails({
                 roles: roles?.map(r => {
-                    if(r?.id === role_id){
+                    if (r?.id === role_id) {
                         return {
                             ...r,
                             ...updateRole
@@ -2557,7 +2590,7 @@ export default function useApiReqs() {
                 .from('role_permissions')
                 .delete()
                 .eq("role_id", role_id)
-                .select()                
+                .select()
 
             if (deletedRoleError || deletedPermsError) {
                 console.log("deletedRoleError", deletedRoleError)
@@ -2582,7 +2615,7 @@ export default function useApiReqs() {
         } finally {
             dispatch(appLoadStop())
         }
-    }    
+    }
 
 
 
@@ -2638,11 +2671,11 @@ export default function useApiReqs() {
                 .single()
                 .eq("id", business_entity_id)
 
-            if(entityError){
+            if (entityError) {
                 console.log("entityError", entityError)
             }
 
-            if(entity){
+            if (entity) {
                 await sendEmail({
                     to_id: entity?.user_id,
                     subject: is_approved ? "Approval!" : "Revoked!",
@@ -2717,11 +2750,11 @@ export default function useApiReqs() {
                 .single()
                 .eq("id", business_entity_id)
 
-            if(entityError){
+            if (entityError) {
                 console.log("entityError", entityError)
             }
 
-            if(entity){
+            if (entity) {
                 await sendEmail({
                     to_id: entity?.user_id,
                     subject: is_approved ? "Approval!" : "Revoked!",
@@ -2903,6 +2936,7 @@ export default function useApiReqs() {
         fetchSingleService,
         getServiceCategories,
         addService,
+        searchGlobalApprovedServices,
 
 
 
@@ -3011,6 +3045,146 @@ export default function useApiReqs() {
         //hospitals
         fetchHospitals,
         updateHospitalVerification,
-        onboardHospital
+        onboardHospital,
+
+        //communities
+        fetchCommunities: async ({ callBack = () => { } }) => {
+            try {
+                dispatch(appLoadStart())
+
+                const { data, error } = await supabase
+                    .from('community')
+                    .select(`
+                        *,
+                        members: community_members ( user_id ),
+                        requests: community_requests ( user_id )
+                    `)
+
+                if (error) throw error
+
+                dispatch(setAdminState({ communities: data }))
+                dispatch(appLoadStop())
+                callBack && callBack({ communities: data })
+
+            } catch (error) {
+                console.error("Error fetching communities:", error)
+                toast.error("Error fetching communities")
+                dispatch(appLoadStop())
+            }
+        },
+        fetchCommunityRequests: async ({ callBack = () => { }, community_id }) => {
+            try {
+                if (!community_id) throw new Error("Community ID required")
+                dispatch(appLoadStart())
+
+                const { data, error } = await supabase
+                    .from('community_requests')
+                    .select(`
+                        *,
+                        user_profile: user_profiles ( * )  
+                    `)
+                    .eq('community_id', community_id)
+
+                if (error) throw error
+
+                dispatch(appLoadStop())
+                callBack && callBack({ requests: data })
+
+                if (data.length === 0) {
+                    toast.info("No new requests")
+                }
+
+            } catch (error) {
+                console.error("Error fetching requests:", error)
+                toast.error("Error retrieving member requests")
+                dispatch(appLoadStop())
+            }
+        },
+        handleCommunityRequest: async ({ callBack = () => { }, community, user_id, notification_token, type }) => {
+            try {
+                if (!community || !user_id || !type) throw new Error("Incomplete request info")
+                dispatch(appLoadStart())
+
+                if (type === 'accept') {
+                    const { error: insertError } = await supabase
+                        .from('community_members')
+                        .insert({
+                            user_id,
+                            role: 'member',
+                            community_id: community.id
+                        })
+
+                    if (insertError) throw insertError
+                }
+
+                const { error: deleteError } = await supabase
+                    .from("community_requests")
+                    .delete()
+                    .eq("community_id", community.id)
+                    .eq("user_id", user_id)
+
+                if (deleteError) throw deleteError
+
+                const updatedCommunities = communities.map(c => {
+                    if (c?.id === community.id) {
+                        const updatedMembers = type === 'accept' ? [...(c?.members || []), { user_id }] : c?.members
+                        const updatedRequests = (c?.requests || []).filter(r => r?.user_id != user_id)
+
+                        return {
+                            ...c,
+                            members: updatedMembers,
+                            requests: updatedRequests
+                        }
+                    }
+                    return c
+                })
+
+                dispatch(setAdminState({ communities: updatedCommunities }))
+
+                if (notification_token) {
+                    await sendNotifications({
+                        tokens: [notification_token],
+                        title: 'Community response',
+                        body: type === 'accept' ? `Your request to join ${community.name} was accepted! Welcome` : `Your request to join ${community.name} was rejected!`,
+                        data: {
+                            notification_type: 'community_request_response',
+                        }
+                    })
+                }
+
+                toast.success(`Request ${type}ed`)
+                dispatch(appLoadStop())
+                callBack && callBack({ success: true })
+
+            } catch (error) {
+                console.error("Error handling request:", error)
+                toast.error("Something went wrong! Try again!")
+                dispatch(appLoadStop())
+            }
+        },
+        deleteCommunity: async ({ callBack = () => { }, community_id }) => {
+            try {
+                if (!community_id) throw new Error("Community ID required")
+                dispatch(appLoadStart())
+
+                const { error } = await supabase.from('community')
+                    .delete()
+                    .eq("id", community_id)
+
+                if (error) throw error
+
+                const updatedCommunities = communities?.filter(c => c?.id !== community_id)
+
+                dispatch(setAdminState({ communities: updatedCommunities }))
+                dispatch(appLoadStop())
+                callBack && callBack({ success: true })
+                toast.success("Community deleted successfully")
+
+            } catch (error) {
+                console.error("Error deleting community:", error)
+                toast.error("Something went wrong! Try again")
+                dispatch(appLoadStop())
+            }
+        }
     }
 }

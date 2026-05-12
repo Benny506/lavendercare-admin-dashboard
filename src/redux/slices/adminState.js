@@ -35,7 +35,8 @@ const adminState = createSlice({
         bookings: [],
         products: [],
         thirdPartyProducts: [],
-        productCategories: []
+        productCategories: [],
+        communities: []
     },
     reducers: {
         setAdminState: (state, action) => {
@@ -97,6 +98,9 @@ const adminState = createSlice({
 
             if (action?.payload?.vendorServiceCategories) {
                 state.vendorServiceCategories = action?.payload?.vendorServiceCategories
+            }
+            if (action?.payload?.communities) {
+                state.communities = action?.payload?.communities
             }
         },
     }

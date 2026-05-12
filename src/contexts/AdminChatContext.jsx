@@ -49,6 +49,7 @@ export const AdminChatProvider = ({ children }) => {
                     filter: `to_user=eq.${meId}`
                 },
                 () => {
+                    console.log("RUNNING")
                     fetchConversations();
                 }
             )
