@@ -106,6 +106,15 @@ const sidebarMenu = [
     requiredPermissions: ['content.create', 'content.edit', 'content.delete']
   },
   {
+    title: "Website",
+    Icon: () => <FaLayerGroup />,
+    path: "/admin/website",
+    submenu: [
+      { title: "Content", path: "/admin/website/content" },
+    ],
+    requiredPermissions: ['site_content.edit']
+  },
+  {
     title: "Marketplace",
     icon: 'marketPlace',
     path: "/admin/marketplace",

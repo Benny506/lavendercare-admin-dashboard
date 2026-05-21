@@ -67,6 +67,7 @@ import BlogDetail from "../pages/admin/content/BlogDetail";
 import NewBlog from "../pages/admin/content/NewBlog";
 import CreateAccount from "../pages/admin/createAccount/CreateAccount";
 import NotFound from "../pages/admin/notFound/NotFound";
+import SiteContentEditor from "../pages/admin/content/siteContent/SiteContentEditor";
 import CommunityChat from "../pages/admin/communities/CommunityChat";
 import { VoiceNoteProvider } from "../hooks/chatHooks/voiceNotes/useVoiceNote";
 import Orders from "../pages/admin/marketPlace/Orders";
@@ -118,6 +119,19 @@ function Routing() {
             <Route path="/admin/content/new-blog" element={<NewBlog />} />
             <Route path="/admin/content/edit-blog" element={<NewBlog />} />
             <Route path="/admin/content/blog-detail" element={<BlogDetail />} />
+          </Route>
+
+          {/* WEBSITE CONTENT */}
+          <Route path="/admin" element={
+            <PermissionCheck
+              permission_required={['site_content.edit']}
+            >
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            </PermissionCheck>
+          }>
+            <Route path="/admin/website/content" element={<SiteContentEditor />} />
           </Route>
 
 

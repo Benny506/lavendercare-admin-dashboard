@@ -28,7 +28,10 @@ export default function ConfirmModal({ modalProps, children }){
             onClose={hide}
         >
             <div className="flex justify-between items-center mb-4">
-                <div className="font-semibold text-lg">{ data?.title || 'Delete' }</div>
+                <div className="flex items-center gap-2">
+                    {data?.icon && <div className="text-xl">{data.icon}</div>}
+                    <div className="font-semibold text-lg">{ data?.title || 'Delete' }</div>
+                </div>
             </div>
 
             <div className="text-sm text-gray-600 mb-6">
@@ -45,16 +48,16 @@ export default function ConfirmModal({ modalProps, children }){
 
             <div className="flex justify-end gap-2">
                 <button
-                    className="bg-gray-100 cursor-pointer px-4 py-2 rounded"
+                    className={`${data?.noColorClass || "bg-gray-100"} cursor-pointer px-4 py-2 rounded`}
                     onClick={handleCancel}
                 >
-                    Cancel
+                    {data?.noText || 'Cancel'}
                 </button>
                 <button
-                    className="bg-red-600 cursor-pointer text-white px-4 py-2 rounded"
+                    className={`${data?.yesColorClass || "bg-red-600 text-white"} cursor-pointer px-4 py-2 rounded`}
                     onClick={handleYes}
                 >
-                    Yes
+                    {data?.yesText || 'Yes'}
                 </button>
             </div>           
         </Modal>
