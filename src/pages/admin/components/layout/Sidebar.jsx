@@ -111,6 +111,7 @@ const sidebarMenu = [
     path: "/admin/website",
     submenu: [
       { title: "Content", path: "/admin/website/content" },
+      { title: "Chat Support", path: "/admin/website/chat-support" },
     ],
     requiredPermissions: ['site_content.edit']
   },

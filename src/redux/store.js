@@ -6,6 +6,7 @@ import messagesSlice from './slices/messagesSlice'
 import notificationsSlice from './slices/notificationsSlice'
 import subtleLoader from './slices/subtleLoaderSlice'
 import siteContent from './slices/siteContentSlice'
+import chatSupport from './slices/chatSupportSlice'
 
 const store = configureStore({
     reducer: {
@@ -15,7 +16,8 @@ const store = configureStore({
         messagesSlice,
         notificationsSlice,
         subtleLoader,
-        siteContent
+        siteContent,
+        chatSupport
     }
 })
 

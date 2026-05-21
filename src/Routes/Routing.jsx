@@ -68,6 +68,7 @@ import NewBlog from "../pages/admin/content/NewBlog";
 import CreateAccount from "../pages/admin/createAccount/CreateAccount";
 import NotFound from "../pages/admin/notFound/NotFound";
 import SiteContentEditor from "../pages/admin/content/siteContent/SiteContentEditor";
+import ChatSupportEditor from "../pages/admin/content/chatSupport/ChatSupportEditor";
 import CommunityChat from "../pages/admin/communities/CommunityChat";
 import { VoiceNoteProvider } from "../hooks/chatHooks/voiceNotes/useVoiceNote";
 import Orders from "../pages/admin/marketPlace/Orders";
@@ -132,6 +133,7 @@ function Routing() {
             </PermissionCheck>
           }>
             <Route path="/admin/website/content" element={<SiteContentEditor />} />
+            <Route path="/admin/website/chat-support" element={<ChatSupportEditor />} />
           </Route>
 
 
