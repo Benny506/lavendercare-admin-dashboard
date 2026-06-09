@@ -73,7 +73,6 @@ import CommunityChat from "../pages/admin/communities/CommunityChat";
 import { VoiceNoteProvider } from "../hooks/chatHooks/voiceNotes/useVoiceNote";
 import Orders from "../pages/admin/marketPlace/Orders";
 import VariantCombinations from "../pages/admin/marketPlace/VariantCombinations";
-import ServiceSetup from "../pages/admin/serviceProvider/ServiceSetup";
 import Coupons from "../pages/admin/marketPlace/coupons/Coupons";
 import CouponForm from "../pages/admin/marketPlace/coupons/CouponForm";
 import CouponStats from "../pages/admin/marketPlace/coupons/CouponStats";
@@ -254,10 +253,6 @@ function Routing() {
             <Route
               path="/admin/services"
               element={<ServiceProvider />}
-            />
-            <Route
-              path="/admin/services/single-provider/service-setup"
-              element={<ServiceSetup />}
             />
             <Route
               path="/admin/services/single-provider/service-details"

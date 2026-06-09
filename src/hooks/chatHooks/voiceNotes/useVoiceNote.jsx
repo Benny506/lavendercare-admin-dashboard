@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
-import { getPublicUrl } from "../../../lib/requestApi";
+import { getPublicImageUrl, getPublicUrl } from "../../../lib/requestApi";
 
 const VoiceNoteContext = createContext(null);
 
@@ -55,13 +55,13 @@ export const VoiceNoteProvider = ({ children }) => {
       }
 
       // Fetch the public URL
-      const { publicUrl, error } = await getPublicUrl({
+      const publicUrl = await getPublicImageUrl({
         filePath,
         bucket_name: "voice_notes",
       });
 
-      if (!publicUrl || error) {
-        console.error("Error fetching public URL", error);
+      if (!publicUrl) {
+        console.error("Error fetching public URL");
         return;
       }
 

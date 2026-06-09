@@ -10,9 +10,6 @@ import { toast } from "react-toastify";
 import Badge from "../../components/ui/Badge";
 import { formatNumberWithCommas } from "../../../../lib/utils";
 import { BsDot } from "react-icons/bs";
-import AddServiceModal from "./AddServiceModal";
-import ConfirmDetails from "./ConfirmDetails";
-import ServiceHours from "./ServiceHours";
 import ServiceCard from "./ServiceCard";
 
 export default function VendorServices({ provider }) {
@@ -24,9 +21,6 @@ export default function VendorServices({ provider }) {
 
     const [apiReqs, setApiReqs] = useState({ isLoading: false, errorMsg: null, data: null })
     const [services, setServices] = useState()
-    const [newService, setNewService] = useState({
-        step: null, details: {}
-    })
 
     useEffect(() => {
         if (!services) {
@@ -86,14 +80,6 @@ export default function VendorServices({ provider }) {
 
     return (
         <div>
-            <div className="flex items-center justify-end mb-4">
-                <button
-                    onClick={() => navigate('/admin/services/single-provider/service-setup', { state: { provider } })}
-                    className="text-white bg-purple-700 rounded-4xl px-4 py-2 font-bold cursor-pointer"
-                >
-                    + Add New Service
-                </button>
-            </div>
             {/* Service Cards */}
             {filteredServices && filteredServices.length > 0 ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -124,33 +110,6 @@ export default function VendorServices({ provider }) {
                 </div>
             )}
 
-            <AddServiceModal
-                info={newService.details.serviceInfo}
-                isOpen={newService.step == 'add'}
-                hide={() => setNewService({ step: null, details: {} })}
-                goBackBtnFunc={() => setNewService({ step: null, details: {} })}
-                continueBtnFunc={(args) => setNewService(prev => ({
-                    step: 'availability',
-                    details: {
-                        ...prev.details,
-                        serviceInfo: args
-                    }
-                }))}
-                setApiReqs={setApiReqs}
-            />
-
-            <ConfirmDetails
-                vendor={provider}
-                info={newService}
-                setVendorServices={setServices}
-                vendorServices={services}
-                isOpen={newService.step == 'confirm'}
-                hide={() => setNewService({ step: null, details: {} })}
-                goBackBtnFunc={() => setNewService(prev => ({ ...prev, step: 'availability' }))}
-                continueBtnFunc={() => {
-                    setNewService({ step: 'review', details: {} })
-                }}
-            />
         </div>
     )
 }

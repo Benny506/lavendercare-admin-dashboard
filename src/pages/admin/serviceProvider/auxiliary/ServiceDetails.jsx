@@ -11,13 +11,9 @@ import { GoDash } from "react-icons/go";
 import ZeroItems from "../../components/ZeroItems";
 import { FaEdit } from "react-icons/fa";
 import useApiReqs from "../../../../hooks/useApiReqs";
-import ServiceType from "./ServiceType";
-import AddServiceModal from "./AddServiceModal";
-import ServiceHours from "./ServiceHours";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import { FaLocationPin } from "react-icons/fa6";
-import ServiceLocation from "./ServiceLocation";
 
 export default function ServiceDetails() {
     const dispatch = useDispatch()
@@ -26,24 +22,12 @@ export default function ServiceDetails() {
 
     const { state } = useLocation()
 
-    const { updateServiceType, deleteServiceType, insertServiceType, updateService, fetchSingleService } = useApiReqs()
+    const { updateService, fetchSingleService } = useApiReqs()
 
     const service_id = state?.service?.id
     const provider = state?.provider
 
-    const [serviceTypeModal, setServiceTypeModal] = useState({ visible: false, hide: null })
     const [service, setService] = useState(null)
-    const [serviceLocationModal, setServiceLocationModal] = useState({ visible: false, hide: null })
-    const [editServiceModal, setEditServiceModal] = useState({ step: null })
-    // const [days, setDays] = useState({
-    //     monday: [],
-    //     tuesday: [],
-    //     wednesday: [],
-    //     thursday: [],
-    //     friday: [],
-    //     saturday: [],
-    //     sunday: []
-    // })
 
     useEffect(() => {
         if (!service_id || !provider) {
@@ -70,12 +54,6 @@ export default function ServiceDetails() {
         navigate(-1)
         toast.info("Provider & Service information could not be retrieved")
     }
-
-    const openServiceLocationModal = () => setServiceLocationModal({ visible: true, hide: hideServiceLocationModal })
-    const hideServiceLocationModal = () => setServiceLocationModal({ visible: false, hide: null })
-
-    const openServiceTypeModal = ({ info }) => setServiceTypeModal({ visible: true, hide: hideServiceTypeModal, info })
-    const hideServiceTypeModal = () => setServiceTypeModal({ visible: false, hide: null })
 
     if (!service || !provider) return <></>
 
@@ -162,42 +140,12 @@ export default function ServiceDetails() {
                     }
                 </div>
 
-                <div className="mb-6">
-                    <ServiceHours
-                        info={service?.availability}
-                        handleContinueBtnClick={availability => {
-                            updateService({
-                                callBack: ({ updatedService }) => {
-                                    if (updatedService) {
-                                        setService({
-                                            ...service,
-                                            availability
-                                        })
-                                    }
 
-                                    setEditServiceModal({ step: null })
-                                },
-                                update: {
-                                    availability
-                                },
-                                service_id: service?.id,
-                            })
-                        }}
-                    />
-                </div>
 
                 <div className="mb-6">
                     <section className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6 space-y-6">
                         <div className="flex items-center justify-between">
                             <h2 className="text-2xl font-bold text-gray-900">Duration && Fees</h2>
-                            <Button
-                                variant="ghost"
-                                onClick={() => openServiceTypeModal({ info: null })}
-                                className="text-[#703dcb]"
-                            >
-                                <BsPlus className="text-2xl" />
-                                Add
-                            </Button>
                         </div>
 
                         {service?.types?.length ? (
@@ -228,40 +176,6 @@ export default function ServiceDetails() {
                                             </p>
                                         </div>
 
-                                        <div className="flex justify-between mt-4">
-                                            <Button
-                                                variant="ghost"
-                                                onClick={() =>
-                                                    openServiceTypeModal({ info: t })
-                                                }
-                                                className="text-[#703dcb]"
-                                            >
-                                                Edit
-                                            </Button>
-
-                                            <Button
-                                                variant="ghost"
-                                                className="text-red-500"
-                                                onClick={() =>
-                                                    deleteServiceType({
-                                                        callBack: ({ deleted_type_id }) => {
-                                                            if (!deleted_type_id) return
-
-                                                            const updatedService = {
-                                                                ...service,
-                                                                types: (service?.types || [])?.filter(t => t?.id !== deleted_type_id)
-                                                            }
-
-                                                            setService(updatedService)
-                                                        },
-                                                        type_id: t?.id,
-                                                        service_id: service?.id
-                                                    })
-                                                }
-                                            >
-                                                <BsTrash size={18} />
-                                            </Button>
-                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -275,7 +189,7 @@ export default function ServiceDetails() {
 
                 <Card
                     title="Location & Fees"
-                    subtitle="Only set this if this service can be rendered physically!"
+                    subtitle="Locations set by provider will appear here!"
                     icon={FaLocationPin}
                 >
                     <div className="space-y-4">
@@ -300,51 +214,9 @@ export default function ServiceDetails() {
                                         </p>
                                     </div>
 
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            const canBePhysical = service?.types?.filter(t => !t?.is_virtual)?.[0]
-
-                                            const updated = service?.locations?.filter((_, i) => i !== index);
-
-                                            if (canBePhysical && updated?.length === 0) {
-                                                return toast.info("This service required at least 1 address because it can be rendered physically")
-                                            }
-
-                                            updateService({
-                                                callBack: ({ updatedService }) => {
-                                                    if (updatedService) {
-                                                        setService({ 
-                                                            ...service,
-                                                            locations: updated?.length === 0 ? null : updated
-                                                        })
-                                                    }
-                                                },
-                                                update: {
-                                                    locations: updated?.length === 0 ? null : updated
-                                                },
-                                                service_id: service?.id
-                                            })
-                                        }}
-                                        className="text-sm text-red-500 hover:underline"
-                                    >
-                                        Remove
-                                    </button>
                                 </div>
                             )
                         })}
-
-                        {/* Add button */}
-                        <button
-                            type="button"
-                            onClick={openServiceLocationModal}
-                            className="w-full border border-dashed border-primary-400 text-primary-600 py-3 rounded-lg font-semibold hover:bg-primary-50 transition"
-                        >
-                            {
-                                service?.locations?.length === 0 ? 'Click to Set' : 'Click to add more'
-                            }
-                        </button>
-
                     </div>
                 </Card>
 
@@ -354,13 +226,6 @@ export default function ServiceDetails() {
                     {/* Header Row */}
                     <div className="flex items-center justify-between">
                         <h2 className="text-2xl font-bold text-gray-900">Service Details</h2>
-                        <Button
-                            variant="ghost"
-                            onClick={() => setEditServiceModal({ step: 'add' })}
-                            className="text-primary-600 font-semibold"
-                        >
-                            Edit
-                        </Button>
                     </div>
 
                     {/* Content Grid */}
@@ -446,102 +311,6 @@ export default function ServiceDetails() {
             </div> */}
             </div>
 
-            <ServiceType
-                info={serviceTypeModal?.info}
-                isOpen={serviceTypeModal?.visible}
-                hide={serviceTypeModal?.hide}
-                handleContinueBtnClick={({ requestInfo, info }) => {
-                    if (info?.id) {
-                        return updateServiceType({
-                            callBack: ({ updatedServiceType }) => {
-                                if (!updatedServiceType) return;
-
-                                const updatedService = {
-                                    ...(service || {}),
-                                    types: (service?.types || [])?.map(t => {
-                                        if (t?.id === updatedServiceType?.id) {
-                                            return updatedServiceType
-                                        }
-
-                                        return t
-                                    })
-                                }
-
-                                setService(updatedService)
-                                hideServiceTypeModal()
-                            },
-                            type_id: info?.id,
-                            update: requestInfo
-                        })
-                    }
-
-                    insertServiceType({
-                        callBack: ({ newServiceType }) => {
-                            if (!newServiceType) return;
-
-                            const updatedService = {
-                                ...(service || {}),
-                                types: [newServiceType, ...(service?.types || [])]
-                            }
-
-                            setService(updatedService)
-                            hideServiceTypeModal()
-                        },
-                        requestInfo: {
-                            ...requestInfo,
-                            service_id: service?.id
-                        }
-                    })
-                }}
-            />
-
-            <AddServiceModal
-                info={service || {}}
-                isOpen={editServiceModal.step == 'add'}
-                hide={() => setEditServiceModal({ step: null })}
-                goBackBtnFunc={() => setEditServiceModal({ step: null })}
-                continueBtnFunc={(update) => {
-                    updateService({
-                        callBack: ({ updatedService }) => {
-                            if (updatedService) {
-                                setService({
-                                    ...service,
-                                    ...update
-                                })
-                            }
-
-                            setEditServiceModal({ step: null })
-                        },
-                        update,
-                        service_id: service?.id,
-                    })
-                }}
-            />
-
-            <ServiceLocation
-                isOpen={serviceLocationModal.visible}
-                hide={serviceLocationModal.hide}
-                handleContinueBtnClick={({ requestInfo, info }) => {
-                    hideServiceLocationModal()
-
-                    const updatedLocations = [requestInfo, ...(service?.locations || [])]
-
-                    updateService({
-                        callBack: ({ updatedService }) => {
-                            if (updatedService) {
-                                setService({
-                                    ...service,
-                                    locations: updatedLocations
-                                })
-                            }
-                        },
-                        update: {
-                            locations: updatedLocations
-                        },
-                        service_id: service?.id
-                    })
-                }}
-            />
         </div>
     );
 }
