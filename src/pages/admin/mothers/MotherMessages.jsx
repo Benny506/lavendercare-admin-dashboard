@@ -624,94 +624,94 @@ function MotherMessages() {
                                                         )
                                                         : (
                                                             <div style={{ minWidth: '240px', minHeight: '20px' }}>
-                                                            {
-                                                                message
-                                                                    ?
-                                                                    <p className="text-sm mb-3 whitespace-pre-wrap">{message}</p>
-                                                                    :
-                                                                    <p style={{ fontStyle: 'italic' }} className="text-sm mb-3">Message deleted</p>
-                                                            }
-                                                        </div>
-                                                    )}
-                                            <div className="flex flex-col items-end justify-end">
-                                                <div
-                                                    style={{
-                                                        height: '0.2px',
-                                                        backgroundColor: iAmSender ? 'white' : 'gray',
-                                                        width: '100%'
-                                                    }}
-                                                    className="mb-2 mt-4"
-                                                />
-                                                <p
-                                                    style={{
-                                                        color: iAmSender ? '#FFF' : "_000"
-                                                    }}
-                                                    className="text-xs m-0 p-0"
-                                                >
-                                                    {isoToAMPM({ isoString: created_at })}
-                                                </p>
-                                                <p
-                                                    style={{
-                                                        color: iAmSender ? '#FFF' : "_000"
-                                                    }}
-                                                    className="text-xs m-0 p-0"
-                                                >
-                                                    {isToday(created_at) ? 'Today' : isYesterday(created_at) ? 'Yesteday' : formatDate1({ dateISO: created_at })}
-                                                </p>
+                                                                {
+                                                                    message
+                                                                        ?
+                                                                        <p className="text-sm mb-3 whitespace-pre-wrap">{message}</p>
+                                                                        :
+                                                                        <p style={{ fontStyle: 'italic' }} className="text-sm mb-3">Message deleted</p>
+                                                                }
+                                                            </div>
+                                                        )}
+                                                <div className="flex flex-col items-end justify-end">
+                                                    <div
+                                                        style={{
+                                                            height: '0.2px',
+                                                            backgroundColor: iAmSender ? 'white' : 'gray',
+                                                            width: '100%'
+                                                        }}
+                                                        className="mb-2 mt-4"
+                                                    />
+                                                    <p
+                                                        style={{
+                                                            color: iAmSender ? '#FFF' : "_000"
+                                                        }}
+                                                        className="text-xs m-0 p-0"
+                                                    >
+                                                        {isoToAMPM({ isoString: created_at })}
+                                                    </p>
+                                                    <p
+                                                        style={{
+                                                            color: iAmSender ? '#FFF' : "_000"
+                                                        }}
+                                                        className="text-xs m-0 p-0"
+                                                    >
+                                                        {isToday(created_at) ? 'Today' : isYesterday(created_at) ? 'Yesteday' : formatDate1({ dateISO: created_at })}
+                                                    </p>
 
+                                                    {
+                                                        iAmSender
+                                                        &&
+                                                        (
+                                                            seen
+                                                                ?
+                                                                <IoCheckmarkDoneSharp size={11} color="#FFF" />
+                                                                :
+                                                                delivered
+                                                                &&
+                                                                <IoCheckmark size={11} color="#FFF" />
+                                                        )
+                                                    }
+                                                </div>
                                                 {
-                                                    iAmSender
-                                                    &&
-                                                    (
-                                                        seen
-                                                            ?
-                                                            <IoCheckmarkDoneSharp size={11} color="#FFF" />
-                                                            :
-                                                            delivered
-                                                            &&
-                                                            <IoCheckmark size={11} color="#FFF" />
-                                                    )
+                                                    pending || failed
+                                                        ?
+                                                        <div style={{}} className="flex items-center justify-end mt-3">
+                                                            <div style={{ borderRadius: '5px' }} className="p-1 bg-white">
+                                                                {
+                                                                    pending
+                                                                        ?
+                                                                        // <Tooltip>
+                                                                        //     <TooltipTrigger asChild>
+                                                                        <BsClockHistory color="#6F3DCB" size={15} />
+                                                                        // </TooltipTrigger>
+                                                                        //     <TooltipContent side="top" sideOffset={5}>
+                                                                        //         Pending message. Sending...
+                                                                        //     </TooltipContent>
+                                                                        // </Tooltip>                                                                    
+                                                                        :
+                                                                        failed
+                                                                        &&
+                                                                        <div className="flex items-center gap-2">
+                                                                            <LuMessageCircleWarning onClick={() => openFailedMsgModal({ msg })} color="#c41a2b" size={15} />
+                                                                        </div>
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                        :
+                                                        (message && iAmSender)
+                                                        &&
+                                                        <div style={{}} className="flex items-center justify-end mt-3">
+                                                            <div onClick={() => openConfirmDelete({ msg })} style={{ borderRadius: '5px' }} className="p-1 bg-white">
+                                                                <BsTrash color="#6F3DCB" />
+                                                            </div>
+                                                        </div>
                                                 }
                                             </div>
-                                            {
-                                                pending || failed
-                                                    ?
-                                                    <div style={{}} className="flex items-center justify-end mt-3">
-                                                        <div style={{ borderRadius: '5px' }} className="p-1 bg-white">
-                                                            {
-                                                                pending
-                                                                    ?
-                                                                    // <Tooltip>
-                                                                    //     <TooltipTrigger asChild>
-                                                                    <BsClockHistory color="#6F3DCB" size={15} />
-                                                                    // </TooltipTrigger>
-                                                                    //     <TooltipContent side="top" sideOffset={5}>
-                                                                    //         Pending message. Sending...
-                                                                    //     </TooltipContent>
-                                                                    // </Tooltip>                                                                    
-                                                                    :
-                                                                    failed
-                                                                    &&
-                                                                    <div className="flex items-center gap-2">
-                                                                        <LuMessageCircleWarning onClick={() => openFailedMsgModal({ msg })} color="#c41a2b" size={15} />
-                                                                    </div>
-                                                            }
-                                                        </div>
-                                                    </div>
-                                                    :
-                                                    (message && iAmSender)
-                                                    &&
-                                                    <div style={{}} className="flex items-center justify-end mt-3">
-                                                        <div onClick={() => openConfirmDelete({ msg })} style={{ borderRadius: '5px' }} className="p-1 bg-white">
-                                                            <BsTrash color="#6F3DCB" />
-                                                        </div>
-                                                    </div>
-                                            }
-                                        </div>
-                                    )}
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        )
+                            )
                         })
                     )}
 
@@ -844,7 +844,7 @@ function MotherMessages() {
                 }}
             />
 
-            <GlobalServicePicker 
+            <GlobalServicePicker
                 isOpen={showServicePicker}
                 onClose={() => setShowServicePicker(false)}
                 onSelect={handleServiceSelect}

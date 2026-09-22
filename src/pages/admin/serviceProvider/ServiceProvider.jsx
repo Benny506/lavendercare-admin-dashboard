@@ -105,7 +105,8 @@ function ServiceProvider() {
         setRejectServiceReason('')
       },
       update: {
-        status: newStatus
+        status: newStatus,
+        rejection_reason: newStatus === 'rejected' ? (rejectServiceReason || 'Rejected by administrator') : null
       },
       service_id
     })

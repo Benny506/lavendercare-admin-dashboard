@@ -19,12 +19,28 @@ export default function VendorInfo({ vendor }) {
 
     const image_url = vendor?.profile_img ? getPublicImageUrl({ path: vendor?.profile_img, bucket_name: 'user_profiles' }) : null
 
-    const formatTimeStr = (str) => {
-        if (!str) return "Closed";
-        let [h, m] = str.split(':');
+    const formatTimeStr = (strr) => {
+        if (strr === null || strr === undefined || strr === "") return "Closed";
+
+        const str = String(strr);
+        let h, m;
+
+        if (str.includes(':')) {
+            [h, m] = str.split(':');
+        } else {
+            h = str;
+            m = '00';
+        }
+
         let hour = parseInt(h, 10);
+        if (isNaN(hour)) return "Closed";
+
         const ampm = hour >= 12 ? 'PM' : 'AM';
         hour = hour % 12 || 12;
+
+        // Ensure minutes are 2 digits just in case
+        if (!m || m.length === 1) m = "00";
+
         return `${hour}:${m} ${ampm}`;
     }
 
@@ -89,16 +105,15 @@ export default function VendorInfo({ vendor }) {
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
                         {DAYS_ORDER.map((day) => {
                             const hours = vendor.availability[day];
-                            const isAvailable = hours?.opening != null && hours?.closing != null;
-                            
+                            const isAvailable = hours?.opening != null && hours?.opening !== "" && hours?.closing != null && hours?.closing !== "";
+
                             return (
-                                <div 
-                                    key={day} 
-                                    className={`flex flex-col p-4 rounded-2xl border transition-all duration-300 ${
-                                        isAvailable 
-                                            ? 'bg-white border-gray-200 shadow-sm hover:shadow-md hover:border-indigo-200 hover:-translate-y-0.5' 
-                                            : 'bg-gray-50/60 border-transparent opacity-80'
-                                    }`}
+                                <div
+                                    key={day}
+                                    className={`flex flex-col p-4 rounded-2xl border transition-all duration-300 ${isAvailable
+                                        ? 'bg-white border-gray-200 shadow-sm hover:shadow-md hover:border-indigo-200 hover:-translate-y-0.5'
+                                        : 'bg-gray-50/60 border-transparent opacity-80'
+                                        }`}
                                 >
                                     <div className="flex items-center gap-2 mb-2">
                                         <div className={`w-2 h-2 rounded-full ${isAvailable ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]' : 'bg-gray-300'}`}></div>
@@ -106,7 +121,7 @@ export default function VendorInfo({ vendor }) {
                                             {day.slice(0, 3)}
                                         </span>
                                     </div>
-                                    
+
                                     {isAvailable ? (
                                         <div className="flex flex-col mt-auto text-sm font-bold text-indigo-900 bg-indigo-50/50 p-2 rounded-lg text-center">
                                             <span>{formatTimeStr(hours.opening)}</span>
